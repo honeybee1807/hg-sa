@@ -5,8 +5,26 @@ export default function FeaturedGemCard({ gem }) {
   if (!gem?.businesses) {
     return (
       <div className="featured-gem-empty">
-        <i className="fa-solid fa-gem" />
-        <p>This week&apos;s featured gem is coming soon — check back on Monday!</p>
+        <div className="featured-gem-badge">
+          <i className="fa-solid fa-gem" /> Gem of the Week
+        </div>
+        <div className="featured-gem-body">
+          <div className="featured-gem-logo">
+            <div className="featured-gem-empty-icon-wrap">
+              <i className="fa-solid fa-gem featured-gem-empty-icon" />
+            </div>
+          </div>
+          <div className="featured-gem-info">
+            <h3 className="featured-gem-empty-heading">Could this be your business?</h3>
+            <p className="featured-gem-desc">
+              Every Monday we spotlight an outstanding KwaZulu-Natal business — completely free.
+              Submit your listing and you could be featured next.
+            </p>
+            <Link href="/submit" className="btn-primary featured-gem-cta">
+              <i className="fa-solid fa-plus" /> List Your Business Free
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

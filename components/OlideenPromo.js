@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 import { OLIDEEN_URL } from "@/lib/constants";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -32,9 +33,21 @@ export default function OlideenPromo() {
     <section className="olideen-promo" ref={ref}>
       <div className="promo-shimmer" aria-hidden="true" />
       <div className="container promo-content">
-        <span className="promo-animate promo-tag">
-          <i className="fa-solid fa-building-columns" /> Olideen Technologies
-        </span>
+        <a
+          href={OLIDEEN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="promo-animate promo-ot-logo-wrap"
+        >
+          <Image
+            src="/OT_Logo.png"
+            alt="Olideen Technologies"
+            width={200}
+            height={70}
+            className="ot-logo-pulse"
+            style={{ objectFit: "contain", height: "auto" }}
+          />
+        </a>
         <h2 className="promo-animate promo-heading">
           Connecting KwaZulu-Natal,<br />One Business at a Time
         </h2>

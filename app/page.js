@@ -208,12 +208,13 @@ export default async function HomePage() {
                   <i className={cat.icon} />
                 </span>
                 <span className="cat-name">{cat.name}</span>
+                <span className="cat-desc">{cat.desc}</span>
               </Link>
             ))}
           </AnimatedSection>
           <AnimatedSection delay={0.15}>
             <div className="text-center mt-3">
-              <Link href="/categories" className="btn-ghost-white">
+              <Link href="/categories" className="btn-rose-outline">
                 <i className="fa-solid fa-grid-2" /> View All Categories
               </Link>
             </div>
@@ -243,7 +244,7 @@ export default async function HomePage() {
           </AnimatedSection>
           <AnimatedSection delay={0.15}>
             <div className="text-center mt-3">
-              <Link href="/towns" className="btn-ghost-white">
+              <Link href="/towns" className="btn-rose-outline">
                 <i className="fa-solid fa-map" /> All Towns
               </Link>
             </div>
