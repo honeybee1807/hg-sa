@@ -11,7 +11,7 @@ export default function Navbar() {
     <header className="navbar">
       <div className="container navbar-inner">
         <Link href="/" className="navbar-logo">
-          <Image src="/HG_Logo.png" alt="Hidden Gems SA" width={80} height={80} priority />
+          <Image src="/HG_Logo.png" alt="Hidden Gems SA" width={110} height={48} priority style={{ height: 48, width: "auto" }} />
         </Link>
 
         <nav className={`navbar-links ${open ? "navbar-links--open" : ""}`}>

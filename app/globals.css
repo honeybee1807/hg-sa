@@ -441,19 +441,56 @@ h1, h2, h3, h4, h5, h6 {
 .section-header p { color: #6b7280; margin-top: 0.5rem; }
 
 /* ─── featured gem card ────────────────────────────────────────────── */
+/* empty state matches the real card visually */
 .featured-gem-empty {
-  text-align: center;
-  padding: 3rem;
-  background: var(--sapphire-pale);
+  background: #fff;
   border-radius: var(--radius);
-  color: var(--sapphire);
-  font-size: 1.05rem;
+  max-width: 680px;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+  /* animated gradient border */
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+  box-shadow:
+    0 8px 48px rgba(196,110,161,0.12),
+    0 2px 16px rgba(28,48,96,0.08),
+    0 0 0 1.5px transparent;
+  animation: emptyCardBorder 3s ease infinite;
 }
 
-.featured-gem-empty i {
-  font-size: 2rem;
-  display: block;
-  margin-bottom: 0.75rem;
+@keyframes emptyCardBorder {
+  0%, 100% { box-shadow: 0 8px 48px rgba(196,110,161,0.12), 0 2px 16px rgba(28,48,96,0.08), 0 0 0 1.5px rgba(196,110,161,0.25); }
+  50%       { box-shadow: 0 8px 48px rgba(196,110,161,0.22), 0 2px 16px rgba(28,48,96,0.12), 0 0 0 1.5px rgba(196,110,161,0.65); }
+}
+
+/* icon placeholder replacing the logo */
+.featured-gem-empty-icon-wrap {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sapphire-pale), #fde8f3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.featured-gem-empty-icon {
+  font-size: 2.2rem;
+  color: var(--rose);
+  animation: gemIconPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes gemIconPulse {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%       { opacity: 0.7; transform: scale(0.88); }
+}
+
+.featured-gem-empty-heading {
+  font-size: 1.4rem;
+  margin-bottom: 0.4rem;
+  color: var(--navy);
 }
 
 .featured-gem-card {
@@ -706,14 +743,53 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .footer-links a:hover { color: #fff; }
 
-.footer-credit {
-  text-align: right;
-  font-size: 0.875rem;
+.footer-brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
 }
 
-.footer-credit a { color: var(--sapphire-light); }
-.footer-credit a:hover { color: #fff; }
-.footer-copy { margin-top: 0.4rem; font-size: 0.8rem; color: rgba(255,255,255,0.4); }
+.footer-credit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.footer-built-by {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.35);
+}
+
+.footer-ot-link {
+  display: block;
+  transition: opacity 0.2s;
+}
+
+.footer-ot-link:hover { opacity: 0.85; }
+
+.footer-copy { font-size: 0.78rem; color: rgba(255,255,255,0.35); }
+
+/* ─── olideen logo pulse animation ─────────────────────────────── */
+@keyframes otLogoPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+
+.ot-logo-pulse {
+  animation: otLogoPulse 2.4s ease-in-out infinite;
+  display: block;
+  transform-origin: center;
+}
+
+/* promo logo wrapper */
+.promo-ot-logo-wrap {
+  display: block;
+  margin-bottom: 0.5rem;
+}
 
 @media (max-width: 720px) {
   .footer-inner {
@@ -1509,54 +1585,88 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   dark homepage design system
-   all rules scoped to .home-wrap so they never bleed to other pages.
+   homepage design system — warm & community-first
+   hero stays dark; all sections below are warm light.
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── dark tokens ────────────────────────────────────────────────── */
+/* ── tokens (hero uses these) ───────────────────────────────────── */
 :root {
-  --ink:        #080e1c;
-  --ink-1:      #0e1729;
-  --ink-2:      #142035;
-  --ink-border: rgba(255,255,255,0.07);
-  --ink-border-h: rgba(255,255,255,0.15);
-  --gem:        #C46EA1;
-  --gem-mid:    #D88FB8;
-  --gem-glow:   rgba(196,110,161,0.18);
-  --sky:        #5B9EC9;
-  --dtext:      #EBF0FF;
-  --dtext-2:    rgba(235,240,255,0.55);
-  --dtext-3:    rgba(235,240,255,0.3);
+  --ink:      #0d0710;
+  --ink-1:    #120a14;
+  --gem:      #C46EA1;
+  --gem-mid:  #D88FB8;
+  --gem-glow: rgba(196,110,161,0.22);
+  --sky:      #5B9EC9;
+  --dtext:    #F5EEF8;
+  --dtext-2:  rgba(245,238,248,0.62);
+  --dtext-3:  rgba(245,238,248,0.35);
 }
 
-/* ── wrapper ────────────────────────────────────────────────────── */
+/* ── wrapper: warm white ────────────────────────────────────────── */
 .home-wrap {
-  background: var(--ink);
-  color: var(--dtext);
+  background: #fff;
+  color: #1a1a1a;
 }
 
 /* ── sections ───────────────────────────────────────────────────── */
 .home-section {
   padding: 5rem 0;
   position: relative;
+  background: #fff;
 }
 
 .home-section--inset {
-  background: var(--ink-1);
+  background: #FDF7FA;
+}
+
+/* bigger, warmer section headings on white */
+.home-section-header {
+  text-align: center;
+  margin-bottom: 3rem;
 }
 
 .home-section-header h2 {
-  color: var(--dtext) !important;
-  background: none !important;
-  -webkit-text-fill-color: var(--dtext) !important;
-  font-size: clamp(1.75rem, 3.5vw, 2.4rem);
+  font-size: clamp(2rem, 4.5vw, 3.2rem) !important;
+  background: linear-gradient(120deg, var(--navy) 0%, var(--rose) 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  line-height: 1.15;
+  margin-bottom: 0.6rem;
 }
 
 .home-section-header p {
-  color: var(--dtext-2) !important;
+  color: #6b7280 !important;
+  font-size: 1.05rem;
+  max-width: 520px;
+  margin: 0 auto;
 }
 
-/* ── ghost white button ─────────────────────────────────────────── */
+/* ── rose outline button (replaces ghost-white on light bg) ─────── */
+.btn-rose-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.75rem;
+  border: 1.5px solid var(--rose);
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--rose);
+  background: transparent;
+  text-decoration: none;
+  transition: background 0.22s, color 0.22s, box-shadow 0.22s;
+}
+
+.btn-rose-outline:hover {
+  background: linear-gradient(120deg, var(--gem), var(--gem-mid));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(196,110,161,0.35);
+}
+
+/* keep ghost-white available for hero dark sections */
 .btn-ghost-white {
   display: inline-flex;
   align-items: center;
@@ -1567,7 +1677,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   font-family: var(--font-body);
   font-size: 0.95rem;
   font-weight: 600;
-  color: rgba(235,240,255,0.75);
+  color: rgba(245,238,248,0.8);
   background: transparent;
   text-decoration: none;
   transition: border-color 0.22s, color 0.22s, background 0.22s;
@@ -1579,95 +1689,118 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   background: rgba(255,255,255,0.07);
 }
 
-/* ── category cards (dark) ──────────────────────────────────────── */
+/* ── category cards (warm light) ────────────────────────────────── */
 .home-wrap .category-card {
-  background: var(--ink-2);
-  border: 1px solid var(--ink-border);
-  color: var(--dtext-2);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  background: #fff;
+  border: 1.5px solid #f3e8f0;
+  color: var(--navy);
+  box-shadow: 0 4px 12px rgba(28,48,96,0.08);
+  padding: 2rem 1rem 1.75rem;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, border-color 0.22s ease;
+}
+
+.home-wrap .cat-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  font-size: 1.6rem;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  transition: box-shadow 0.22s ease, filter 0.22s ease, transform 0.22s ease;
 }
 
 .home-wrap .cat-name {
-  color: var(--dtext-2);
-  transition: color 0.25s;
+  color: var(--navy);
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: color 0.22s;
+}
+
+.home-wrap .cat-desc {
+  color: #7a6a7a;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.4;
+  margin-top: 0.25rem;
+  transition: color 0.22s;
 }
 
 .home-wrap .category-card:hover {
-  background: #1a2840;
-  border-color: var(--ink-border-h);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  background: #FEF0F8;
+  border-color: var(--rose);
+  box-shadow: 0 8px 28px rgba(196,110,161,0.18);
+  transform: translateY(-4px);
 }
 
 .home-wrap .category-card:hover .cat-name {
-  color: var(--dtext);
+  color: var(--rose);
+}
+
+.home-wrap .category-card:hover .cat-desc {
+  color: #b06090;
 }
 
 .home-wrap .category-card:hover .cat-icon {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  box-shadow: 0 10px 28px rgba(196,110,161,0.28);
+  filter: brightness(1.12);
+  transform: scale(1.06) rotate(-2deg);
 }
 
-/* ── town pills (dark) ──────────────────────────────────────────── */
+/* ── town pills (warm light) ─────────────────────────────────────── */
 .home-wrap .town-pill {
-  background: transparent;
-  border-color: rgba(255,255,255,0.12);
-  color: var(--dtext-2);
+  background: #fff;
+  border-color: #e8d5ea;
+  color: var(--navy);
+  font-size: 0.95rem;
+  box-shadow: 0 2px 8px rgba(196,110,161,0.06);
 }
 
 .home-wrap .town-pill:hover {
   background: linear-gradient(120deg, var(--gem), var(--gem-mid));
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 4px 18px rgba(196,110,161,0.4);
+  box-shadow: 0 6px 22px rgba(196,110,161,0.4);
 }
 
-/* ── featured gem (dark) ────────────────────────────────────────── */
+/* ── featured gem card (light) ───────────────────────────────────── */
 .home-wrap .featured-gem-card {
-  background: var(--ink-1);
-  border: 1px solid var(--ink-border);
-  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 48px rgba(196,110,161,0.12), 0 2px 16px rgba(28,48,96,0.08);
+  border: 1px solid #f3e8f0;
 }
 
-.home-wrap .featured-gem-info h3 { color: var(--dtext); }
-.home-wrap .featured-gem-meta    { color: var(--dtext-3); }
-.home-wrap .featured-gem-desc    { color: var(--dtext-2); }
-
-.home-wrap .featured-gem-empty {
-  background: var(--ink-1);
-  color: var(--dtext-2);
-  border: 1px solid var(--ink-border);
-}
-
-/* ── faq (dark) ─────────────────────────────────────────────────── */
+/* ── faq (light) ─────────────────────────────────────────────────── */
 .home-wrap .faq-item {
-  background: var(--ink-1);
-  border: 1px solid var(--ink-border);
+  border: 1.5px solid #f3e8f0;
   box-shadow: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.home-wrap .faq-item[open] { border-color: rgba(196,110,161,0.3); }
-
-.home-wrap .faq-question {
-  color: var(--dtext);
+.home-wrap .faq-item[open] {
+  border-color: var(--rose);
+  box-shadow: 0 4px 20px rgba(196,110,161,0.1);
 }
 
-.home-wrap .faq-question::after { color: var(--gem); }
+.home-wrap .faq-question { color: var(--navy); }
+.home-wrap .faq-question::after { color: var(--rose); }
+.home-wrap .faq-answer { color: #4b5563; }
 
-.home-wrap .faq-answer { color: var(--dtext-2); }
-
-/* ── home cta band ──────────────────────────────────────────────── */
+/* ── home cta band — dark navy, rose accent only ─────────────────── */
 .home-cta-band {
-  padding: 6rem 0;
-  background: var(--ink-1);
+  padding: 5rem 0;
+  background:
+    radial-gradient(ellipse at 50% 110%, rgba(196,110,161,0.18) 0%, transparent 60%),
+    linear-gradient(160deg, #1a0710 0%, #0d0a1a 45%, #080610 100%);
   position: relative;
   overflow: hidden;
   text-align: center;
+  color: #fff;
 }
 
 .home-cta-glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 50%, rgba(196,110,161,0.12) 0%, transparent 65%);
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(34,88,127,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 50%, rgba(196,110,161,0.1) 0%, transparent 55%);
   pointer-events: none;
 }
 
@@ -1682,7 +1815,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .home-cta-h2 {
   font-family: var(--font-heading);
-  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
   color: var(--dtext) !important;
   background: none !important;
   -webkit-text-fill-color: var(--dtext) !important;
@@ -1699,7 +1832,10 @@ details[open] .faq-question::after { transform: rotate(180deg); }
    ════════════════════════════════════════════════════════════════════ */
 .hero {
   position: relative;
-  background: var(--ink);
+  background:
+    radial-gradient(ellipse at 25% 40%, rgba(196,110,161,0.32) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 70%, rgba(34,88,127,0.22) 0%, transparent 50%),
+    linear-gradient(160deg, #1a0710 0%, #0d0a1a 45%, #080610 100%);
   overflow: hidden;
 }
 
@@ -1718,11 +1854,11 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .hero-glow-rose {
   position: absolute;
-  width: 750px;
-  height: 750px;
-  background: radial-gradient(circle, rgba(196,110,161,0.2) 0%, transparent 60%);
-  top: -250px;
-  right: -150px;
+  width: 900px;
+  height: 900px;
+  background: radial-gradient(circle, rgba(196,110,161,0.35) 0%, transparent 60%);
+  top: -320px;
+  right: -200px;
 }
 
 .hero-glow-blue {
@@ -1777,12 +1913,12 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .hero-h1 {
   font-family: var(--font-heading);
-  font-size: clamp(3rem, 6.5vw, 5rem);
-  line-height: 1.05;
+  font-size: clamp(3.5rem, 8vw, 6.5rem);
+  line-height: 1.0;
   margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.05em;
+  gap: 0.04em;
   color: var(--dtext);
   background: none;
   -webkit-text-fill-color: var(--dtext);
@@ -2086,6 +2222,13 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   .hero-inner { padding: 4rem 1.25rem 3rem; }
   .h-stats    { gap: 1.25rem; }
   .h-stat-sep { height: 32px; }
+}
+
+/* ── homepage section rhythm — mobile ──────────────────────────── */
+@media (max-width: 560px) {
+  .home-section,
+  .olideen-promo,
+  .home-cta-band { padding: 3rem 0; }
 }
 
 /* ── old section--dark (fallback — not used on homepage anymore) ─ */
