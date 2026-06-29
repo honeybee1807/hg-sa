@@ -15,7 +15,7 @@ async function getBusinessesByTown(town) {
     .from("businesses")
     .select("id, name, category, town, logo_url, slug, description")
     .eq("status", "approved")
-    .eq("town", town)
+    .filter("town", "ilike", `${town}%`)
     .order("name");
   return data ?? [];
 }

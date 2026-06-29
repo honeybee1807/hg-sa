@@ -17,7 +17,8 @@ async function getCountsByTown() {
     .eq("status", "approved");
   if (!data) return {};
   return data.reduce((acc, b) => {
-    acc[b.town] = (acc[b.town] ?? 0) + 1;
+    const key = b.town.split(",")[0].trim();
+    acc[key] = (acc[key] ?? 0) + 1;
     return acc;
   }, {});
 }

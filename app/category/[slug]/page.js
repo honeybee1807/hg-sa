@@ -131,7 +131,7 @@ function BusinessCard({ biz }) {
       <div className="listing-card-body">
         <h3 className="listing-card-name">{biz.name}</h3>
         <p className="listing-card-meta">
-          <span><i className="fa-solid fa-location-dot" /> {biz.town}</span>
+          <span><i className="fa-solid fa-location-dot" /> {biz.town.split(",")[0]}</span>
         </p>
         {biz.description && (
           <p className="listing-card-desc">{biz.description}</p>
