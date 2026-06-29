@@ -151,11 +151,11 @@ export default function SubmitForm() {
 
           <div className="form-group">
             <label htmlFor="town">Town <span className="required">*</span></label>
-            <input id="town" className="form-control" list="towns-list" value={fields.town}
-              onChange={set("town")} required placeholder="Start typing..." autoComplete="off" />
-            <datalist id="towns-list">
-              {TOWNS.map((t) => <option key={t} value={t} />)}
-            </datalist>
+            <select id="town" className="form-control" value={fields.town}
+              onChange={set("town")} required>
+              <option value="">Select your town...</option>
+              {TOWNS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
         </div>
 

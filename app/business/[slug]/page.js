@@ -74,7 +74,7 @@ export default async function BusinessPage({ params }) {
   const initial = biz.name[0].toUpperCase();
   const waNumber = formatWhatsApp(biz.whatsapp);
   const catSlug = CATEGORIES.find((c) => c.name === biz.category)?.slug ?? "";
-  const townSlug = biz.town.toLowerCase().replace(/\s+/g, "-");
+  const townSlug = biz.town.split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -159,7 +159,7 @@ export default async function BusinessPage({ params }) {
                 </span>
                 <span>
                   <i className="fa-solid fa-location-dot" />
-                  {biz.town}, {biz.province}
+                  {biz.town.split(",")[0]}, KZN
                 </span>
               </div>
             </div>
@@ -238,7 +238,7 @@ export default async function BusinessPage({ params }) {
             </h2>
             <p>
               <Link href={`/town/${townSlug}`} className="biz-town-link">
-                {biz.town}
+                {biz.town.split(",")[0]}
               </Link>
               , KwaZulu-Natal
             </p>

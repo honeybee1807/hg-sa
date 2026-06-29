@@ -339,7 +339,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
                       <p className="admin-biz-meta">
                         <i className="fa-solid fa-tag" /> {biz.category}
                         <span className="admin-meta-sep">·</span>
-                        <i className="fa-solid fa-location-dot" /> {biz.town}, {biz.province}
+                        <i className="fa-solid fa-location-dot" /> {biz.town.split(",")[0]}, KZN
                       </p>
                       {biz.description && <p className="admin-biz-desc">{biz.description}</p>}
                     </div>
