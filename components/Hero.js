@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
+import GemBackground from "@/components/GemBackground";
 
 function MockupCard() {
   return (
@@ -106,6 +107,7 @@ export default function Hero() {
 
   return (
     <section className="hero" ref={ref}>
+      <GemBackground />
       <div className="hero-bg" aria-hidden="true">
         <div className="hero-dot-grid" />
         <div className="hero-glow-rose" />

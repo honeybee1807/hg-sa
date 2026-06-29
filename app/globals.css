@@ -1839,10 +1839,25 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   overflow: hidden;
 }
 
+.gem-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.gem-bg canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .hero-bg {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
 }
 
 .hero-dot-grid {
