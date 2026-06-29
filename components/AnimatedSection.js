@@ -12,6 +12,7 @@ export default function AnimatedSection({ children, className = "", stagger = fa
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (window.matchMedia("(max-width: 767px)").matches) return;
     const targets = stagger ? Array.from(el.querySelectorAll(":scope > *")) : [el];
     if (!targets.length) return;
 

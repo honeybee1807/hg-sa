@@ -85,7 +85,7 @@ export default function Hero() {
 
       // animated counters
       [
-        { sel: ".hc-towns", end: 11, suffix: "" },
+        { sel: ".hc-towns", end: 12, suffix: "" },
         { sel: ".hc-cats",  end: 10, suffix: "" },
         { sel: ".hc-free",  end: 100, suffix: "%" },
       ].forEach(({ sel, end, suffix }) => {
