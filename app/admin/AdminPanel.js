@@ -85,7 +85,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
   function buildContactUrl(biz) {
     const num = formatWa(biz.whatsapp);
     if (!num) return null;
-    const text = `Hi ${biz.owner_name ?? "there"}! This is Lubnah from the *Hidden Gems SA* team 👋\n\nWe received your listing for *${biz.name}* and need to verify a few details before we can approve it.\n\nIs now a good time to chat?\n\n— Lubnah\nHidden Gems SA Team`;
+    const text = `Hi ${biz.owner_name ?? "there"}! This is the *Hidden Gems SA* team 👋\n\nWe received your listing for *${biz.name}* and need to verify a few details before we can approve it.\n\nIs now a good time to chat?\n\n— Hidden Gems SA Team`;
     return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
   }
 
