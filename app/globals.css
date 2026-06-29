@@ -792,13 +792,39 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 @media (max-width: 720px) {
+  .footer {
+    padding: 2rem 0 1.5rem;
+  }
   .footer-inner {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
     text-align: center;
   }
-  .footer-links { align-items: center; }
-  .footer-credit { text-align: center; }
+  .footer-brand-mark { justify-content: center; }
+  .footer-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 1.5rem;
+    justify-items: center;
+  }
+  .footer-credit {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 1.25rem;
+  }
+  .ot-logo-pulse {
+    width: 80px !important;
+    height: auto !important;
+    animation: none;
+  }
+  .footer-copy {
+    width: 100%;
+    margin-top: 0.1rem;
+  }
 }
 
 /* ─── admin ────────────────────────────────────────────────────────── */
