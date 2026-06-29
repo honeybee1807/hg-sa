@@ -74,6 +74,21 @@ export default function AdminPanel({ businesses, currentFeatured }) {
     } else flash(res.error, true);
   }
 
+  function formatWa(raw) {
+    if (!raw) return null;
+    const digits = raw.replace(/\D/g, "");
+    if (digits.startsWith("27")) return digits;
+    if (digits.startsWith("0")) return "27" + digits.slice(1);
+    return "27" + digits;
+  }
+
+  function buildContactUrl(biz) {
+    const num = formatWa(biz.whatsapp);
+    if (!num) return null;
+    const text = `Hi ${biz.owner_name ?? "there"}! This is Lubnah from the *Hidden Gems SA* team 👋\n\nWe received your listing for *${biz.name}* and need to verify a few details before we can approve it.\n\nIs now a good time to chat?\n\n— Lubnah\nHidden Gems SA Team`;
+    return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+  }
+
   function buildWaMessage(biz) {
     const text = `Congratulations ${biz.owner_name ?? ""}! 🎉\n\nYour business *${biz.name}* has been selected as Hidden Gems SA's *Featured Gem of the Week*!\n\nYour listing is live at:\n${SITE_URL}/business/${biz.slug}\n\n— Lubnah\nHidden Gems SA Team\n🌐 ${SITE_URL}\n💻 Built by Olideen Technologies — ${OLIDEEN_URL}`;
     return `https://wa.me/${biz.whatsapp}?text=${encodeURIComponent(text)}`;
@@ -347,8 +362,21 @@ export default function AdminPanel({ businesses, currentFeatured }) {
 
                   <div className="admin-biz-owner">
                     <span><i className="fa-solid fa-user" /> {biz.owner_name}</span>
-                    {biz.owner_email && <span><i className="fa-solid fa-envelope" /> {biz.owner_email}</span>}
-                    {biz.whatsapp && <span><i className="fa-brands fa-whatsapp" /> {biz.whatsapp}</span>}
+                    {biz.owner_email && (
+                      <a href={`mailto:${biz.owner_email}`} className="admin-owner-link">
+                        <i className="fa-solid fa-envelope" /> {biz.owner_email}
+                      </a>
+                    )}
+                    {biz.whatsapp && (
+                      <a
+                        href={buildContactUrl(biz)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="admin-wa-contact-btn"
+                      >
+                        <i className="fa-brands fa-whatsapp" /> Contact on WhatsApp
+                      </a>
+                    )}
                   </div>
 
                   {biz.review_note && (

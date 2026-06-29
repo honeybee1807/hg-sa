@@ -1074,6 +1074,32 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .admin-biz-owner span { display: flex; align-items: center; gap: 0.3rem; }
 
+.admin-owner-link {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: color 0.2s;
+}
+.admin-owner-link:hover { color: var(--sapphire); }
+
+.admin-wa-contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.85rem;
+  background: linear-gradient(120deg, #25d366, #128c7e);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 20px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.admin-wa-contact-btn:hover { opacity: 0.88; }
+
 .admin-reject-note {
   font-size: 0.85rem;
   color: #991B1B;
