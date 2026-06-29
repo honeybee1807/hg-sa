@@ -10,8 +10,8 @@ async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
     .select("*")
-    .eq("slug", slug)
     .eq("status", "approved")
+    .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();
   return data;
 }
