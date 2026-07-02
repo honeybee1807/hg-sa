@@ -39,7 +39,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
   }
 
   async function handleApprove(biz) {
-    const res = await approveBusiness(biz.id, biz.name, biz.town);
+    const res = await approveBusiness(biz.id, biz.name, biz.town, biz.category);
     if (res.success) { flash(`Approved — slug: ${res.slug}`); refresh(); }
     else flash(res.error, true);
   }

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createHmac } from "crypto";
 import { revalidatePath } from "next/cache";
 import { getAdminClient } from "@/lib/supabase-admin";
+import { CATEGORIES } from "@/lib/constants";
 
 function sessionToken() {
   return createHmac("sha256", process.env.ADMIN_PASSWORD ?? "")
@@ -48,7 +49,7 @@ function generateSlug(name, town) {
     .replace(/^-|-$/g, "");
 }
 
-export async function approveBusiness(id, name, town) {
+export async function approveBusiness(id, name, town, category) {
   const db = getAdminClient();
   let slug = generateSlug(name, town);
 
@@ -68,9 +69,14 @@ export async function approveBusiness(id, name, town) {
 
   if (error) return { success: false, error: error.message };
 
+  const townSlug = town.split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
+  const categorySlug = CATEGORIES.find((c) => c.name === category)?.slug;
+
   revalidatePath("/");
   revalidatePath("/towns");
   revalidatePath("/categories");
+  revalidatePath(`/town/${townSlug}`);
+  if (categorySlug) revalidatePath(`/category/${categorySlug}`);
   revalidatePath(`/business/${slug}`);
   revalidatePath("/admin");
   return { success: true, slug };
