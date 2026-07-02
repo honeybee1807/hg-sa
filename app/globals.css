@@ -1,20 +1,23 @@
 /* ─── brand tokens ─────────────────────────────────────────────────── */
 :root {
-  --sapphire:       #22587F;
-  --sapphire-dark:  #1A4566;
-  --sapphire-light: #B8D4E8;
-  --sapphire-pale:  #E4EFF7;
-  --rose:           #C46EA1;
-  --rose-mid:       #D88FB8;
-  --navy:           #1C3060;
+  --sapphire:       #0F52BA;
+  --sapphire-dark:  #0B3D8C;
+  --sapphire-light: #A9C9EC;
+  --sapphire-pale:  #E7EFFA;
+  --sapphire-deep:  #082B66;
+  --topaz:          #1F94D2;
+  --amethyst:       #9966CC;
+  --amethyst-light: #C9A8E0;
+  --aquamarine:     #2EC4B6;
+  --pearl:          #F5F0EB;
 
   --font-heading: var(--font-playfair), "Playfair Display", Georgia, serif;
   --font-body:    var(--font-inter), Inter, system-ui, sans-serif;
 
   --max-width: 1200px;
   --radius:    8px;
-  --shadow:    0 2px 12px rgba(28, 48, 96, 0.10);
-  --shadow-lg: 0 4px 24px rgba(28, 48, 96, 0.16);
+  --shadow:    0 2px 12px rgba(8, 43, 102, 0.10);
+  --shadow-lg: 0 4px 24px rgba(8, 43, 102, 0.16);
 }
 
 /* ─── reset ────────────────────────────────────────────────────────── */
@@ -67,7 +70,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
   line-height: 1.2;
-  color: var(--navy);
+  color: var(--sapphire-deep);
 }
 
 /* ─── layout ───────────────────────────────────────────────────────── */
@@ -91,7 +94,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   color: #fff;
   cursor: pointer;
-  background: linear-gradient(120deg, var(--rose), var(--rose-mid), var(--sapphire));
+  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
   background-size: 200% 100%;
   background-position: 0% 50%;
   transition: background-position 0.4s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -101,7 +104,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-primary:hover {
   background-position: 100% 50%;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(34, 88, 127, 0.30);
+  box-shadow: 0 4px 16px rgba(15, 82, 186, 0.30);
 }
 
 .btn-secondary {
@@ -224,7 +227,7 @@ h1, h2, h3, h4, h5, h6 {
 .form-group label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--navy);
+  color: var(--sapphire-deep);
 }
 
 .form-control {
@@ -242,14 +245,14 @@ h1, h2, h3, h4, h5, h6 {
 .form-control:focus {
   outline: none;
   border-color: var(--sapphire);
-  box-shadow: 0 0 0 3px rgba(34, 88, 127, 0.12);
+  box-shadow: 0 0 0 3px rgba(15, 82, 186, 0.12);
 }
 
 /* ─── utility ──────────────────────────────────────────────────────── */
 .text-center { text-align: center; }
 .text-sapphire { color: var(--sapphire); }
-.text-rose { color: var(--rose); }
-.text-navy { color: var(--navy); }
+.text-rose { color: var(--amethyst); }
+.text-navy { color: var(--sapphire-deep); }
 .mt-1 { margin-top: 0.5rem; }
 .mt-2 { margin-top: 1rem; }
 .mt-3 { margin-top: 1.5rem; }
@@ -349,7 +352,7 @@ h1, h2, h3, h4, h5, h6 {
 .olideen-promo {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--navy), var(--sapphire-dark), var(--sapphire), var(--navy));
+  background: linear-gradient(135deg, var(--sapphire-deep), var(--sapphire), var(--topaz), var(--sapphire-deep));
   background-size: 300% 300%;
   animation: gradientShift 7s ease infinite;
   padding: 5rem 0;
@@ -432,7 +435,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .section-header h2 {
   font-size: clamp(1.5rem, 3vw, 2.1rem);
-  background: linear-gradient(120deg, var(--navy) 0%, var(--sapphire) 100%);
+  background: linear-gradient(120deg, var(--sapphire-deep) 0%, var(--sapphire) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -453,15 +456,15 @@ h1, h2, h3, h4, h5, h6 {
   border: 1.5px solid transparent;
   background-clip: padding-box;
   box-shadow:
-    0 8px 48px rgba(196,110,161,0.12),
-    0 2px 16px rgba(28,48,96,0.08),
+    0 8px 48px rgba(153,102,204,0.12),
+    0 2px 16px rgba(8,43,102,0.08),
     0 0 0 1.5px transparent;
   animation: emptyCardBorder 3s ease infinite;
 }
 
 @keyframes emptyCardBorder {
-  0%, 100% { box-shadow: 0 8px 48px rgba(196,110,161,0.12), 0 2px 16px rgba(28,48,96,0.08), 0 0 0 1.5px rgba(196,110,161,0.25); }
-  50%       { box-shadow: 0 8px 48px rgba(196,110,161,0.22), 0 2px 16px rgba(28,48,96,0.12), 0 0 0 1.5px rgba(196,110,161,0.65); }
+  0%, 100% { box-shadow: 0 8px 48px rgba(153,102,204,0.12), 0 2px 16px rgba(8,43,102,0.08), 0 0 0 1.5px rgba(153,102,204,0.25); }
+  50%       { box-shadow: 0 8px 48px rgba(153,102,204,0.22), 0 2px 16px rgba(8,43,102,0.12), 0 0 0 1.5px rgba(153,102,204,0.65); }
 }
 
 /* icon placeholder replacing the logo */
@@ -469,7 +472,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--sapphire-pale), #fde8f3);
+  background: linear-gradient(135deg, var(--sapphire-pale), #F0E5F8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -478,7 +481,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .featured-gem-empty-icon {
   font-size: 2.2rem;
-  color: var(--rose);
+  color: var(--amethyst);
   animation: gemIconPulse 2.2s ease-in-out infinite;
 }
 
@@ -490,7 +493,7 @@ h1, h2, h3, h4, h5, h6 {
 .featured-gem-empty-heading {
   font-size: 1.4rem;
   margin-bottom: 0.4rem;
-  color: var(--navy);
+  color: var(--sapphire-deep);
 }
 
 .featured-gem-card {
@@ -503,7 +506,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .featured-gem-badge {
-  background: linear-gradient(120deg, var(--rose), var(--rose-mid), var(--sapphire));
+  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
   background-size: 200% 100%;
   color: #fff;
   padding: 0.5rem 1.25rem;
@@ -629,10 +632,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .town-pill:hover {
-  background: linear-gradient(120deg, var(--rose), var(--rose-mid));
+  background: linear-gradient(120deg, var(--sapphire), var(--aquamarine));
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 4px 14px rgba(196, 110, 161, 0.35);
+  box-shadow: 0 4px 14px rgba(15, 82, 186, 0.35);
   transform: translateY(-2px);
 }
 
@@ -651,7 +654,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 600;
   font-size: 1rem;
-  color: var(--navy);
+  color: var(--sapphire-deep);
   cursor: pointer;
   list-style: none;
   display: flex;
@@ -681,7 +684,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 /* ─── cta band ─────────────────────────────────────────────────────── */
 .cta-band {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--sapphire-dark) 50%, #1a3855 100%);
+  background: linear-gradient(135deg, var(--sapphire-deep) 0%, var(--sapphire-dark) 50%, #123A73 100%);
   background-size: 200% 200%;
   animation: gradientShift 8s ease infinite;
   color: #fff;
@@ -693,7 +696,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 70% 50%, rgba(196,110,161,0.18) 0%, transparent 65%);
+  background: radial-gradient(ellipse at 70% 50%, rgba(153,102,204,0.18) 0%, transparent 65%);
   pointer-events: none;
 }
 
@@ -707,7 +710,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 /* ─── footer ───────────────────────────────────────────────────────── */
 .footer {
-  background: var(--navy);
+  background: var(--sapphire-deep);
   color: rgba(255,255,255,0.75);
   padding: 3rem 0 2rem;
   margin-top: auto;
@@ -862,7 +865,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .admin-wrap { min-height: 100vh; background: #f3f4f6; }
 
 .admin-header {
-  background: var(--navy);
+  background: var(--sapphire-deep);
   color: #fff;
   padding: 1rem 0;
   position: sticky;
@@ -905,7 +908,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .admin-section-title {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--sapphire-deep);
   margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
@@ -1249,7 +1252,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 @media (max-width: 560px) { .form-row { grid-template-columns: 1fr; } }
 
-.required { color: var(--rose); margin-left: 0.15rem; }
+.required { color: var(--amethyst); margin-left: 0.15rem; }
 .optional  { font-weight: 400; color: #6b7280; font-size: 0.8rem; }
 
 .char-count {
@@ -1286,7 +1289,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 .logo-dropzone i { font-size: 2rem; color: var(--sapphire); }
-.logo-dropzone-label { font-weight: 600; color: var(--navy); }
+.logo-dropzone-label { font-weight: 600; color: var(--sapphire-deep); }
 .logo-dropzone-hint  { font-size: 0.8rem; }
 .logo-file-input     { display: none; }
 
@@ -1418,7 +1421,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   text-decoration: none;
-  color: var(--navy);
+  color: var(--sapphire-deep);
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
@@ -1485,7 +1488,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .listing-card-name {
   font-family: var(--font-heading);
   font-size: 1.05rem;
-  color: var(--navy);
+  color: var(--sapphire-deep);
   margin-bottom: 0.2rem;
 }
 
@@ -1643,15 +1646,12 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 /* ── tokens (hero uses these) ───────────────────────────────────── */
 :root {
-  --ink:      #0d0710;
-  --ink-1:    #120a14;
-  --gem:      #C46EA1;
-  --gem-mid:  #D88FB8;
-  --gem-glow: rgba(196,110,161,0.22);
-  --sky:      #5B9EC9;
-  --dtext:    #F5EEF8;
-  --dtext-2:  rgba(245,238,248,0.62);
-  --dtext-3:  rgba(245,238,248,0.35);
+  --ink:            #0d0710;
+  --ink-1:          #120a14;
+  --amethyst-glow:  rgba(153,102,204,0.22);
+  --dtext:          #F5EEF8;
+  --dtext-2:        rgba(245,238,248,0.62);
+  --dtext-3:        rgba(245,238,248,0.35);
 }
 
 /* ── wrapper: warm white ────────────────────────────────────────── */
@@ -1668,7 +1668,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 .home-section--inset {
-  background: #FDF7FA;
+  background: #F5F0EB;
 }
 
 /* bigger, warmer section headings on white */
@@ -1679,7 +1679,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .home-section-header h2 {
   font-size: clamp(2rem, 4.5vw, 3.2rem) !important;
-  background: linear-gradient(120deg, var(--navy) 0%, var(--rose) 100%) !important;
+  background: linear-gradient(120deg, var(--sapphire-deep) 0%, var(--amethyst) 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
@@ -1700,22 +1700,22 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   align-items: center;
   gap: 0.5rem;
   padding: 0.7rem 1.75rem;
-  border: 1.5px solid var(--rose);
+  border: 1.5px solid var(--amethyst);
   border-radius: 10px;
   font-family: var(--font-body);
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--rose);
+  color: var(--amethyst);
   background: transparent;
   text-decoration: none;
   transition: background 0.22s, color 0.22s, box-shadow 0.22s;
 }
 
 .btn-rose-outline:hover {
-  background: linear-gradient(120deg, var(--gem), var(--gem-mid));
+  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 4px 18px rgba(196,110,161,0.35);
+  box-shadow: 0 4px 18px rgba(153,102,204,0.35);
 }
 
 /* keep ghost-white available for hero dark sections */
@@ -1744,9 +1744,9 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 /* ── category cards (warm light) ────────────────────────────────── */
 .home-wrap .category-card {
   background: #fff;
-  border: 1.5px solid #f3e8f0;
-  color: var(--navy);
-  box-shadow: 0 4px 12px rgba(28,48,96,0.08);
+  border: 1.5px solid #E1E8F4;
+  color: var(--sapphire-deep);
+  box-shadow: 0 4px 12px rgba(8,43,102,0.08);
   padding: 2rem 1rem 1.75rem;
   transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, border-color 0.22s ease;
 }
@@ -1761,14 +1761,14 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 .home-wrap .cat-name {
-  color: var(--navy);
+  color: var(--sapphire-deep);
   font-size: 0.92rem;
   font-weight: 700;
   transition: color 0.22s;
 }
 
 .home-wrap .cat-desc {
-  color: #7a6a7a;
+  color: #6b7280;
   font-size: 0.78rem;
   font-weight: 400;
   line-height: 1.4;
@@ -1777,22 +1777,22 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 .home-wrap .category-card:hover {
-  background: #FEF0F8;
-  border-color: var(--rose);
-  box-shadow: 0 8px 28px rgba(196,110,161,0.18);
+  background: #F3ECFA;
+  border-color: var(--amethyst);
+  box-shadow: 0 8px 28px rgba(153,102,204,0.18);
   transform: translateY(-4px);
 }
 
 .home-wrap .category-card:hover .cat-name {
-  color: var(--rose);
+  color: var(--amethyst);
 }
 
 .home-wrap .category-card:hover .cat-desc {
-  color: #b06090;
+  color: #7A4FA6;
 }
 
 .home-wrap .category-card:hover .cat-icon {
-  box-shadow: 0 10px 28px rgba(196,110,161,0.28);
+  box-shadow: 0 10px 28px rgba(153,102,204,0.28);
   filter: brightness(1.12);
   transform: scale(1.06) rotate(-2deg);
 }
@@ -1800,47 +1800,47 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 /* ── town pills (warm light) ─────────────────────────────────────── */
 .home-wrap .town-pill {
   background: #fff;
-  border-color: #e8d5ea;
-  color: var(--navy);
+  border-color: #DCC7EA;
+  color: var(--sapphire-deep);
   font-size: 0.95rem;
-  box-shadow: 0 2px 8px rgba(196,110,161,0.06);
+  box-shadow: 0 2px 8px rgba(153,102,204,0.06);
 }
 
 .home-wrap .town-pill:hover {
-  background: linear-gradient(120deg, var(--gem), var(--gem-mid));
+  background: linear-gradient(120deg, var(--sapphire), var(--aquamarine));
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 6px 22px rgba(196,110,161,0.4);
+  box-shadow: 0 6px 22px rgba(15,82,186,0.4);
 }
 
 /* ── featured gem card (light) ───────────────────────────────────── */
 .home-wrap .featured-gem-card {
-  box-shadow: 0 8px 48px rgba(196,110,161,0.12), 0 2px 16px rgba(28,48,96,0.08);
-  border: 1px solid #f3e8f0;
+  box-shadow: 0 8px 48px rgba(153,102,204,0.12), 0 2px 16px rgba(8,43,102,0.08);
+  border: 1px solid #E1E8F4;
 }
 
 /* ── faq (light) ─────────────────────────────────────────────────── */
 .home-wrap .faq-item {
-  border: 1.5px solid #f3e8f0;
+  border: 1.5px solid #E1E8F4;
   box-shadow: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .home-wrap .faq-item[open] {
-  border-color: var(--rose);
-  box-shadow: 0 4px 20px rgba(196,110,161,0.1);
+  border-color: var(--amethyst);
+  box-shadow: 0 4px 20px rgba(153,102,204,0.1);
 }
 
-.home-wrap .faq-question { color: var(--navy); }
-.home-wrap .faq-question::after { color: var(--rose); }
+.home-wrap .faq-question { color: var(--sapphire-deep); }
+.home-wrap .faq-question::after { color: var(--amethyst); }
 .home-wrap .faq-answer { color: #4b5563; }
 
-/* ── home cta band — dark navy, rose accent only ─────────────────── */
+/* ── home cta band — deep sapphire, amethyst accent ──────────────── */
 .home-cta-band {
   padding: 5rem 0;
   background:
-    radial-gradient(ellipse at 50% 110%, rgba(196,110,161,0.18) 0%, transparent 60%),
-    linear-gradient(160deg, #1a0710 0%, #0d0a1a 45%, #080610 100%);
+    radial-gradient(ellipse at 50% 110%, rgba(153,102,204,0.18) 0%, transparent 60%),
+    linear-gradient(160deg, #0F52BA 0%, #0B3D8C 45%, #082B66 100%);
   position: relative;
   overflow: hidden;
   text-align: center;
@@ -1851,8 +1851,8 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(34,88,127,0.12) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 50%, rgba(196,110,161,0.1) 0%, transparent 55%);
+    radial-gradient(ellipse at 20% 50%, rgba(15,82,186,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 50%, rgba(153,102,204,0.1) 0%, transparent 55%);
   pointer-events: none;
 }
 
@@ -1861,7 +1861,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--gem-mid);
+  color: var(--amethyst-light);
   margin-bottom: 0.6rem;
 }
 
@@ -1885,8 +1885,8 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .hero {
   position: relative;
   background:
-    radial-gradient(ellipse at 25% 40%, rgba(196,110,161,0.32) 0%, transparent 55%),
-    radial-gradient(ellipse at 80% 70%, rgba(34,88,127,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 25% 40%, rgba(153,102,204,0.32) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 70%, rgba(15,82,186,0.22) 0%, transparent 50%),
     linear-gradient(160deg, #1a0710 0%, #0d0a1a 45%, #080610 100%);
   overflow: hidden;
 }
@@ -1923,7 +1923,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   position: absolute;
   width: 900px;
   height: 900px;
-  background: radial-gradient(circle, rgba(196,110,161,0.35) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(153,102,204,0.35) 0%, transparent 60%);
   top: -320px;
   right: -200px;
 }
@@ -1932,7 +1932,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   position: absolute;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(34,88,127,0.22) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(15,82,186,0.22) 0%, transparent 65%);
   bottom: -150px;
   left: -100px;
 }
@@ -1968,8 +1968,8 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--gem);
-  box-shadow: 0 0 10px var(--gem-glow), 0 0 4px var(--gem);
+  background: var(--amethyst);
+  box-shadow: 0 0 10px var(--amethyst-glow), 0 0 4px var(--amethyst);
   animation: eyebrowPulse 2.2s ease-in-out infinite;
 }
 
@@ -1995,7 +1995,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .h-line-2 { display: block; font-weight: 800; }
 
 .hero-shimmer-text {
-  background: linear-gradient(100deg, var(--gem) 0%, #f0b8d6 40%, var(--gem) 80%);
+  background: linear-gradient(100deg, var(--amethyst) 0%, #D9BFE8 40%, var(--amethyst) 80%);
   background-size: 220% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -2023,26 +2023,26 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   margin-bottom: 3rem;
 }
 
-/* primary cta — rose gradient */
+/* primary cta — amethyst → sapphire gradient */
 .hero-cta-primary {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.875rem 2rem;
-  background: linear-gradient(120deg, var(--gem), var(--gem-mid));
+  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
   color: #fff;
   border-radius: 10px;
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 600;
   text-decoration: none;
-  box-shadow: 0 4px 24px rgba(196,110,161,0.32);
+  box-shadow: 0 4px 24px rgba(153,102,204,0.32);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .hero-cta-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 36px rgba(196,110,161,0.48);
+  box-shadow: 0 10px 36px rgba(153,102,204,0.48);
 }
 
 /* ghost cta */
@@ -2112,7 +2112,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   position: absolute;
   width: 380px;
   height: 380px;
-  background: radial-gradient(circle, rgba(196,110,161,0.22) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(153,102,204,0.22) 0%, transparent 65%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -2145,13 +2145,13 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 /* pink glow ring that appears on hover */
 .hero-mockup-card:hover {
-  border-color: rgba(196,110,161,0.4);
+  border-color: rgba(153,102,204,0.4);
   box-shadow:
     0 30px 70px rgba(0,0,0,0.55),
     0 0 0 1px rgba(255,255,255,0.04),
     inset 0 1px 0 rgba(255,255,255,0.07),
-    0 0 32px rgba(196,110,161,0.55),
-    0 0 72px rgba(196,110,161,0.22);
+    0 0 32px rgba(153,102,204,0.55),
+    0 0 72px rgba(153,102,204,0.22);
 }
 
 .hero-mc-glare {
@@ -2177,7 +2177,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   position: absolute;
   top: -13px;
   right: 18px;
-  background: linear-gradient(120deg, var(--gem), var(--gem-mid));
+  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
   color: #fff;
   font-size: 0.68rem;
   font-weight: 700;
@@ -2188,7 +2188,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  box-shadow: 0 2px 12px rgba(196,110,161,0.4);
+  box-shadow: 0 2px 12px rgba(153,102,204,0.4);
 }
 
 .hero-mc-header {
@@ -2202,7 +2202,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--gem), var(--gem-mid));
+  background: linear-gradient(135deg, var(--amethyst), var(--sapphire));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2234,8 +2234,8 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   gap: 0.22rem;
 }
 
-.hero-mc-tag--cat  { background: rgba(196,110,161,0.14); color: var(--gem-mid); }
-.hero-mc-tag--town { background: rgba(91,158,201,0.14);  color: var(--sky); }
+.hero-mc-tag--cat  { background: rgba(153,102,204,0.14); color: var(--amethyst-light); }
+.hero-mc-tag--town { background: rgba(31,148,210,0.14);  color: var(--topaz); }
 
 .hero-mc-desc {
   color: var(--dtext-2);
@@ -2266,7 +2266,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .hero-mc-view {
   font-size: 0.78rem;
-  color: var(--gem-mid);
+  color: var(--amethyst-light);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -2300,7 +2300,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 /* ── old section--dark (fallback — not used on homepage anymore) ─ */
 .section--dark {
-  background: linear-gradient(145deg, var(--navy) 0%, #1e3f6b 45%, var(--sapphire-dark) 100%);
+  background: linear-gradient(145deg, var(--sapphire-deep) 0%, #0A3579 45%, var(--sapphire-dark) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -2309,8 +2309,8 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 20% 80%, rgba(196,110,161,0.12) 0%, transparent 55%),
-              radial-gradient(ellipse at 80% 20%, rgba(34,88,127,0.25) 0%, transparent 55%);
+  background: radial-gradient(ellipse at 20% 80%, rgba(153,102,204,0.12) 0%, transparent 55%),
+              radial-gradient(ellipse at 80% 20%, rgba(15,82,186,0.25) 0%, transparent 55%);
   pointer-events: none;
 }
 
@@ -2332,8 +2332,8 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 .section--dark .category-card i {
-  background: rgba(196, 110, 161, 0.18);
-  color: var(--rose-mid);
+  background: rgba(153, 102, 204, 0.18);
+  color: var(--amethyst-light);
 }
 
 .section--dark .category-card:hover {
@@ -2345,7 +2345,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 .section--dark .category-card:hover i {
-  background: linear-gradient(135deg, var(--rose), var(--rose-mid));
+  background: linear-gradient(135deg, var(--amethyst), var(--amethyst-light));
   color: #fff;
   transform: scale(1.1);
 }

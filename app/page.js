@@ -181,7 +181,7 @@ export default async function HomePage() {
           <AnimatedSection>
             <div className="section-header home-section-header">
               <h2>
-                <i className="fa-solid fa-gem" style={{ color: "#C46EA1" }} /> Featured Gem of the Week
+                <i className="fa-solid fa-gem" style={{ color: "#9966CC" }} /> Featured Gem of the Week
               </h2>
               <p>Spotlight on an outstanding KwaZulu-Natal local business</p>
             </div>

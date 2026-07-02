@@ -81,26 +81,26 @@ export default function GemBackground() {
       // ── Lighting ──────────────────────────────────────────────────
       scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 
-      const roseLight = new THREE.PointLight(0xd878b0, 6, 90);
-      roseLight.position.set(8, 10, 18);
-      scene.add(roseLight);
+      const amethystLight = new THREE.PointLight(0x9966cc, 6, 90);
+      amethystLight.position.set(8, 10, 18);
+      scene.add(amethystLight);
 
-      const blueLight = new THREE.PointLight(0x2244aa, 5, 90);
-      blueLight.position.set(-12, -8, 14);
-      scene.add(blueLight);
+      const sapphireLight = new THREE.PointLight(0x1f94d2, 5, 90);
+      sapphireLight.position.set(-12, -8, 14);
+      scene.add(sapphireLight);
 
-      const topLight = new THREE.PointLight(0xffd8f0, 3, 60);
+      const topLight = new THREE.PointLight(0xd8f0ea, 3, 60);
       topLight.position.set(0, 16, 20);
       scene.add(topLight);
 
       // ── Diamond palette (fill + edge pairs) ───────────────────────
       const palette = [
-        { fill: 0xc46ea1, edge: 0xf0b8d8 },   // rose
-        { fill: 0xa0507a, edge: 0xe0a0c8 },   // deep rose
-        { fill: 0x7a3060, edge: 0xcc88b8 },   // plum
-        { fill: 0xd890c0, edge: 0xffd6f0 },   // blush
-        { fill: 0x1e3a7a, edge: 0x78aae8 },   // sapphire accent
-        { fill: 0xe8b0d8, edge: 0xfff0f8 },   // pale pink
+        { fill: 0x9966cc, edge: 0xd9bfe8 },   // amethyst
+        { fill: 0x0f52ba, edge: 0x8ec3ec },   // sapphire
+        { fill: 0x0b3d8c, edge: 0x6fa8e8 },   // deep sapphire
+        { fill: 0x1f94d2, edge: 0x9edcf0 },   // blue topaz
+        { fill: 0x2ec4b6, edge: 0x9eeee6 },   // aquamarine
+        { fill: 0xc9a8e0, edge: 0xf5f0eb },   // pale amethyst / pearl
       ];
 
       // ── Spawn gems ────────────────────────────────────────────────

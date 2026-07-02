@@ -103,16 +103,16 @@ export default function AdminPanel({ businesses, currentFeatured }) {
     function draw(logoImg) {
       // Background
       const grad = ctx.createLinearGradient(0, 0, 1080, 1080);
-      grad.addColorStop(0, "#1C3060");
-      grad.addColorStop(0.55, "#22587F");
-      grad.addColorStop(1, "#1A4566");
+      grad.addColorStop(0, "#082B66");
+      grad.addColorStop(0.55, "#0F52BA");
+      grad.addColorStop(1, "#0B3D8C");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1080, 1080);
 
-      // Rose accent bar top
+      // Amethyst accent bar top
       const bar = ctx.createLinearGradient(0, 0, 1080, 0);
-      bar.addColorStop(0, "#C46EA1");
-      bar.addColorStop(1, "#22587F");
+      bar.addColorStop(0, "#9966CC");
+      bar.addColorStop(1, "#0F52BA");
       ctx.fillStyle = bar;
       ctx.fillRect(0, 0, 1080, 12);
 
@@ -131,7 +131,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
       ctx.save();
       ctx.beginPath();
       ctx.arc(540, logoY + logoR, logoR, 0, Math.PI * 2);
-      ctx.fillStyle = "#E4EFF7";
+      ctx.fillStyle = "#E7EFFA";
       ctx.fill();
 
       if (logoImg) {
@@ -139,7 +139,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
         ctx.drawImage(logoImg, 540 - logoR, logoY, logoR * 2, logoR * 2);
       } else {
         ctx.clip();
-        ctx.fillStyle = "#22587F";
+        ctx.fillStyle = "#0F52BA";
         ctx.font = `italic bold 110px Georgia, serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
