@@ -2315,6 +2315,12 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   .home-cta-band { padding: 3rem 0; }
 }
 
+/* Olideen Technologies promo hidden on mobile — that screen space
+   belongs to the Featured Gem card and the directory listing instead */
+@media (max-width: 768px) {
+  .olideen-promo { display: none; }
+}
+
 /* ── old section--dark (fallback — not used on homepage anymore) ─ */
 .section--dark {
   background: linear-gradient(145deg, var(--sapphire-deep) 0%, #0A3579 45%, var(--sapphire-dark) 100%);
@@ -2481,5 +2487,121 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .page-loading--dark {
   background: var(--sapphire-deep);
   min-height: 100vh;
+}
+
+/* ─── directory search & filter ───────────────────────────────────── */
+.dir-search {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.dir-search-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.dir-search-input-wrap {
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dir-search-input-wrap i {
+  position: absolute;
+  left: 1rem;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.dir-search-input {
+  width: 100%;
+  padding: 0.8rem 1rem 0.8rem 2.6rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dir-search-input:focus {
+  outline: none;
+  border-color: var(--sapphire);
+  box-shadow: 0 0 0 3px rgba(15, 82, 186, 0.12);
+}
+
+.dir-search-town-select {
+  padding: 0.8rem 1rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  background: #fff;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.dir-search-town-select:focus {
+  outline: none;
+  border-color: var(--sapphire);
+}
+
+.dir-search-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.dir-search-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #4b5563;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.dir-search-tab:hover {
+  border-color: var(--sapphire-light);
+  color: var(--sapphire);
+}
+
+.dir-search-tab--active {
+  background: var(--sapphire);
+  border-color: var(--sapphire);
+  color: #fff;
+}
+
+.dir-search-count {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 560px) {
+  .dir-search-controls { flex-direction: column; }
+  .dir-search-town-select { width: 100%; }
+  .dir-search-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 

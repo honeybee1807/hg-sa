@@ -5,6 +5,7 @@ import Hero from "@/components/Hero";
 import OlideenPromo from "@/components/OlideenPromo";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
 import AnimatedSection from "@/components/AnimatedSection";
+import DirectorySearch from "@/components/DirectorySearch";
 
 // keyword-rich title and description for maximum search visibility
 export const metadata = {
@@ -29,6 +30,15 @@ async function getFeaturedGem() {
     .limit(1)
     .maybeSingle();
   return data;
+}
+
+async function getAllApprovedBusinesses() {
+  const { data } = await supabase
+    .from("businesses")
+    .select("id, name, category, town, logo_url, slug, description")
+    .eq("status", "approved")
+    .order("name");
+  return data ?? [];
 }
 
 // expanded faq list — covers voice search, ai answer engines, and long-tail queries
@@ -164,7 +174,10 @@ const jsonLd = {
 };
 
 export default async function HomePage() {
-  const featuredGem = await getFeaturedGem();
+  const [featuredGem, allBusinesses] = await Promise.all([
+    getFeaturedGem(),
+    getAllApprovedBusinesses(),
+  ]);
 
   return (
     <div className="home-wrap">
@@ -190,6 +203,21 @@ export default async function HomePage() {
           </AnimatedSection>
           <AnimatedSection delay={0.1}>
             <FeaturedGemCard gem={featuredGem} />
+          </AnimatedSection>
+        </div>
+      </section>
+
+      {/* search & filter the whole directory — live results, no page reload */}
+      <section className="home-section">
+        <div className="container">
+          <AnimatedSection>
+            <div className="section-header home-section-header">
+              <h2>Search the Directory</h2>
+              <p>Find exactly what you&apos;re looking for, instantly</p>
+            </div>
+          </AnimatedSection>
+          <AnimatedSection delay={0.1}>
+            <DirectorySearch businesses={allBusinesses} />
           </AnimatedSection>
         </div>
       </section>
