@@ -2315,10 +2315,34 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   .home-cta-band { padding: 3rem 0; }
 }
 
-/* Olideen Technologies promo hidden on mobile — that screen space
-   belongs to the Featured Gem card and the directory listing instead */
+/* Olideen Technologies — full rich panel on desktop/tablet; a compact
+   dedicated credit strip replaces it on mobile so it doesn't compete
+   with the Featured Gem card and directory listing for scroll space,
+   while still giving Olideen an explicit, dedicated mention. */
+.promo-mobile-credit {
+  display: none;
+}
+
 @media (max-width: 768px) {
-  .olideen-promo { display: none; }
+  .olideen-promo { padding: 2.5rem 0; }
+
+  .promo-full-only { display: none !important; }
+
+  .promo-mobile-credit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+  }
+
+  .promo-mobile-credit span {
+    font-family: var(--font-heading);
+    font-style: italic;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.85);
+    text-align: center;
+  }
 }
 
 /* ── old section--dark (fallback — not used on homepage anymore) ─ */

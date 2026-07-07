@@ -33,11 +33,12 @@ export default function OlideenPromo() {
     <section className="olideen-promo" ref={ref}>
       <div className="promo-shimmer" aria-hidden="true" />
       <div className="container promo-content">
+        {/* full rich panel — desktop/tablet only, ≥768px */}
         <a
           href={OLIDEEN_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="promo-animate promo-ot-logo-wrap"
+          className="promo-animate promo-ot-logo-wrap promo-full-only"
         >
           <Image
             src="/OT_Logo.png"
@@ -48,10 +49,10 @@ export default function OlideenPromo() {
             style={{ objectFit: "contain", height: "auto" }}
           />
         </a>
-        <h2 className="promo-animate promo-heading">
+        <h2 className="promo-animate promo-heading promo-full-only">
           Connecting KwaZulu-Natal,<br />One Business at a Time
         </h2>
-        <p className="promo-animate promo-sub">
+        <p className="promo-animate promo-sub promo-full-only">
           We build digital tools that put overlooked local businesses on the map —
           from Estcourt to Pietermaritzburg.
         </p>
@@ -59,10 +60,30 @@ export default function OlideenPromo() {
           href={OLIDEEN_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="promo-animate btn-primary promo-cta"
+          className="promo-animate btn-primary promo-cta promo-full-only"
         >
           <i className="fa-solid fa-arrow-up-right-from-square" />
           Visit Olideen Technologies
+        </a>
+
+        {/* compact dedicated credit strip — mobile only, below 768px.
+            replaces the full panel so it doesn't compete with the
+            Featured Gem card and directory listing for scroll space,
+            while still giving Olideen an explicit, dedicated mention. */}
+        <a
+          href={OLIDEEN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="promo-animate promo-mobile-credit"
+        >
+          <Image
+            src="/OT_Logo.png"
+            alt="Olideen Technologies"
+            width={140}
+            height={49}
+            style={{ objectFit: "contain", height: "auto" }}
+          />
+          <span>Built with care by Olideen Technologies</span>
         </a>
       </div>
     </section>
