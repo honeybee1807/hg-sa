@@ -173,10 +173,12 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Hero />
+      <Hero featuredGem={featuredGem} />
 
-      {/* featured gem of the week */}
-      <section className="home-section">
+      {/* featured gem of the week — desktop only below 980px; on mobile the
+          real card is already shown up in the hero (see Hero.js), so this
+          would otherwise duplicate the same business twice on one page */}
+      <section className="home-section featured-gem-section">
         <div className="container">
           <AnimatedSection>
             <div className="section-header home-section-header">

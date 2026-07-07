@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
 import GemBackground from "@/components/GemBackground";
+import FeaturedGemCard from "@/components/FeaturedGemCard";
 
 function MockupCard() {
   return (
@@ -45,7 +46,7 @@ function MockupCard() {
   );
 }
 
-export default function Hero() {
+export default function Hero({ featuredGem }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -161,8 +162,14 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* ── right: mockup ── */}
+        {/* ── right: mockup (desktop only, decorative) ── */}
         <MockupCard />
+
+        {/* ── mobile only: the real Featured Gem, promoted up into the hero
+             since the decorative mockup above is hidden below 980px ── */}
+        <div className="hero-mobile-gem">
+          <FeaturedGemCard gem={featuredGem} />
+        </div>
       </div>
     </section>
   );

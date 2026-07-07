@@ -2108,6 +2108,12 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   justify-content: center;
 }
 
+/* real Featured Gem card, promoted into the hero on mobile only —
+   desktop keeps the decorative mockup instead (see @media 980px below) */
+.hero-mobile-gem {
+  display: none;
+}
+
 .hero-mockup-glow {
   position: absolute;
   width: 380px;
@@ -2283,6 +2289,17 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   }
 
   .hero-mockup { display: none; }
+
+  .hero-mobile-gem {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* the real featured gem now lives in the hero on mobile — avoid
+     showing the same business twice on one page */
+  .featured-gem-section { display: none; }
 }
 
 @media (max-width: 560px) {
