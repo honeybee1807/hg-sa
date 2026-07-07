@@ -2350,3 +2350,119 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   transform: scale(1.1);
 }
 
+/* ─── gem loader ───────────────────────────────────────────────────── */
+.gem-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 2rem 1rem;
+}
+
+.gem-loader-svg {
+  width: 108px;
+  height: auto;
+  overflow: visible;
+}
+
+.gem-loader-torso    { transition: fill 0.2s ease; }
+.gem-loader-limb     { transition: fill 0.2s ease; }
+.gem-loader-shadow   { transition: fill 0.2s ease; }
+
+/* light variant — for pearl/white backgrounds */
+.gem-loader--light .gem-loader-torso    { fill: var(--sapphire); }
+.gem-loader--light .gem-loader-limb     { fill: var(--topaz); }
+.gem-loader--light .gem-loader-shadow   { fill: rgba(15, 82, 186, 0.12); }
+.gem-loader--light .gem-loader-handle   { fill: var(--aquamarine); }
+.gem-loader--light .gem-loader-pickhead { fill: var(--amethyst); }
+.gem-loader--light .gem-loader-particle--1 { fill: var(--amethyst); }
+.gem-loader--light .gem-loader-particle--2 { fill: var(--aquamarine); }
+.gem-loader--light .gem-loader-particle--3 { fill: var(--topaz); }
+.gem-loader--light .gem-loader-particle--4 { fill: var(--sapphire-dark); }
+.gem-loader--light .gem-loader-text     { color: var(--sapphire); }
+
+/* dark variant — for sapphire/navy backgrounds */
+.gem-loader--dark .gem-loader-torso    { fill: var(--pearl); }
+.gem-loader--dark .gem-loader-limb     { fill: var(--aquamarine); }
+.gem-loader--dark .gem-loader-shadow   { fill: rgba(245, 240, 235, 0.16); }
+.gem-loader--dark .gem-loader-handle   { fill: var(--topaz); }
+.gem-loader--dark .gem-loader-pickhead { fill: var(--amethyst); }
+.gem-loader--dark .gem-loader-particle--1 { fill: var(--amethyst); }
+.gem-loader--dark .gem-loader-particle--2 { fill: var(--aquamarine); }
+.gem-loader--dark .gem-loader-particle--3 { fill: var(--topaz); }
+.gem-loader--dark .gem-loader-particle--4 { fill: var(--pearl); }
+.gem-loader--dark .gem-loader-text     { color: var(--pearl); }
+
+/* swinging arm — pivots at the shoulder joint (104,74) */
+.gem-loader-arm {
+  transform-origin: 104px 74px;
+  animation: gemSwing 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes gemSwing {
+  0%   { transform: rotate(-70deg); }
+  38%  { transform: rotate(-70deg); }
+  55%  { transform: rotate(70deg); }
+  66%  { transform: rotate(58deg); }
+  100% { transform: rotate(-70deg); }
+}
+
+.gem-loader-particle {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: gemSpark 2.4s ease-out infinite;
+}
+
+.gem-loader-particle--1 { animation-delay: 0s;     --tx: 12px;  --ty: -10px; }
+.gem-loader-particle--2 { animation-delay: 0.05s;  --tx: 14px;  --ty: 8px; }
+.gem-loader-particle--3 { animation-delay: 0.09s;  --tx: -8px;  --ty: 10px; }
+.gem-loader-particle--4 { animation-delay: 0.03s;  --tx: 6px;   --ty: -16px; }
+
+@keyframes gemSpark {
+  0%, 53%  { opacity: 0; transform: scale(0.3) translate(0, 0); }
+  59%      { opacity: 1; transform: scale(1) translate(calc(var(--tx) * 0.4), calc(var(--ty) * 0.4)); }
+  78%      { opacity: 0; transform: scale(0.6) translate(var(--tx), var(--ty)); }
+  100%     { opacity: 0; transform: scale(0.6) translate(var(--tx), var(--ty)); }
+}
+
+.gem-loader-text {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 1.05rem;
+  text-align: center;
+  min-height: 1.6em;
+  margin: 0;
+  animation: gemTextFade 2.5s ease-in-out;
+}
+
+@keyframes gemTextFade {
+  0%   { opacity: 0; transform: translateY(4px); }
+  15%  { opacity: 1; transform: translateY(0); }
+  85%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gem-loader-arm,
+  .gem-loader-particle,
+  .gem-loader-text {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ─── page-level loading screens ───────────────────────────────────── */
+.page-loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-loading--dark {
+  background: var(--sapphire-deep);
+  min-height: 100vh;
+}
+
