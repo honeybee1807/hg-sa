@@ -7,8 +7,9 @@ const VALID_CATEGORIES = new Set(CATEGORIES.map((c) => c.name));
 
 function normalizeWhatsApp(raw) {
   if (!raw) return null;
-  const digits = raw.replace(/\D/g, "");
+  let digits = raw.replace(/\D/g, "");
   if (!digits) return null;
+  if (digits.startsWith("00")) digits = digits.slice(2); // international "00" dialing prefix
   if (digits.startsWith("27")) return digits;
   if (digits.startsWith("0")) return "27" + digits.slice(1);
   return "27" + digits;

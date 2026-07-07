@@ -1336,7 +1336,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   box-shadow: var(--shadow);
 }
 
-.submit-success i {
+.submit-success > i {
   font-size: 3rem;
   color: #10b981;
   display: block;
