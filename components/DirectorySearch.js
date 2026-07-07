@@ -3,17 +3,12 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, TOWNS } from "@/lib/constants";
 
 export default function DirectorySearch({ businesses }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [town, setTown] = useState("All");
-
-  const towns = useMemo(() => {
-    const set = new Set(businesses.map((b) => b.town.split(",")[0].trim()));
-    return Array.from(set).sort();
-  }, [businesses]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -52,7 +47,7 @@ export default function DirectorySearch({ businesses }) {
           aria-label="Filter by town"
         >
           <option value="All">All Towns</option>
-          {towns.map((t) => (
+          {TOWNS.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
