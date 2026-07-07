@@ -1,0 +1,21 @@
+{
+  "name": "Hidden Gems SA",
+  "short_name": "Hidden Gems SA",
+  "description": "Free local business directory for KwaZulu-Natal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F0EB",
+  "theme_color": "#0F52BA",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
