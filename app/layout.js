@@ -24,7 +24,7 @@ export const metadata = {
   },
   description:
     "Find trusted local businesses across KwaZulu-Natal for free. Home bakers, tutors, transport, beauty & more in Ladysmith, Pietermaritzburg, Dundee and 8 other KZN towns.",
-  metadataBase: new URL("https://directory.olideentech.co.za"),
+  metadataBase: new URL("https://www.hiddengemssa.co.za"),
   keywords: [
     "KwaZulu-Natal business directory",
     "KZN local businesses",
