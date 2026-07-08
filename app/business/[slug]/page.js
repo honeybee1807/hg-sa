@@ -1,11 +1,22 @@
+// this is the page shown at hiddengemssa.co.za/business/whatever-slug —
+// one individual business's own page, with its logo, description, contact
+// button, and location. "[slug]" in the folder name means this same file
+// handles every business's page; only the web address changes.
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
 import { SITE_URL, CATEGORIES } from "@/lib/constants";
 
-export const revalidate = 3600;
+// rebuild a business's page at most once an hour, so a recent admin change
+// (like approving it) shows up reasonably quickly without needing to
+// rebuild the page on every single visit.
+export const revalidate = 3600; // 3600 seconds = 1 hour
 
+// looks up one approved business by its web-address slug. also checks for
+// an older "-kwazulu-natal" version of the slug, kept around so links
+// shared before that suffix was dropped still work instead of 404-ing.
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
@@ -16,6 +27,9 @@ async function getBusiness(slug) {
   return data;
 }
 
+// tells Next.js the full list of business pages that exist, so it can
+// prepare (pre-build) all of them ahead of time rather than building each
+// one from scratch on a visitor's very first visit.
 export async function generateStaticParams() {
   const { data } = await supabase
     .from("businesses")
@@ -25,6 +39,9 @@ export async function generateStaticParams() {
   return (data ?? []).map((b) => ({ slug: b.slug }));
 }
 
+// builds the page title, description, and share-preview details for this
+// specific business — this is what shows up in a Google search result or
+// a WhatsApp link preview.
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const biz = await getBusiness(slug);
@@ -47,14 +64,19 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// turns a saved WhatsApp number (already stored in the "27..." format
+// from when it was submitted — see app/submit/actions.js) into that exact
+// format, just in case an older record was saved differently.
 function formatWhatsApp(raw) {
   if (!raw) return null;
-  const digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("27")) return digits;
-  if (digits.startsWith("0")) return "27" + digits.slice(1);
-  return "27" + digits;
+  const digitsOnly = raw.replace(/\D/g, "");
+  if (digitsOnly.startsWith("27")) return digitsOnly;
+  if (digitsOnly.startsWith("0")) return "27" + digitsOnly.slice(1);
+  return "27" + digitsOnly;
 }
 
+// looks up which little icon (from the Font Awesome, or "FA", icon set)
+// should sit next to a business's category name on its page.
 function getCategoryIcon(categoryName) {
   const CATEGORIES_MAP = {
     "Baking & Catering":    "fa-bread-slice",
@@ -74,13 +96,19 @@ function getCategoryIcon(categoryName) {
 export default async function BusinessPage({ params }) {
   const { slug } = await params;
   const biz = await getBusiness(slug);
+  // no business found with this web address — show the site's normal
+  // "page not found" screen instead of a broken/blank page.
   if (!biz) notFound();
 
-  const initial = biz.name[0].toUpperCase();
+  const initial = biz.name[0].toUpperCase(); // fallback monogram letter, used if there's no logo
   const waNumber = formatWhatsApp(biz.whatsapp);
   const catSlug = CATEGORIES.find((c) => c.name === biz.category)?.slug ?? "";
   const townSlug = biz.town.split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
 
+  // the hidden, machine-readable description of this business (see the
+  // longer explanation of structured data / JSON-LD in app/page.js) —
+  // this is what lets Google show rich details in search results, and
+  // helps AI tools describe this exact business accurately.
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [

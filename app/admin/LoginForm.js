@@ -1,23 +1,32 @@
 "use client";
 
+// the login screen shown at hiddengemssa.co.za/admin when nobody is logged
+// in yet. it's a small form with just a password field.
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginAdmin } from "./actions";
 
 export default function LoginForm() {
-  const [error, setError]     = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(""); // an error message to show, if the password was wrong
+  const [loading, setLoading] = useState(false); // true while we're waiting to hear back
   const router = useRouter();
 
   async function handleSubmit(e) {
-    e.preventDefault();
+    e.preventDefault(); // stop the browser from doing its normal full-page-reload form submit
     setLoading(true);
     setError("");
-    const res = await loginAdmin(new FormData(e.target));
-    if (res.success) {
+
+    const result = await loginAdmin(new FormData(e.target));
+
+    if (result.success) {
+      // successfully logged in — reload the page's data. app/admin/page.js
+      // will now see the "logged in" cookie and show the real admin panel
+      // instead of this login form.
       router.refresh();
     } else {
-      setError(res.error);
+      // wrong password — show the error and let them try again.
+      setError(result.error);
       setLoading(false);
     }
   }

@@ -1,7 +1,19 @@
 "use client";
 
+// the custom loading animation shown while a page is still loading: a
+// small illustrated miner character swinging a pickaxe, with gem-coloured
+// sparks flying off on impact, and rotating text underneath explaining
+// what's happening. everything is drawn with plain SVG shapes and animated
+// with CSS (see the matching stylesheet) — no image files or animation
+// libraries are needed for this component itself.
+//
+// "variant" switches between a light-background and dark-background
+// colour scheme, so this loader looks right wherever it's dropped in.
+
 import { useEffect, useState } from "react";
 
+// the messages that rotate underneath the animation, one at a time, so a
+// slow load doesn't feel like it's stuck on the same static message.
 const PHRASES = [
   "Uncovering local gems...",
   "Finding the businesses your neighbours trust...",
@@ -12,13 +24,17 @@ const PHRASES = [
 ];
 
 export default function GemLoader({ variant = "light" }) {
-  const [index, setIndex] = useState(0);
+  const [phraseIndex, setPhraseIndex] = useState(0); // which message from PHRASES is currently showing
 
+  // every 2.5 seconds, move on to the next phrase. the "% PHRASES.length"
+  // wraps back around to the first message again once the last one has
+  // been shown, so the rotation loops forever for as long as the loader
+  // stays on screen.
   useEffect(() => {
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % PHRASES.length);
+    const intervalId = setInterval(() => {
+      setPhraseIndex((currentIndex) => (currentIndex + 1) % PHRASES.length);
     }, 2500);
-    return () => clearInterval(id);
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
@@ -67,7 +83,11 @@ export default function GemLoader({ variant = "light" }) {
         </g>
       </svg>
 
-      <p className="gem-loader-text" key={index}>{PHRASES[index]}</p>
+      {/* the "key={phraseIndex}" forces React to treat each new phrase as
+          a brand-new element rather than updating the text in place —
+          that's what allows the CSS fade-in animation to replay every
+          time the phrase changes, instead of only playing once. */}
+      <p className="gem-loader-text" key={phraseIndex}>{PHRASES[phraseIndex]}</p>
     </div>
   );
 }

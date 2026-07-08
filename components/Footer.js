@@ -1,9 +1,14 @@
+// the site-wide footer shown at the bottom of every page: the Hidden Gems
+// SA brand mark, the main navigation links, and the "Built by Olideen
+// Technologies" credit (see [[OlideenPromo]] for the fuller mobile version
+// of this same credit, shown higher up the page on small screens).
+
 import Link from "next/link";
 import Image from "next/image";
 import { OLIDEEN_URL } from "@/lib/constants";
 
 export default function Footer() {
-  const year = new Date().getFullYear();
+  const year = new Date().getFullYear(); // used in the "© 2026 Hidden Gems SA" line below, so it never needs manually updating
 
   return (
     <footer className="footer">

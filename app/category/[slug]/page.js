@@ -1,15 +1,24 @@
+// this is the page shown at hiddengemssa.co.za/category/whatever-slug —
+// e.g. /category/baking-catering — listing every approved business in one
+// category, plus a small FAQ section written specifically for that
+// category (see faqItems further down).
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
 import { CATEGORIES, SITE_URL } from "@/lib/constants";
 
+// rebuild this page at most once an hour.
 export const revalidate = 3600;
 
+// turns the web-address version of a category (e.g. "baking-catering")
+// back into the full category record from lib/constants.js.
 function slugToCategory(slug) {
   return CATEGORIES.find((c) => c.slug === slug) ?? null;
 }
 
+// fetches every approved business in one specific category.
 async function getBusinessesByCategory(categoryName) {
   const { data } = await supabase
     .from("businesses")
@@ -20,6 +29,8 @@ async function getBusinessesByCategory(categoryName) {
   return data ?? [];
 }
 
+// tells Next.js every category page that exists, so all 10 can be
+// pre-built ahead of time.
 export async function generateStaticParams() {
   return CATEGORIES.map((cat) => ({ slug: cat.slug }));
 }
@@ -41,9 +52,19 @@ export default async function CategoryPage({ params }) {
   if (!cat) notFound();
 
   const businesses = await getBusinessesByCategory(cat.name);
-  const towns = [...new Set(businesses.map((b) => b.town.split(",")[0].trim()))].sort();
+
+  // build the list of distinct towns that actually have a business in this
+  // category, so the FAQ answer below can name them specifically (e.g.
+  // "we list baking businesses in Estcourt, Ladysmith..."). "new Set(...)"
+  // is just a quick way to remove duplicate town names before sorting
+  // them alphabetically.
+  const townNamesWithoutDuplicates = new Set(businesses.map((b) => b.town.split(",")[0].trim()));
+  const towns = [...townNamesWithoutDuplicates].sort();
+
   const catLower = cat.name.toLowerCase();
 
+  // the FAQ shown on this specific category's page — written to directly
+  // answer a real search like "where can I find a caterer in Estcourt".
   const faqItems = [
     {
       question: `Where can I find ${catLower} businesses in KwaZulu-Natal?`,
@@ -64,6 +85,8 @@ export default async function CategoryPage({ params }) {
     },
   ];
 
+  // hidden, machine-readable description of this page for search engines
+  // and AI tools (see the fuller explanation in app/page.js).
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [

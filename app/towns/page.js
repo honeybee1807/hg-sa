@@ -1,3 +1,7 @@
+// this is the page at hiddengemssa.co.za/towns — the "browse by town" hub,
+// showing all 12 towns as clickable cards with a live count of how many
+// approved businesses are in each one.
+
 import Link from "next/link";
 import { TOWNS, SITE_URL } from "@/lib/constants";
 import supabase from "@/lib/supabase";
@@ -10,17 +14,28 @@ export const metadata = {
 
 export const revalidate = 3600;
 
+// counts how many approved businesses are in each town, so each card can
+// show something like "8 businesses". returns an object that looks like
+// { "Ladysmith": 8, "Estcourt": 3, ... }.
 async function getCountsByTown() {
-  const { data } = await supabase
+  const { data: approvedBusinesses } = await supabase
     .from("businesses")
     .select("town")
     .eq("status", "approved");
-  if (!data) return {};
-  return data.reduce((acc, b) => {
-    const key = b.town.split(",")[0].trim();
-    acc[key] = (acc[key] ?? 0) + 1;
-    return acc;
-  }, {});
+
+  if (!approvedBusinesses) return {};
+
+  // start with an empty tally, then go through every approved business one
+  // at a time, adding 1 to that business's town count. some older records
+  // store the town with extra text after it (like "Estcourt, KwaZulu-
+  // Natal"), so only the part before the first comma is used.
+  const countByTown = {};
+  for (const business of approvedBusinesses) {
+    const townNameOnly = business.town.split(",")[0].trim();
+    const currentCount = countByTown[townNameOnly] ?? 0;
+    countByTown[townNameOnly] = currentCount + 1;
+  }
+  return countByTown;
 }
 
 const jsonLd = {

@@ -1,3 +1,9 @@
+// this is the homepage — hiddengemssa.co.za itself. it fetches the current
+// featured business and the full list of approved businesses, then lays out
+// every section a visitor sees: the hero banner, the featured business,
+// the live search, the category and town browsing grids, the "built by
+// Olideen" panel, the FAQ, and the closing call-to-action.
+
 import Link from "next/link";
 import supabase from "@/lib/supabase";
 import { CATEGORIES, TOWNS, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
@@ -7,7 +13,8 @@ import FeaturedGemCard from "@/components/FeaturedGemCard";
 import AnimatedSection from "@/components/AnimatedSection";
 import DirectorySearch from "@/components/DirectorySearch";
 
-// keyword-rich title and description for maximum search visibility
+// the title/description search engines show for the homepage specifically
+// (this overrides the sitewide default set in app/layout.js).
 export const metadata = {
   title: "Hidden Gems SA – Free KZN Business Directory | KwaZulu-Natal Local Businesses",
   description:
@@ -25,6 +32,11 @@ export const metadata = {
   },
 };
 
+// looks up whichever business is currently set as "Featured Gem of the
+// Week" (an admin picks this — see app/admin/actions.js). a featured
+// listing has an expiry date ("featured_until"), so this only counts one
+// if that date hasn't passed yet. if more than one somehow qualifies, it
+// picks the most recently created one and ignores the rest.
 async function getFeaturedGem() {
   const { data } = await supabase
     .from("featured_gem")
@@ -36,16 +48,26 @@ async function getFeaturedGem() {
   return data;
 }
 
+// fetches every business that's been approved, for the homepage's live
+// search box. only asks for the fields the search results actually need
+// to display, not the whole record.
 async function getAllApprovedBusinesses() {
   const { data } = await supabase
     .from("businesses")
     .select("id, name, category, town, logo_url, slug, description")
     .eq("status", "approved")
     .order("name");
+  // if the lookup failed for some reason, show an empty list rather than
+  // crashing the page.
   return data ?? [];
 }
 
-// expanded faq list — covers voice search, ai answer engines, and long-tail queries
+// the questions and answers shown in the FAQ section near the bottom of the
+// page. these are written to directly answer the kind of question someone
+// might type into Google or ask a voice assistant / AI chatbot — that's
+// also why this same list gets turned into structured data (see "jsonLd"
+// below), which helps search engines and AI tools quote these answers
+// directly instead of guessing.
 const faqItems = [
   {
     question: "Is Hidden Gems SA free to use?",
@@ -84,7 +106,13 @@ const faqItems = [
   },
 ];
 
-// rich structured data — covers websearch, ai answer engines, and local seo
+// "structured data" (also called JSON-LD) is a block of information written
+// in a very literal, machine-readable format and hidden inside the page —
+// visitors never see it, but Google and AI tools read it to understand
+// exactly what's on the page without having to guess from the visible
+// text. this is what makes things like the FAQ show up directly in Google
+// search results, or lets an AI chatbot answer "what is Hidden Gems SA"
+// accurately instead of making something up.
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -189,7 +217,13 @@ const jsonLd = {
   ],
 };
 
+// the actual homepage. this runs on the server before the page is sent to
+// a visitor's browser, so the featured business and the full business list
+// are both already loaded by the time anyone sees the page — nothing needs
+// to "pop in" afterwards.
 export default async function HomePage() {
+  // fetch both things at the same time (rather than one after the other)
+  // so the page loads as fast as possible.
   const [featuredGem, allBusinesses] = await Promise.all([
     getFeaturedGem(),
     getAllApprovedBusinesses(),
@@ -268,7 +302,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* browse by town — 11 kzn communities */}
+      {/* browse by town — one clickable "pill" button per KZN town */}
       <section className="home-section">
         <div className="container">
           <AnimatedSection>

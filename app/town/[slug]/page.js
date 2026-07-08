@@ -1,3 +1,7 @@
+// this is the page shown at hiddengemssa.co.za/town/whatever-slug — e.g.
+// /town/estcourt — listing every approved business in one town, plus a
+// small FAQ section written specifically for that town.
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -6,10 +10,16 @@ import { TOWNS, SITE_URL } from "@/lib/constants";
 
 export const revalidate = 3600;
 
+// turns the web-address version of a town (e.g. "mooi-river") back into
+// its proper display name ("Mooi River") from lib/constants.js.
 function slugToTown(slug) {
   return TOWNS.find((t) => t.toLowerCase().replace(/\s+/g, "-") === slug) ?? null;
 }
 
+// fetches every approved business in one specific town. uses "ilike" (a
+// case-insensitive, "starts with" match) rather than an exact match,
+// because some older records store the town with extra text after it
+// (like "Estcourt, KwaZulu-Natal" instead of just "Estcourt").
 async function getBusinessesByTown(town) {
   const { data } = await supabase
     .from("businesses")
@@ -20,6 +30,8 @@ async function getBusinessesByTown(town) {
   return data ?? [];
 }
 
+// tells Next.js every town page that exists, so all 12 can be pre-built
+// ahead of time.
 export async function generateStaticParams() {
   return TOWNS.map((town) => ({ slug: town.toLowerCase().replace(/\s+/g, "-") }));
 }
@@ -41,8 +53,15 @@ export default async function TownPage({ params }) {
   if (!town) notFound();
 
   const businesses = await getBusinessesByTown(town);
-  const categories = [...new Set(businesses.map((b) => b.category))].sort();
 
+  // the distinct list of categories actually represented in this town, so
+  // the FAQ answer below can name them specifically. "new Set(...)" just
+  // removes any duplicate category names before sorting alphabetically.
+  const categoryNamesWithoutDuplicates = new Set(businesses.map((b) => b.category));
+  const categories = [...categoryNamesWithoutDuplicates].sort();
+
+  // the FAQ shown on this specific town's page — written to directly
+  // answer a real search like "where can I find a caterer in Estcourt".
   const faqItems = [
     {
       question: `Where can I find local businesses in ${town}?`,
@@ -63,6 +82,8 @@ export default async function TownPage({ params }) {
     },
   ];
 
+  // hidden, machine-readable description of this page for search engines
+  // and AI tools (see the fuller explanation in app/page.js).
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [

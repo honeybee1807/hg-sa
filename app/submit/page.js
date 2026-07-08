@@ -1,3 +1,8 @@
+// this is the page at hiddengemssa.co.za/submit — "List Your Business
+// Free". the actual form (all the input fields, logo upload, etc.) lives
+// in SubmitForm.js; this file just wraps it with the page heading and the
+// page's title/description for search engines.
+
 import { SITE_URL } from "@/lib/constants";
 import SubmitForm from "./SubmitForm";
 

@@ -1,7 +1,17 @@
+// shows the current "Gem of the Week" — a single business the admin (or the
+// automatic Monday draw, see app/admin/actions.js) has chosen to spotlight.
+// "gem" is the row from the featured_gem table, joined with the actual
+// business it points to (gem.businesses).
+//
+// if there's no featured business yet (e.g. the very first week, before
+// anything has ever been chosen), a placeholder card is shown instead,
+// inviting visitors to submit their own business for a future feature.
+
 import Link from "next/link";
 import Image from "next/image";
 
 export default function FeaturedGemCard({ gem }) {
+  // no featured business set — show the "could this be you?" placeholder.
   if (!gem?.businesses) {
     return (
       <div className="featured-gem-empty">

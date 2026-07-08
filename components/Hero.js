@@ -1,11 +1,30 @@
 "use client";
 
+// the big banner section at the very top of the homepage: the headline,
+// the "browse directory" / "list for free" buttons, three animated
+// counters (towns/categories/free), and — on the right-hand side — a
+// preview of what a business listing looks like.
+//
+// that right-hand preview is actually two different things depending on
+// screen size (decided purely by CSS, both exist in the markup at once):
+//   - on desktop (980px and wider): MockupCard below, a purely decorative,
+//     hand-written example card that never changes — it exists just to
+//     show what a listing looks like, it is NOT a real business
+//   - on mobile (below 980px): the decorative mockup is hidden, and the
+//     REAL current Featured Gem card (see [[FeaturedGemCard]]) is promoted
+//     up into the hero instead, so mobile visitors still see something
+//     real and current rather than losing this space entirely
+
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
 import GemBackground from "@/components/GemBackground";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
 
+// a hand-written, always-the-same example of what a business listing card
+// looks like. purely decorative — "Y&L Enterprises" is not a real business
+// in the database, it's just there to make the hero look populated on
+// desktop screens before any animation or real data loads.
 function MockupCard() {
   return (
     <div className="hero-mockup">
@@ -47,13 +66,21 @@ function MockupCard() {
 }
 
 export default function Hero({ featuredGem }) {
-  const ref = useRef(null);
+  const ref = useRef(null); // points at the outer <section>, used to scope all of the animations below to just this component
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ delay: 0.1 });
+    const animationContext = gsap.context(() => {
+      // the entrance sequence: each piece of the hero fades and slides in
+      // one after another, in this order — eyebrow tag, first headline
+      // line, second headline line, subheading paragraph, the two buttons,
+      // the mockup card, then the three stat numbers. the negative
+      // "-=0.x" timings make each step start slightly before the previous
+      // one finishes, so it reads as one flowing motion rather than a
+      // series of separate, disconnected pops.
+      const entranceTimeline = gsap.timeline({ delay: 0.1 });
 
-      tl.fromTo(".h-eyebrow",
+      entranceTimeline
+        .fromTo(".h-eyebrow",
           { y: 18, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" })
         .fromTo(".h-line-1",
@@ -75,7 +102,9 @@ export default function Hero({ featuredGem }) {
           { y: 12, opacity: 0 },
           { y: 0, opacity: 1, stagger: 0.09, duration: 0.45, ease: "power3.out" }, "-=0.4");
 
-      // perpetual float on the mockup card
+      // once the mockup card has entered, it keeps gently floating up and
+      // down forever (repeat: -1 means "repeat endlessly", yoyo means
+      // "reverse back and forth" rather than snapping back to the start).
       gsap.to(".hero-mockup-card", {
         y: -14,
         duration: 3.8,
@@ -84,28 +113,45 @@ export default function Hero({ featuredGem }) {
         repeat: -1,
       });
 
-      // animated counters
-      [
-        { sel: ".hc-towns", end: 12, suffix: "" },
-        { sel: ".hc-cats",  end: 10, suffix: "" },
-        { sel: ".hc-free",  end: 100, suffix: "%" },
-      ].forEach(({ sel, end, suffix }) => {
-        const node = ref.current?.querySelector(sel);
-        if (!node) return;
-        const obj = { v: 0 };
-        gsap.to(obj, {
-          v: end,
+      // the three "12 KZN Towns / 10 Categories / 100% Free" numbers count
+      // up from zero once the hero loads, rather than just appearing as
+      // static text. each one is set up the same way, so this loops over a
+      // small list describing all three instead of writing the same setup
+      // code three separate times.
+      const counters = [
+        { selector: ".hc-towns", finalValue: 12,  suffix: "" },
+        { selector: ".hc-cats",  finalValue: 10,  suffix: "" },
+        { selector: ".hc-free",  finalValue: 100, suffix: "%" },
+      ];
+
+      for (const counter of counters) {
+        const counterElement = ref.current?.querySelector(counter.selector);
+        if (!counterElement) continue;
+
+        // gsap can't directly "animate" a piece of text, so instead a
+        // plain number is animated from 0 up to the target value, and on
+        // every tick of that animation the on-screen text is updated to
+        // show the current rounded number.
+        const animatedNumber = { currentValue: 0 };
+        gsap.to(animatedNumber, {
+          currentValue: counter.finalValue,
           duration: 2.2,
           ease: "power2.out",
           delay: 1.0,
-          onUpdate() { node.textContent = Math.round(obj.v) + suffix; },
+          onUpdate() {
+            counterElement.textContent = Math.round(animatedNumber.currentValue) + counter.suffix;
+          },
         });
-      });
+      }
     }, ref);
 
-    return () => ctx.revert();
+    return () => animationContext.revert();
   }, []);
 
+  // the actual markup: an animated Three.js gem background, then two
+  // columns — the headline/buttons/stats on the left, and either the
+  // decorative mockup or the real Featured Gem on the right (see the
+  // top-of-file note for how those two are switched between by CSS).
   return (
     <section className="hero" ref={ref}>
       <GemBackground />

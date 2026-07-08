@@ -1,8 +1,12 @@
+// this file automatically creates the page at hiddengemssa.co.za/llms.txt
+// — a short, plain-text summary of the site meant for AI tools (ChatGPT,
+// Perplexity, etc.) to read, following an emerging convention for helping
+// AI understand a website (see llmstxt.org). it's built from the same
+// TOWNS/CATEGORIES lists the rest of the site uses, so the numbers here can
+// never fall out of sync with what's actually true.
+
 import { CATEGORIES, TOWNS, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
 
-// A plain-text summary for AI systems (llmstxt.org convention) — built
-// from the same constants the rest of the site uses, so it can never
-// drift out of sync with the real town/category list.
 export async function GET() {
   const townList = TOWNS.join(", ");
   const categoryList = CATEGORIES.map((c) => c.name).join(", ");

@@ -1,3 +1,7 @@
+// this is the page at hiddengemssa.co.za/categories — the "browse by
+// category" hub, showing all 10 categories as clickable cards with a
+// live count of how many approved businesses are in each one.
+
 import Link from "next/link";
 import { CATEGORIES, SITE_URL } from "@/lib/constants";
 import supabase from "@/lib/supabase";
@@ -10,16 +14,25 @@ export const metadata = {
 
 export const revalidate = 3600;
 
+// counts how many approved businesses are in each category, so each card
+// can show something like "12 businesses". returns an object that looks
+// like { "Baking & Catering": 12, "Beauty & Hair": 4, ... }.
 async function getCountsByCategory() {
-  const { data } = await supabase
+  const { data: approvedBusinesses } = await supabase
     .from("businesses")
     .select("category")
     .eq("status", "approved");
-  if (!data) return {};
-  return data.reduce((acc, b) => {
-    acc[b.category] = (acc[b.category] ?? 0) + 1;
-    return acc;
-  }, {});
+
+  if (!approvedBusinesses) return {};
+
+  // start with an empty tally, then go through every approved business one
+  // at a time, adding 1 to that business's category count.
+  const countByCategory = {};
+  for (const business of approvedBusinesses) {
+    const currentCount = countByCategory[business.category] ?? 0;
+    countByCategory[business.category] = currentCount + 1;
+  }
+  return countByCategory;
 }
 
 const jsonLd = {

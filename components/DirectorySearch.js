@@ -1,27 +1,63 @@
 "use client";
 
+// the live search/filter box shown on the homepage above the full business
+// directory. everything here runs entirely in the browser — the full list
+// of approved businesses is already loaded on the page, and this component
+// just narrows down which ones are currently shown, based on whatever text
+// someone has typed and which category/town tabs are selected. nothing is
+// re-fetched from the database as someone types or filters.
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CATEGORIES, TOWNS } from "@/lib/constants";
 
-export default function DirectorySearch({ businesses }) {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All");
-  const [town, setTown] = useState("All");
+// checks one business against the current search text, deciding whether it
+// should stay in the results. returns true if the search box is empty (no
+// filtering needed), or if the typed text shows up anywhere in the
+// business's name, category, town, or description.
+function businessMatchesSearchText(business, searchText) {
+  if (!searchText) return true;
 
+  const lowercaseName        = business.name.toLowerCase();
+  const lowercaseCategory    = business.category.toLowerCase();
+  const lowercaseTown        = business.town.toLowerCase();
+  const lowercaseDescription = (business.description ?? "").toLowerCase();
+
+  return (
+    lowercaseName.includes(searchText) ||
+    lowercaseCategory.includes(searchText) ||
+    lowercaseTown.includes(searchText) ||
+    lowercaseDescription.includes(searchText)
+  );
+}
+
+export default function DirectorySearch({ businesses }) {
+  const [query, setQuery] = useState("");         // whatever text is currently typed into the search box
+  const [category, setCategory] = useState("All"); // which category tab is selected — "All" means no category filtering
+  const [town, setTown] = useState("All");          // which town is selected in the dropdown — "All" means no town filtering
+
+  // recalculates the filtered list of businesses whenever the full list,
+  // the search text, the selected category, or the selected town changes.
+  // "useMemo" just means this filtering work is skipped and the previous
+  // result reused if none of those things have actually changed since the
+  // last render.
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return businesses.filter((biz) => {
-      const matchesQuery =
-        !q ||
-        biz.name.toLowerCase().includes(q) ||
-        biz.category.toLowerCase().includes(q) ||
-        biz.town.toLowerCase().includes(q) ||
-        (biz.description ?? "").toLowerCase().includes(q);
-      const matchesCategory = category === "All" || biz.category === category;
-      const matchesTown = town === "All" || biz.town.split(",")[0].trim() === town;
-      return matchesQuery && matchesCategory && matchesTown;
+    const searchText = query.trim().toLowerCase();
+
+    return businesses.filter((business) => {
+      const matchesSearchText = businessMatchesSearchText(business, searchText);
+      const matchesCategory   = category === "All" || business.category === category;
+
+      // some older records store the town with extra text after it (like
+      // "Estcourt, KwaZulu-Natal" instead of just "Estcourt"), so only the
+      // part before the first comma is compared against the selected town.
+      const townNameOnly  = business.town.split(",")[0].trim();
+      const matchesTown    = town === "All" || townNameOnly === town;
+
+      // a business only stays in the results if it satisfies all three
+      // filters at once.
+      return matchesSearchText && matchesCategory && matchesTown;
     });
   }, [businesses, query, category, town]);
 
