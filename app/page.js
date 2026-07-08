@@ -174,6 +174,18 @@ const jsonLd = {
         "url": `${SITE_URL}/category/${cat.slug}`,
       })),
     },
+    {
+      // marks the FAQ answers as suitable for text-to-speech / voice
+      // assistant reading (AEO signal for answer engines)
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/#webpage`,
+      "url": SITE_URL,
+      "name": "Hidden Gems SA – Free KZN Business Directory",
+      "speakable": {
+        "@type": "SpeakableSpecification",
+        "cssSelector": [".faq-question", ".faq-answer"],
+      },
+    },
   ],
 };
 

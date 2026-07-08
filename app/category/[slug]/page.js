@@ -41,6 +41,28 @@ export default async function CategoryPage({ params }) {
   if (!cat) notFound();
 
   const businesses = await getBusinessesByCategory(cat.name);
+  const towns = [...new Set(businesses.map((b) => b.town.split(",")[0].trim()))].sort();
+  const catLower = cat.name.toLowerCase();
+
+  const faqItems = [
+    {
+      question: `Where can I find ${catLower} businesses in KwaZulu-Natal?`,
+      answer:
+        towns.length > 0
+          ? `Hidden Gems SA currently lists ${businesses.length} approved ${catLower} ${businesses.length === 1 ? "business" : "businesses"} in ${towns.join(", ")}. Browse the full list above, or visit the Towns page to search by area.`
+          : `Hidden Gems SA is currently building its ${catLower} directory for KwaZulu-Natal. Check back soon, or list your own ${catLower} business for free.`,
+    },
+    {
+      question: `Is it free to list a ${catLower} business on Hidden Gems SA?`,
+      answer:
+        "Yes — completely free. There's no cost to list your business and no account required. Submissions are reviewed and approved within 24–48 hours.",
+    },
+    {
+      question: `How do I contact a ${catLower} business listed here?`,
+      answer:
+        "Every approved listing includes a WhatsApp button so you can message the business directly. Some listings also include a website link.",
+    },
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -62,6 +84,24 @@ export default async function CategoryPage({ params }) {
           url: `${SITE_URL}/business/${b.slug}`,
           name: b.name,
         })),
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: faqItems.map((f) => ({
+          "@type": "Question",
+          name: f.question,
+          acceptedAnswer: { "@type": "Answer", text: f.answer },
+        })),
+      },
+      {
+        "@type": "WebPage",
+        "@id": `${SITE_URL}/category/${slug}#webpage`,
+        url: `${SITE_URL}/category/${slug}`,
+        name: `${cat.name} — KwaZulu-Natal Local Businesses`,
+        speakable: {
+          "@type": "SpeakableSpecification",
+          cssSelector: [".page-faq-question", ".page-faq-answer"],
+        },
       },
     ],
   };
@@ -111,6 +151,19 @@ export default async function CategoryPage({ params }) {
               </Link>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="section section--narrow" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="faq-list">
+            {faqItems.map((f, i) => (
+              <details key={i} className="faq-item">
+                <summary className="faq-question page-faq-question">{f.question}</summary>
+                <p className="faq-answer page-faq-answer">{f.answer}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
     </>

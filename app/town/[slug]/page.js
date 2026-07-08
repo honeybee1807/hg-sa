@@ -41,6 +41,27 @@ export default async function TownPage({ params }) {
   if (!town) notFound();
 
   const businesses = await getBusinessesByTown(town);
+  const categories = [...new Set(businesses.map((b) => b.category))].sort();
+
+  const faqItems = [
+    {
+      question: `Where can I find local businesses in ${town}?`,
+      answer:
+        categories.length > 0
+          ? `Hidden Gems SA currently lists ${businesses.length} approved local ${businesses.length === 1 ? "business" : "businesses"} in ${town}, covering ${categories.join(", ")}. Browse the full list above, or visit the Categories page to search by type.`
+          : `Hidden Gems SA doesn't have any approved listings in ${town} yet. Be the first — list your business for free.`,
+    },
+    {
+      question: `Is Hidden Gems SA free for businesses in ${town}?`,
+      answer:
+        "Yes — completely free to list, with no account required. We review and approve new listings within 24–48 hours.",
+    },
+    {
+      question: `How do I contact a business in ${town}?`,
+      answer:
+        "Every approved listing includes a WhatsApp button so you can message the business directly. Some listings also include a website link.",
+    },
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -62,6 +83,24 @@ export default async function TownPage({ params }) {
           url: `${SITE_URL}/business/${b.slug}`,
           name: b.name,
         })),
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: faqItems.map((f) => ({
+          "@type": "Question",
+          name: f.question,
+          acceptedAnswer: { "@type": "Answer", text: f.answer },
+        })),
+      },
+      {
+        "@type": "WebPage",
+        "@id": `${SITE_URL}/town/${slug}#webpage`,
+        url: `${SITE_URL}/town/${slug}`,
+        name: `Local Businesses in ${town}, KwaZulu-Natal`,
+        speakable: {
+          "@type": "SpeakableSpecification",
+          cssSelector: [".page-faq-question", ".page-faq-answer"],
+        },
       },
     ],
   };
@@ -111,6 +150,19 @@ export default async function TownPage({ params }) {
               </Link>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="section section--narrow" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="faq-list">
+            {faqItems.map((f, i) => (
+              <details key={i} className="faq-item">
+                <summary className="faq-question page-faq-question">{f.question}</summary>
+                <p className="faq-answer page-faq-answer">{f.answer}</p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
     </>
