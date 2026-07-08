@@ -52,6 +52,7 @@ body {
 
 main {
   flex: 1;
+  background: #f9fafb;
 }
 
 a {
