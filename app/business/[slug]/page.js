@@ -9,7 +9,7 @@ export const revalidate = 3600;
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
-    .select("*")
+    .select("name, category, town, description, logo_url, slug, website, whatsapp, owner_name, business_detail")
     .eq("status", "approved")
     .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();

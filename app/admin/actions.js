@@ -50,6 +50,8 @@ function generateSlug(name, town) {
 }
 
 export async function approveBusiness(id, name, town, category) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+
   const db = getAdminClient();
   let slug = generateSlug(name, town);
 
@@ -83,6 +85,8 @@ export async function approveBusiness(id, name, town, category) {
 }
 
 export async function rejectBusiness(id, note) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+
   const db = getAdminClient();
   const { error } = await db
     .from("businesses")
@@ -95,6 +99,8 @@ export async function rejectBusiness(id, note) {
 }
 
 export async function searchBusinesses(query) {
+  if (!(await isAdminAuthed())) return [];
+
   const db = getAdminClient();
   const { data } = await db
     .from("businesses")
@@ -105,7 +111,7 @@ export async function searchBusinesses(query) {
   return data ?? [];
 }
 
-export async function setFeaturedGem(businessId) {
+async function setFeaturedGemInternal(businessId) {
   const db = getAdminClient();
   const featuredUntil = new Date(
     Date.now() + 7 * 24 * 60 * 60 * 1000
@@ -121,7 +127,12 @@ export async function setFeaturedGem(businessId) {
   return { success: true };
 }
 
-export async function autoSelectFeaturedGem() {
+export async function setFeaturedGem(businessId) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+  return setFeaturedGemInternal(businessId);
+}
+
+async function autoSelectFeaturedGemInternal() {
   const db = getAdminClient();
 
   const { data: businesses } = await db
@@ -143,5 +154,18 @@ export async function autoSelectFeaturedGem() {
   const weighted = pool.flatMap((b) => Array(b.logo_url ? 3 : 1).fill(b));
   const pick = weighted[Math.floor(Math.random() * weighted.length)];
 
-  return setFeaturedGem(pick.id);
+  return setFeaturedGemInternal(pick.id);
+}
+
+export async function autoSelectFeaturedGem() {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+  return autoSelectFeaturedGemInternal();
+}
+
+// Dedicated entry point for the Monday cron job (see
+// app/api/cron/featured-gem/route.js), which authenticates via
+// CRON_SECRET rather than the admin session cookie — there's no
+// browser session in a server-to-server cron request.
+export async function autoSelectFeaturedGemForCron() {
+  return autoSelectFeaturedGemInternal();
 }

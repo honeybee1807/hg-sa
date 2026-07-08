@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { autoSelectFeaturedGem } from "@/app/admin/actions";
+import { autoSelectFeaturedGemForCron } from "@/app/admin/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,6 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  const result = await autoSelectFeaturedGem();
+  const result = await autoSelectFeaturedGemForCron();
   return NextResponse.json(result, { status: result.success ? 200 : 500 });
 }
