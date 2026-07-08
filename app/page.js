@@ -18,6 +18,10 @@ export const metadata = {
     description:
       "Find local KwaZulu-Natal businesses for free. Browse by category or town across 11 KZN communities.",
     url: SITE_URL,
+    siteName: "Hidden Gems SA",
+    locale: "en_ZA",
+    type: "website",
+    images: [{ url: "/HG_Logo.png", alt: "Hidden Gems SA – KZN Business Directory" }],
   },
 };
 

@@ -31,13 +31,18 @@ export async function generateMetadata({ params }) {
   if (!biz) return { title: "Business Not Found" };
 
   return {
-    title: `${biz.name} — ${biz.town}, KZN`,
+    title: `${biz.name} — ${biz.category} in ${biz.town}`,
     description: biz.description ?? `${biz.name} is a local business in ${biz.town}, KwaZulu-Natal.`,
     alternates: { canonical: `${SITE_URL}/business/${biz.slug}` },
     openGraph: {
       title: biz.name,
       description: biz.description ?? "",
-      images: biz.logo_url ? [{ url: biz.logo_url }] : [],
+      siteName: "Hidden Gems SA",
+      locale: "en_ZA",
+      type: "website",
+      images: biz.logo_url
+        ? [{ url: biz.logo_url }]
+        : [{ url: "/HG_Logo.png", alt: "Hidden Gems SA – KZN Business Directory" }],
     },
   };
 }
@@ -93,11 +98,11 @@ export default async function BusinessPage({ params }) {
           addressCountry: "ZA",
         },
         ...(waNumber && {
+          telephone: `+${waNumber}`,
           contactPoint: {
             "@type": "ContactPoint",
             telephone: `+${waNumber}`,
             contactType: "customer service",
-            contactOption: "TollFree",
           },
         }),
         areaServed: { "@type": "AdministrativeArea", name: biz.town },
