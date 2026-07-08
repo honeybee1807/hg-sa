@@ -1,20 +1,38 @@
+// this is the page at hiddengemssa.co.za/admin. it's the "front door" of
+// the admin area: if you're not logged in, it shows the login form and
+// stops there — it never even looks up any business data until it's
+// confirmed you're logged in. this is what keeps private information
+// (like a submitter's email address) from ever reaching someone who isn't
+// meant to see it, no matter how they try to get to this page.
+
 import { getAdminClient } from "@/lib/supabase-admin";
 import { isAdminAuthed } from "./actions";
 import LoginForm from "./LoginForm";
 import AdminPanel from "./AdminPanel";
 
+// always load this page fresh from the database — never show a cached
+// (possibly outdated) version. this matters a lot for an admin panel,
+// where seeing the latest pending submissions immediately is important.
 export const dynamic = "force-dynamic";
+
+// "robots: noindex" tells search engines not to list this page in their
+// results, on top of it already being blocked in robots.txt — belt and
+// braces, since this is a private page.
 export const metadata = { title: "Admin — Hidden Gems SA", robots: "noindex" };
 
+// fetches every business regardless of status (pending, approved, or
+// rejected) so the admin panel can show all of them across its tabs.
 async function getAllBusinesses() {
   const db = getAdminClient();
   const { data } = await db
     .from("businesses")
-    .select("id, name, category, town, province, whatsapp, description, owner_name, owner_email, logo_url, status, review_note, slug")
-    .order("created_at", { ascending: false });
+    .select("id, name, category, town, province, whatsapp, description, owner_name, owner_email, logo_url, status, review_note, slug, is_own_business, on_behalf_of_name, on_behalf_of_reason")
+    .order("created_at", { ascending: false }) // newest submissions first
   return data ?? [];
 }
 
+// fetches whichever business is currently featured (if any), so the admin
+// panel can show who's featured right now at the top of the page.
 async function getCurrentFeatured() {
   const db = getAdminClient();
   const { data } = await db
@@ -28,9 +46,14 @@ async function getCurrentFeatured() {
 }
 
 export default async function AdminPage() {
-  const authed = await isAdminAuthed();
-  if (!authed) return <LoginForm />;
+  // the most important line in this whole file: if this comes back false,
+  // stop here and show only the login form. nothing below this point ever
+  // runs for someone who isn't logged in.
+  const isLoggedIn = await isAdminAuthed();
+  if (!isLoggedIn) return <LoginForm />;
 
+  // fetch both things at once, rather than one after the other, so the
+  // page loads a little faster.
   const [businesses, currentFeatured] = await Promise.all([
     getAllBusinesses(),
     getCurrentFeatured(),

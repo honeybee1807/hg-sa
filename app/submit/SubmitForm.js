@@ -1,44 +1,84 @@
 "use client";
 
+// this is the actual "list your business" form that people fill in at
+// hiddengemssa.co.za/submit. it's a client component (it needs to react to
+// typing, clicking, and uploading in the browser) that hands the finished
+// data over to submitBusiness() in actions.js once someone hits submit.
+//
+// the trickiest part of this file is the logo upload, which happens in two
+// steps: first the person crops their photo into a neat square using the
+// Cropper.js library (loaded only when needed, so it doesn't slow down
+// everyone who never uploads a logo), then the cropped image is uploaded
+// straight to Cloudinary (an image-hosting service) from the browser. the
+// business itself isn't saved to our database until the very end, once a
+// logo URL (if any) is ready.
+
 import { useState, useRef, useEffect } from "react";
 import { submitBusiness } from "./actions";
 import { CATEGORIES, TOWNS } from "@/lib/constants";
 
+// where uploaded logos get sent, and which "upload preset" (a pre-configured
+// set of rules on the Cloudinary side — image size limits, allowed formats,
+// etc.) to use. these are not secret; Cloudinary's unsigned-upload presets
+// are designed to be called directly from a browser.
 const CLOUDINARY_URL    = "https://api.cloudinary.com/v1_1/dfxhlv8jc/image/upload";
 const CLOUDINARY_PRESET = "hidden_gems_sa_logos";
 
+// what every field in the form starts out as — all empty. used both when the
+// form first loads and to reset everything after a successful submission.
+// "is_own_business" defaults to "yes" since most people listing a business
+// are listing their own — someone submitting on behalf of another business
+// has to actively switch it to "no".
 const INITIAL = {
   name: "", category: "", town: "",
   whatsapp: "", website: "", description: "",
   owner_name: "", owner_email: "",
+  is_own_business: "yes",
+  on_behalf_of_name: "", on_behalf_of_reason: "",
 };
 
 export default function SubmitForm() {
-  const [fields, setFields]       = useState(INITIAL);
-  const [logoUrl, setLogoUrl]     = useState("");
-  const [cropSrc, setCropSrc]     = useState("");
-  const [cropOpen, setCropOpen]   = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult]       = useState(null);
-  const [charCount, setCharCount] = useState(0);
+  const [fields, setFields]       = useState(INITIAL);      // every text field in the form, kept together in one object
+  const [logoUrl, setLogoUrl]     = useState("");            // the Cloudinary web address of the uploaded logo, once there is one
+  const [cropSrc, setCropSrc]     = useState("");            // a temporary local link to the photo the person just picked, for the crop popup to display
+  const [cropOpen, setCropOpen]   = useState(false);          // whether the "crop your logo" popup is currently showing
+  const [uploading, setUploading] = useState(false);          // true while the cropped logo is being sent to Cloudinary
+  const [submitting, setSubmitting] = useState(false);         // true while the whole form is being sent to our database
+  const [result, setResult]       = useState(null);            // the outcome of the last submit attempt: { success: true } or { success: false, error: "..." }
+  const [charCount, setCharCount] = useState(0);               // how many characters are currently in the description box, for the "x/200" counter
 
-  const imgRef     = useRef(null);
-  const cropperRef = useRef(null);
-  const fileRef    = useRef(null);
+  const imgRef     = useRef(null);  // points at the <img> element that Cropper.js attaches itself to
+  const cropperRef = useRef(null);  // holds the live Cropper.js instance, so it can be cleaned up later
+  const fileRef    = useRef(null);  // points at the hidden file-picker <input>, so it can be reset when the person removes a logo
 
+  // this runs every time the crop popup opens or closes. Cropper.js is a
+  // fairly heavy library, so instead of loading it up front for every
+  // visitor, it's only fetched ("import(...)") the moment someone actually
+  // opens the crop popup.
   useEffect(() => {
+    // nothing to do if the popup isn't open, or the image it needs to
+    // attach to hasn't rendered yet.
     if (!cropOpen || !imgRef.current) return;
+
+    // this flag protects against a timing problem: if the popup gets closed
+    // again before the cropper.js library has finished loading, "destroyed"
+    // will be true by the time the .then() below runs, so it knows to skip
+    // setting anything up on an image that's no longer there.
     let destroyed = false;
+
     import("cropperjs").then(({ default: Cropper }) => {
       if (destroyed || !imgRef.current) return;
       cropperRef.current = new Cropper(imgRef.current, {
-        aspectRatio: 1,
-        viewMode: 1,
-        autoCropArea: 0.8,
+        aspectRatio: 1,      // logos are always cropped into a perfect square
+        viewMode: 1,          // don't let the crop box be dragged outside the photo
+        autoCropArea: 0.8,    // start the crop box covering 80% of the photo
         responsive: true,
       });
     });
+
+    // cleanup: whenever the popup closes (or the component goes away), mark
+    // this run as destroyed and tear down the cropper instance so it isn't
+    // left running against an image that no longer exists.
     return () => {
       destroyed = true;
       cropperRef.current?.destroy();
@@ -46,38 +86,71 @@ export default function SubmitForm() {
     };
   }, [cropOpen]);
 
+  // builds a small onChange handler for one specific text field. instead of
+  // writing a separate handler function for "name", another for "category",
+  // and so on, every input below calls set("name"), set("category"), etc.,
+  // and gets back a ready-to-use handler that updates just that one field
+  // while leaving the rest of the form exactly as it was.
   function set(field) {
-    return (e) => setFields((prev) => ({ ...prev, [field]: e.target.value }));
+    return function handleFieldChange(event) {
+      setFields((previousFields) => ({
+        ...previousFields,
+        [field]: event.target.value,
+      }));
+    };
   }
 
-  function handleFileChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCropSrc(URL.createObjectURL(file));
+  // runs the moment someone picks a photo from their device. it doesn't
+  // upload anything yet — it just creates a temporary, browser-only link to
+  // the chosen file so the crop popup can display it, then opens that popup.
+  function handleFileChange(event) {
+    const chosenFile = event.target.files?.[0];
+    if (!chosenFile) return;
+
+    setCropSrc(URL.createObjectURL(chosenFile));
     setCropOpen(true);
-    e.target.value = "";
+
+    // clear the file input's own value so that picking the exact same file
+    // again later (e.g. after cancelling) still fires this change handler.
+    event.target.value = "";
   }
 
+  // closes the crop popup without uploading anything, and frees up the
+  // temporary browser link created in handleFileChange so it doesn't sit
+  // around in memory forever.
   function cancelCrop() {
     setCropOpen(false);
     URL.revokeObjectURL(cropSrc);
     setCropSrc("");
   }
 
+  // runs when the person confirms their crop. this takes the cropped
+  // square, turns it into an actual image file, and uploads that file
+  // straight to Cloudinary from the browser.
   async function confirmCrop() {
     if (!cropperRef.current) return;
     setUploading(true);
+
+    // ask cropper.js for the cropped result as a 400x400 image, then
+    // convert it into a "blob" (a raw file-like chunk of image data) that
+    // can be attached to an upload. this conversion happens in the
+    // background, so everything that depends on it lives inside this
+    // callback function.
     cropperRef.current
       .getCroppedCanvas({ width: 400, height: 400 })
-      .toBlob(async (blob) => {
+      .toBlob(async (croppedImageBlob) => {
         try {
-          const fd = new FormData();
-          fd.append("file", blob, "logo.jpg");
-          fd.append("upload_preset", CLOUDINARY_PRESET);
-          const res  = await fetch(CLOUDINARY_URL, { method: "POST", body: fd });
-          const data = await res.json();
-          if (data.secure_url) {
-            setLogoUrl(data.secure_url);
+          const uploadData = new FormData();
+          uploadData.append("file", croppedImageBlob, "logo.jpg");
+          uploadData.append("upload_preset", CLOUDINARY_PRESET);
+
+          const uploadResponse = await fetch(CLOUDINARY_URL, { method: "POST", body: uploadData });
+          const uploadResult   = await uploadResponse.json();
+
+          if (uploadResult.secure_url) {
+            // success — remember the logo's new web address, close the
+            // popup, and clean up the temporary local file link.
+            setLogoUrl(uploadResult.secure_url);
             setCropOpen(false);
             URL.revokeObjectURL(cropSrc);
             setCropSrc("");
@@ -89,34 +162,79 @@ export default function SubmitForm() {
         } finally {
           setUploading(false);
         }
-      }, "image/jpeg", 0.9);
+      }, "image/jpeg", 0.9); // save the crop as a jpeg at 90% quality
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  // runs when the whole form is submitted. it gathers everything typed into
+  // "fields" plus whatever logo URL is currently set, packages it into a
+  // FormData object (the format Server Actions expect), and hands it off to
+  // submitBusiness() in actions.js, which does the real validation and
+  // saving.
+  async function handleSubmit(event) {
+    event.preventDefault();
     setSubmitting(true);
     setResult(null);
-    const fd = new FormData();
-    Object.entries(fields).forEach(([k, v]) => fd.append(k, v));
-    fd.append("logo_url", logoUrl);
-    const res = await submitBusiness(fd);
-    setResult(res);
+
+    const formDataToSubmit = new FormData();
+
+    // copy every field currently in state onto the FormData one at a time,
+    // rather than one long chained expression, so it's obvious exactly what
+    // is being sent.
+    for (const fieldName of Object.keys(fields)) {
+      formDataToSubmit.append(fieldName, fields[fieldName]);
+    }
+    formDataToSubmit.append("logo_url", logoUrl);
+
+    const submissionResult = await submitBusiness(formDataToSubmit);
+    setResult(submissionResult);
     setSubmitting(false);
   }
 
+  // the description box needs two things to happen on every keystroke: the
+  // usual field update (via set("description")) and an update to the
+  // on-screen "x/200" character counter. this keeps both steps together and
+  // named, instead of an inline arrow function doing both at once.
+  function handleDescriptionChange(event) {
+    set("description")(event);
+    setCharCount(event.target.value.length);
+  }
+
+  // clears the uploaded logo so the person can pick a different one. also
+  // resets the hidden file-picker input, if it exists, so choosing the same
+  // file again would still register as a change.
+  function handleChangeLogoClick() {
+    setLogoUrl("");
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+  }
+
+  // wipes the form back to its empty starting state, for the "Submit
+  // Another Business" button shown after a successful submission.
+  function handleSubmitAnotherClick() {
+    setFields(INITIAL);
+    setLogoUrl("");
+    setResult(null);
+  }
+
+  // once a submission has succeeded, show a thank-you screen instead of the
+  // form itself.
   if (result?.success) {
     return (
       <div className="submit-success">
         <i className="fa-solid fa-circle-check" />
         <h2>Submission Received!</h2>
         <p>Thank you! Your listing is now under review — we&apos;ll have it live within 24–48 hours.</p>
-        <button className="btn-secondary mt-3" onClick={() => { setFields(INITIAL); setLogoUrl(""); setResult(null); }}>
+        <button className="btn-secondary mt-3" onClick={handleSubmitAnotherClick}>
           <i className="fa-solid fa-plus" /> Submit Another Business
         </button>
       </div>
     );
   }
 
+  // the form itself, laid out in four sections: business info, contact
+  // details, owner details (kept private), and an optional logo — followed
+  // by the submit button and, when open, the crop popup.
   return (
     <form onSubmit={handleSubmit} className="submit-form" noValidate>
       {result?.error && (
@@ -165,7 +283,7 @@ export default function SubmitForm() {
             <span className="char-count">{charCount}/200</span>
           </label>
           <textarea id="description" className="form-control" value={fields.description}
-            onChange={(e) => { set("description")(e); setCharCount(e.target.value.length); }}
+            onChange={handleDescriptionChange}
             required rows={3} maxLength={200}
             placeholder="1–2 sentences about your products or services" />
         </div>
@@ -220,6 +338,65 @@ export default function SubmitForm() {
         </div>
       </div>
 
+      {/* ── Relationship to This Business ── */}
+      <div className="form-section">
+        <h2 className="form-section-title">
+          <i className="fa-solid fa-handshake" /> Whose Business Is This?
+        </h2>
+        <p className="form-section-note">
+          <i className="fa-solid fa-circle-info" /> This helps us confirm every listing has the
+          real owner&apos;s knowledge before it goes live.
+        </p>
+
+        <div className="form-group">
+          <div className="radio-choice-row">
+            <label className="radio-choice">
+              <input
+                type="radio"
+                name="is_own_business"
+                value="yes"
+                checked={fields.is_own_business === "yes"}
+                onChange={set("is_own_business")}
+              />
+              This is my own business
+            </label>
+            <label className="radio-choice">
+              <input
+                type="radio"
+                name="is_own_business"
+                value="no"
+                checked={fields.is_own_business === "no"}
+                onChange={set("is_own_business")}
+              />
+              I&apos;m listing it on someone else&apos;s behalf
+            </label>
+          </div>
+        </div>
+
+        {/* these two extra questions only appear once someone says they're
+            listing on someone else's behalf — for their own business, there's
+            nothing more to ask here. */}
+        {fields.is_own_business === "no" && (
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="on_behalf_of_name">
+                Whose Business Is It? <span className="required">*</span>
+              </label>
+              <input id="on_behalf_of_name" className="form-control" type="text" value={fields.on_behalf_of_name}
+                onChange={set("on_behalf_of_name")} required placeholder="Business owner's name" />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="on_behalf_of_reason">
+                Why Are You Listing It for Them? <span className="required">*</span>
+              </label>
+              <input id="on_behalf_of_reason" className="form-control" type="text" value={fields.on_behalf_of_reason}
+                onChange={set("on_behalf_of_reason")} required placeholder="e.g. Their son, helping them get online" />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Logo ── */}
       <div className="form-section">
         <h2 className="form-section-title">
@@ -232,7 +409,7 @@ export default function SubmitForm() {
             <img src={logoUrl} alt="Your uploaded logo" className="logo-preview-img" />
             <div className="logo-preview-info">
               <p><i className="fa-solid fa-circle-check" /> Logo uploaded successfully</p>
-              <button type="button" className="btn-secondary" onClick={() => { setLogoUrl(""); fileRef.current && (fileRef.current.value = ""); }}>
+              <button type="button" className="btn-secondary" onClick={handleChangeLogoClick}>
                 <i className="fa-solid fa-rotate" /> Change Logo
               </button>
             </div>
