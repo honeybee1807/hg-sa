@@ -11,12 +11,12 @@ import DirectorySearch from "@/components/DirectorySearch";
 export const metadata = {
   title: "Hidden Gems SA – Free KZN Business Directory | KwaZulu-Natal Local Businesses",
   description:
-    "Discover trusted KwaZulu-Natal businesses for free. Home bakers, tutors, transport, beauty services & trades across Ladysmith, Pietermaritzburg, Dundee and 8 more KZN towns. No account needed.",
+    "Discover trusted KwaZulu-Natal businesses for free. Home bakers, tutors, transport, beauty services & trades across Ladysmith, Pietermaritzburg, Dundee and 9 more KZN towns. No account needed.",
   alternates: { canonical: SITE_URL },
   openGraph: {
     title: "Hidden Gems SA – Free KZN Business Directory",
     description:
-      "Find local KwaZulu-Natal businesses for free. Browse by category or town across 11 KZN communities.",
+      "Find local KwaZulu-Natal businesses for free. Browse by category or town across 12 KZN communities.",
     url: SITE_URL,
     siteName: "Hidden Gems SA",
     locale: "en_ZA",
@@ -55,7 +55,7 @@ const faqItems = [
   {
     question: "Which areas does Hidden Gems SA cover?",
     answer:
-      "We serve 11 KwaZulu-Natal towns: Ladysmith, Pietermaritzburg, Dundee, Harrismith, Greytown, Bergville, Colenso, Frere, Mooi River, Weenen and Winterton.",
+      `We serve ${TOWNS.length} KwaZulu-Natal towns: ${TOWNS.slice(0, -1).join(", ")} and ${TOWNS[TOWNS.length - 1]}.`,
   },
   {
     question: "How do I get my business listed on Hidden Gems SA?",
@@ -94,7 +94,7 @@ const jsonLd = {
       "url": SITE_URL,
       "name": "Hidden Gems SA",
       "description":
-        "Free local business directory for KwaZulu-Natal, South Africa — find home bakers, tutors, transport, beauty services, trades and more across 11 KZN towns.",
+        `Free local business directory for KwaZulu-Natal, South Africa — find home bakers, tutors, transport, beauty services, trades and more across ${TOWNS.length} KZN towns.`,
       "inLanguage": "en-ZA",
       "publisher": {
         "@type": "Organization",
