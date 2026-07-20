@@ -1,13 +1,13 @@
 "use client";
 
 // the rotating photo background shown behind the hero section's headline,
-// stats, and mockup card. five photos crossfade into one another with a
+// stats, and mockup card. these photos crossfade into one another with a
 // slow "Ken Burns" zoom, and sit behind everything else already in the
-// hero — the 3D gem field, the dot grid, and every piece of real content
-// keep rendering on top of it exactly as before.
+// hero — the dot grid and every piece of real content keep rendering on
+// top of it exactly as before.
 //
-// if none of the five images can be loaded (e.g. the folder is empty),
-// this component quietly renders nothing, and the hero falls back to its
+// if none of the images can be loaded (e.g. the folder is empty), this
+// component quietly renders nothing, and the hero falls back to its
 // existing plain CSS gradient background (already defined on the .hero
 // section itself). there's no error message either way, and no layout
 // shift, since this whole component is one absolutely-positioned layer
@@ -21,13 +21,15 @@ const IMAGE_PATHS = [
   "/hero-images/hero-3.jpg",
   "/hero-images/hero-4.jpg",
   "/hero-images/hero-5.jpg",
+  "/hero-images/hero-6.jpg",
+  "/hero-images/hero-7.jpg",
 ];
 
 const CYCLE_MS = 8000; // how long each image stays on screen before the next one crossfades in
 
 export default function HeroBackground() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [failedCount, setFailedCount] = useState(0); // how many of the 5 images have failed to load
+  const [failedCount, setFailedCount] = useState(0); // how many images have failed to load
 
   // preload every image once, purely to find out whether the whole set is
   // missing. individual failures don't need any special handling beyond
