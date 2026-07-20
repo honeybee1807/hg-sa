@@ -18,7 +18,6 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
-import GemBackground from "@/components/GemBackground";
 import HeroBackground from "@/components/HeroBackground";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
 
@@ -149,14 +148,13 @@ export default function Hero({ featuredGem }) {
     return () => animationContext.revert();
   }, []);
 
-  // the actual markup: an animated Three.js gem background, then two
-  // columns — the headline/buttons/stats on the left, and either the
-  // decorative mockup or the real Featured Gem on the right (see the
-  // top-of-file note for how those two are switched between by CSS).
+  // the actual markup: the rotating photo background, then two columns —
+  // the headline/buttons/stats on the left, and either the decorative
+  // mockup or the real Featured Gem on the right (see the top-of-file note
+  // for how those two are switched between by CSS).
   return (
     <section className="hero" ref={ref}>
       <HeroBackground />
-      <GemBackground />
       <div className="hero-bg" aria-hidden="true">
         <div className="hero-dot-grid" />
         <div className="hero-glow-rose" />
