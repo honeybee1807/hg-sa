@@ -20,9 +20,6 @@ const IMAGE_PATHS = [
   "/hero-images/hero-2.jpg",
   "/hero-images/hero-3.jpg",
   "/hero-images/hero-4.jpg",
-  "/hero-images/hero-5.jpg",
-  "/hero-images/hero-6.jpg",
-  "/hero-images/hero-7.jpg",
 ];
 
 const CYCLE_MS = 8000; // how long each image stays on screen before the next one crossfades in
