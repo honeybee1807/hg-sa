@@ -11,6 +11,13 @@
   --aquamarine:     #2EC4B6;
   --pearl:          #F5F0EB;
 
+  /* the header and footer both use this one fixed navy, rather than each
+     borrowing a colour from whatever section happens to sit next to them
+     (the footer previously matched the CTA band above it exactly, so the
+     two visually merged into one block) — this keeps them reading as a
+     consistent, distinct "chrome" bookending the page. */
+  --chrome-navy:    #0A1730;
+
   --font-heading: var(--font-playfair), "Playfair Display", Georgia, serif;
   --font-body:    var(--font-inter), Inter, system-ui, sans-serif;
 
@@ -271,7 +278,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .navbar {
-  background: #080e1c;
+  background: var(--chrome-navy);
   border-bottom: 1px solid rgba(255,255,255,0.06);
   box-shadow: 0 2px 16px rgba(0,0,0,0.45);
 }
@@ -343,7 +350,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.5rem 0 1rem;
     border-bottom: 1px solid rgba(0,0,0,0.08);
   }
-  .navbar-links { background: #080e1c; border-color: rgba(255,255,255,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+  .navbar-links { background: var(--chrome-navy); border-color: rgba(255,255,255,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
   .navbar-links--open { display: flex; }
   .navbar-links a { padding: 0.75rem 1.5rem; width: 100%; }
   .navbar-cta { margin: 0.5rem 1.5rem 0; width: auto !important; }
@@ -711,7 +718,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 /* ─── footer ───────────────────────────────────────────────────────── */
 .footer {
-  background: var(--sapphire-deep);
+  background: var(--chrome-navy);
   color: rgba(255,255,255,0.75);
   padding: 3rem 0 2rem;
   margin-top: auto;
