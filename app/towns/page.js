@@ -61,7 +61,7 @@ export default async function TownsPage() {
         <div className="container">
           <div className="section-header">
             <h1>Browse by Town</h1>
-            <p>Discover local businesses across KwaZulu-Natal.</p>
+            <p>Discover local businesses across our KwaZulu-Natal towns — more South African towns coming soon.</p>
           </div>
 
           <div className="hub-grid">

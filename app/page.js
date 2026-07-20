@@ -77,7 +77,7 @@ const faqItems = [
   {
     question: "Which areas does Hidden Gems SA cover?",
     answer:
-      `We serve ${TOWNS.length} KwaZulu-Natal towns: ${TOWNS.slice(0, -1).join(", ")} and ${TOWNS[TOWNS.length - 1]}.`,
+      `We currently serve ${TOWNS.length} KwaZulu-Natal towns: ${TOWNS.slice(0, -1).join(", ")} and ${TOWNS[TOWNS.length - 1]} — with more South African towns coming soon.`,
   },
   {
     question: "How do I get my business listed on Hidden Gems SA?",
@@ -87,7 +87,7 @@ const faqItems = [
   {
     question: "What types of businesses are listed?",
     answer:
-      "Any legitimate local business in KZN — home bakers, tutors, transport operators, hairstylists, plumbers, electricians, cleaning services, photographers, event planners, tailors, IT support and more.",
+      "Any legitimate local business in South Africa — home bakers, tutors, transport operators, hairstylists, plumbers, electricians, cleaning services, photographers, event planners, tailors, IT support and more.",
   },
   {
     question: "How do I contact a business listed on Hidden Gems SA?",
@@ -248,7 +248,7 @@ export default async function HomePage() {
               <h2>
                 <i className="fa-solid fa-gem" style={{ color: "#9966CC" }} /> Featured Gem of the Week
               </h2>
-              <p>Spotlight on an outstanding KwaZulu-Natal local business</p>
+              <p>Spotlight on an outstanding South African local business</p>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={0.1}>
@@ -278,7 +278,7 @@ export default async function HomePage() {
           <AnimatedSection>
             <div className="section-header home-section-header">
               <h2>Browse by Category</h2>
-              <p>Find the type of business you&apos;re looking for across KwaZulu-Natal</p>
+              <p>Find the type of business you&apos;re looking for across South Africa</p>
             </div>
           </AnimatedSection>
           <AnimatedSection stagger className="grid-4 cat-grid">
@@ -308,7 +308,7 @@ export default async function HomePage() {
           <AnimatedSection>
             <div className="section-header home-section-header">
               <h2>Browse by Town</h2>
-              <p>Discover local businesses in your KwaZulu-Natal community</p>
+              <p>Discover local businesses across our KwaZulu-Natal towns — more South African towns coming soon</p>
             </div>
           </AnimatedSection>
           <AnimatedSection stagger className="towns-grid">

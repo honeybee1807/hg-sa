@@ -6,7 +6,7 @@
 // to the database with a "pending" status, ready for an admin to review.
 
 import supabase from "@/lib/supabase";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, TOWNS } from "@/lib/constants";
 
 // a quick-to-check list of every valid category name — used below to catch
 // someone submitting a category that isn't one of the real options (which
@@ -98,11 +98,17 @@ export async function submitBusiness(formData) {
   // approval. it won't appear anywhere on the public site until then. the
   // "on behalf of" details are only saved when they're actually relevant —
   // for someone listing their own business, both are stored as empty.
+  // only the 12 listed KwaZulu-Natal towns are known to be in that
+  // province — anyone who typed in their own town via the "Somewhere else
+  // in South Africa" option could be anywhere, so their province is left
+  // unset rather than guessed.
+  const province = TOWNS.includes(town) ? "KwaZulu-Natal" : null;
+
   const { error } = await supabase.from("businesses").insert({
     name,
     category,
     town,
-    province:    "KwaZulu-Natal",
+    province,
     whatsapp:    normalizedWhatsapp,
     website:     website || null,
     description,

@@ -27,7 +27,7 @@ export default function FeaturedGemCard({ gem }) {
           <div className="featured-gem-info">
             <h3 className="featured-gem-empty-heading">Could this be your business?</h3>
             <p className="featured-gem-desc">
-              Every Monday we spotlight an outstanding KwaZulu-Natal business — completely free.
+              Every Monday we spotlight an outstanding South African business — completely free.
               Submit your listing and you could be featured next.
             </p>
             <Link href="/submit" className="btn-primary featured-gem-cta">

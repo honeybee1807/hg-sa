@@ -17,7 +17,7 @@ import { useEffect, useState } from "react";
 const PHRASES = [
   "Uncovering local gems...",
   "Finding the businesses your neighbours trust...",
-  "Digging through KwaZulu-Natal...",
+  "Digging through South Africa...",
   "Every gem was hidden once...",
   "Your community's best, coming right up...",
   "Almost there — good things take a moment...",

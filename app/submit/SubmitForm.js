@@ -30,12 +30,18 @@ const CLOUDINARY_PRESET = "hidden_gems_sa_logos";
 // are listing their own — someone submitting on behalf of another business
 // has to actively switch it to "no".
 const INITIAL = {
-  name: "", category: "", town: "",
+  name: "", category: "", town: "", other_town: "",
   whatsapp: "", website: "", description: "",
   owner_name: "", owner_email: "",
   is_own_business: "yes",
   on_behalf_of_name: "", on_behalf_of_reason: "",
 };
+
+// the value used for the town dropdown's "somewhere else in South Africa"
+// option — never sent to the database as-is; whatever the person types
+// into the follow-up text field replaces it before submitting (see
+// handleSubmit below).
+const OTHER_TOWN_VALUE = "__other__";
 
 export default function SubmitForm() {
   const [fields, setFields]       = useState(INITIAL);      // every text field in the form, kept together in one object
@@ -179,9 +185,15 @@ export default function SubmitForm() {
 
     // copy every field currently in state onto the FormData one at a time,
     // rather than one long chained expression, so it's obvious exactly what
-    // is being sent.
+    // is being sent. "town" is the one exception: if someone picked "Other"
+    // in the dropdown, what actually gets sent is whatever they typed into
+    // the follow-up text field, not the placeholder "__other__" value.
     for (const fieldName of Object.keys(fields)) {
-      formDataToSubmit.append(fieldName, fields[fieldName]);
+      if (fieldName === "other_town") continue;
+      const value = fieldName === "town" && fields.town === OTHER_TOWN_VALUE
+        ? fields.other_town
+        : fields[fieldName];
+      formDataToSubmit.append(fieldName, value);
     }
     formDataToSubmit.append("logo_url", logoUrl);
 
@@ -273,9 +285,21 @@ export default function SubmitForm() {
               onChange={set("town")} required>
               <option value="">Select your town...</option>
               {TOWNS.map((t) => <option key={t} value={t}>{t}</option>)}
+              <option value={OTHER_TOWN_VALUE}>Somewhere else in South Africa...</option>
             </select>
           </div>
         </div>
+
+        {/* only shown once someone picks "Somewhere else in South Africa" —
+            for one of the listed KwaZulu-Natal towns, there's nothing more
+            to ask here. */}
+        {fields.town === OTHER_TOWN_VALUE && (
+          <div className="form-group">
+            <label htmlFor="other_town">Your Town <span className="required">*</span></label>
+            <input id="other_town" className="form-control" type="text" value={fields.other_town}
+              onChange={set("other_town")} required placeholder="e.g. Boksburg" />
+          </div>
+        )}
 
         <div className="form-group">
           <label htmlFor="description">

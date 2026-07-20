@@ -19,6 +19,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
 import GemBackground from "@/components/GemBackground";
+import HeroBackground from "@/components/HeroBackground";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
 
 // a hand-written, always-the-same example of what a business listing card
@@ -154,6 +155,7 @@ export default function Hero({ featuredGem }) {
   // top-of-file note for how those two are switched between by CSS).
   return (
     <section className="hero" ref={ref}>
+      <HeroBackground />
       <GemBackground />
       <div className="hero-bg" aria-hidden="true">
         <div className="hero-dot-grid" />
@@ -166,18 +168,18 @@ export default function Hero({ featuredGem }) {
         <div className="hero-left">
           <span className="h-eyebrow">
             <span className="h-eyebrow-dot" />
-            KwaZulu-Natal Business Directory
+            South African Business Directory
           </span>
 
           <h1 className="hero-h1">
-            <span className="h-line-1">Find KZN&apos;s</span>
+            <span className="h-line-1">Find South Africa&apos;s</span>
             <span className="h-line-2">
               <span className="hero-shimmer-text">Hidden Gems</span>
             </span>
           </h1>
 
           <p className="h-sub">
-            Connect with KwaZulu-Natal&apos;s finest home bakers, tutors, transport operators,
+            Connect with South Africa&apos;s finest home bakers, tutors, transport operators,
             hairstylists and more — all completely free.
           </p>
 
@@ -193,7 +195,7 @@ export default function Hero({ featuredGem }) {
           <div className="h-stats">
             <div className="h-stat">
               <span className="h-stat-val hc-towns">0</span>
-              <span className="h-stat-label">KZN Towns</span>
+              <span className="h-stat-label">Towns Covered</span>
             </div>
             <div className="h-stat-sep" />
             <div className="h-stat">
