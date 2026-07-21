@@ -46,6 +46,7 @@ export async function submitBusiness(formData) {
   // leading/trailing spaces.
   const name        = formData.get("name")?.toString().trim();
   const category     = formData.get("category")?.toString().trim();
+  const customCategory = formData.get("custom_category")?.toString().trim();
   const town         = formData.get("town")?.toString().trim();
   const whatsapp      = formData.get("whatsapp")?.toString().trim();
   const website        = formData.get("website")?.toString().trim();
@@ -84,6 +85,14 @@ export async function submitBusiness(formData) {
     return { success: false, error: "Invalid category selected." };
   }
 
+  // "Other" is the one category that needs a follow-up description — for
+  // every other category, whatever came through in this field (there
+  // shouldn't be anything, since the form clears and hides it) is ignored
+  // and saved as null.
+  if (category === "Other" && !customCategory) {
+    return { success: false, error: "Please describe your business category" };
+  }
+
   if (description.length > 200) {
     return { success: false, error: "Description must be 200 characters or fewer." };
   }
@@ -107,6 +116,7 @@ export async function submitBusiness(formData) {
   const { error } = await supabase.from("businesses").insert({
     name,
     category,
+    custom_category:      category === "Other" ? customCategory : null,
     town,
     province,
     whatsapp:    normalizedWhatsapp,

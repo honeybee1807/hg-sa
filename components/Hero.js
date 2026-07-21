@@ -20,6 +20,7 @@ import { gsap } from "gsap";
 import Link from "next/link";
 import HeroBackground from "@/components/HeroBackground";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
+import { TOWNS, CATEGORIES } from "@/lib/constants";
 
 // a hand-written, always-the-same example of what a business listing card
 // looks like. purely decorative — "Y&L Enterprises" is not a real business
@@ -39,7 +40,7 @@ function MockupCard() {
             <strong className="hero-mc-name">Y&amp;L Enterprises</strong>
             <div className="hero-mc-tags">
               <span className="hero-mc-tag hero-mc-tag--cat">
-                <i className="fa-solid fa-bread-slice" /> Baking &amp; Catering
+                <i className="fa-solid fa-utensils" /> Food &amp; Drinks
               </span>
               <span className="hero-mc-tag hero-mc-tag--town">
                 <i className="fa-solid fa-location-dot" /> Ladysmith
@@ -113,15 +114,17 @@ export default function Hero({ featuredGem }) {
         repeat: -1,
       });
 
-      // the three "12 KZN Towns / 10 Categories / 100% Free" numbers count
+      // the three "Towns Covered / Categories / Free to List" numbers count
       // up from zero once the hero loads, rather than just appearing as
       // static text. each one is set up the same way, so this loops over a
       // small list describing all three instead of writing the same setup
-      // code three separate times.
+      // code three separate times. the towns/categories totals come straight
+      // from lib/constants.js, so they can never drift out of sync with the
+      // actual lists shown elsewhere on the site.
       const counters = [
-        { selector: ".hc-towns", finalValue: 12,  suffix: "" },
-        { selector: ".hc-cats",  finalValue: 10,  suffix: "" },
-        { selector: ".hc-free",  finalValue: 100, suffix: "%" },
+        { selector: ".hc-towns", finalValue: TOWNS.length,      suffix: "" },
+        { selector: ".hc-cats",  finalValue: CATEGORIES.length, suffix: "" },
+        { selector: ".hc-free",  finalValue: 100,               suffix: "%" },
       ];
 
       for (const counter of counters) {

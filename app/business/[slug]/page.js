@@ -20,7 +20,7 @@ export const revalidate = 3600; // 3600 seconds = 1 hour
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
-    .select("name, category, town, description, logo_url, slug, website, whatsapp, owner_name, business_detail")
+    .select("name, category, custom_category, town, description, logo_url, slug, website, whatsapp, owner_name, business_detail")
     .eq("status", "approved")
     .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();
@@ -76,21 +76,11 @@ function formatWhatsApp(raw) {
 }
 
 // looks up which little icon (from the Font Awesome, or "FA", icon set)
-// should sit next to a business's category name on its page.
+// should sit next to a business's category name on its page — reuses the
+// same icon already assigned to that category in lib/constants.js, rather
+// than keeping a second, separate list here that could drift out of sync.
 function getCategoryIcon(categoryName) {
-  const CATEGORIES_MAP = {
-    "Baking & Catering":    "fa-bread-slice",
-    "Tutoring & Education": "fa-graduation-cap",
-    "Transport & Delivery": "fa-car",
-    "Beauty & Hair":        "fa-scissors",
-    "Health & Wellness":    "fa-heart-pulse",
-    "Trades & Repairs":     "fa-wrench",
-    "Clothing & Fashion":   "fa-shirt",
-    "Cleaning Services":    "fa-broom",
-    "Photography & Events": "fa-camera",
-    "General Services":     "fa-star",
-  };
-  return CATEGORIES_MAP[categoryName] ?? "fa-store";
+  return CATEGORIES.find((c) => c.name === categoryName)?.icon ?? "fa-solid fa-store";
 }
 
 export default async function BusinessPage({ params }) {
@@ -187,8 +177,9 @@ export default async function BusinessPage({ params }) {
               <h1 className="biz-name">{biz.name}</h1>
               <div className="biz-meta">
                 <span>
-                  <i className={`fa-solid ${getCategoryIcon(biz.category)}`} />
+                  <i className={getCategoryIcon(biz.category)} />
                   {biz.category}
+                  {biz.category === "Other" && biz.custom_category && ` — ${biz.custom_category}`}
                 </span>
                 <span>
                   <i className="fa-solid fa-location-dot" />

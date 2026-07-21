@@ -30,7 +30,7 @@ const CLOUDINARY_PRESET = "hidden_gems_sa_logos";
 // are listing their own — someone submitting on behalf of another business
 // has to actively switch it to "no".
 const INITIAL = {
-  name: "", category: "", town: "", other_town: "",
+  name: "", category: "", custom_category: "", town: "", other_town: "",
   whatsapp: "", website: "", description: "",
   owner_name: "", owner_email: "",
   is_own_business: "yes",
@@ -104,6 +104,20 @@ export default function SubmitForm() {
         [field]: event.target.value,
       }));
     };
+  }
+
+  // the category dropdown needs one extra step beyond the generic set()
+  // above: the moment someone switches away from "Other", whatever they'd
+  // typed into the custom-category field is stale and must be cleared —
+  // otherwise it could linger in state and get submitted for an unrelated
+  // category if the field were ever hidden without being reset.
+  function handleCategoryChange(event) {
+    const newCategory = event.target.value;
+    setFields((previousFields) => ({
+      ...previousFields,
+      category: newCategory,
+      custom_category: newCategory === "Other" ? previousFields.custom_category : "",
+    }));
   }
 
   // runs the moment someone picks a photo from their device. it doesn't
@@ -185,14 +199,23 @@ export default function SubmitForm() {
 
     // copy every field currently in state onto the FormData one at a time,
     // rather than one long chained expression, so it's obvious exactly what
-    // is being sent. "town" is the one exception: if someone picked "Other"
-    // in the dropdown, what actually gets sent is whatever they typed into
-    // the follow-up text field, not the placeholder "__other__" value.
+    // is being sent. two exceptions:
+    //  - "town": if someone picked "Other" in the town dropdown, what
+    //    actually gets sent is whatever they typed into the follow-up text
+    //    field, not the placeholder "__other__" value.
+    //  - "custom_category": only ever sent when the category itself is
+    //    "Other" — for any other category it's blanked out here as a last
+    //    line of defence, even though the field is already cleared the
+    //    moment the category selection changes away from "Other" (see
+    //    set("category") below).
     for (const fieldName of Object.keys(fields)) {
       if (fieldName === "other_town") continue;
-      const value = fieldName === "town" && fields.town === OTHER_TOWN_VALUE
-        ? fields.other_town
-        : fields[fieldName];
+      let value = fields[fieldName];
+      if (fieldName === "town" && fields.town === OTHER_TOWN_VALUE) {
+        value = fields.other_town;
+      } else if (fieldName === "custom_category" && fields.category !== "Other") {
+        value = "";
+      }
       formDataToSubmit.append(fieldName, value);
     }
     formDataToSubmit.append("logo_url", logoUrl);
@@ -271,7 +294,7 @@ export default function SubmitForm() {
           <div className="form-group">
             <label htmlFor="category">Category <span className="required">*</span></label>
             <select id="category" className="form-control" value={fields.category}
-              onChange={set("category")} required>
+              onChange={handleCategoryChange} required>
               <option value="">Select a category...</option>
               {CATEGORIES.map((c) => (
                 <option key={c.slug} value={c.name}>{c.name}</option>
@@ -289,6 +312,16 @@ export default function SubmitForm() {
             </select>
           </div>
         </div>
+
+        {/* only shown once someone picks "Other" as their category — for
+            any of the listed categories, there's nothing more to ask here. */}
+        {fields.category === "Other" && (
+          <div className="form-group">
+            <label htmlFor="custom_category">Please describe your category <span className="required">*</span></label>
+            <input id="custom_category" className="form-control" type="text" value={fields.custom_category}
+              onChange={set("custom_category")} required placeholder="e.g. Pet Grooming" />
+          </div>
+        )}
 
         {/* only shown once someone picks "Somewhere else in South Africa" —
             for one of the listed KwaZulu-Natal towns, there's nothing more

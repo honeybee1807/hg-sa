@@ -26,7 +26,7 @@ async function getAllBusinesses() {
   const db = getAdminClient();
   const { data } = await db
     .from("businesses")
-    .select("id, name, category, town, province, whatsapp, description, owner_name, owner_email, logo_url, status, review_note, slug, is_own_business, on_behalf_of_name, on_behalf_of_reason")
+    .select("id, name, category, custom_category, town, province, whatsapp, description, owner_name, owner_email, logo_url, status, review_note, slug, is_own_business, on_behalf_of_name, on_behalf_of_reason")
     .order("created_at", { ascending: false }) // newest submissions first
   return data ?? [];
 }

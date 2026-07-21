@@ -450,6 +450,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
                       </div>
                       <p className="admin-biz-meta">
                         <i className="fa-solid fa-tag" /> {biz.category}
+                        {biz.category === "Other" && biz.custom_category && ` (${biz.custom_category})`}
                         <span className="admin-meta-sep">·</span>
                         <i className="fa-solid fa-location-dot" /> {biz.town.split(",")[0]}, KZN
                       </p>
