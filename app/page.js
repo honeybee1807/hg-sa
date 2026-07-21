@@ -272,7 +272,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* browse by category — 12 categories covering all major kzn business types */}
+      {/* browse by category — 14 categories covering all major kzn business types */}
       <section className="home-section home-section--inset">
         <div className="container">
           <AnimatedSection>

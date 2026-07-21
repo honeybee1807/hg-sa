@@ -40,7 +40,7 @@ function MockupCard() {
             <strong className="hero-mc-name">Y&amp;L Enterprises</strong>
             <div className="hero-mc-tags">
               <span className="hero-mc-tag hero-mc-tag--cat">
-                <i className="fa-solid fa-utensils" /> Food &amp; Drinks
+                <i className="fa-solid fa-bread-slice" /> Baking &amp; Catering
               </span>
               <span className="hero-mc-tag hero-mc-tag--town">
                 <i className="fa-solid fa-location-dot" /> Ladysmith

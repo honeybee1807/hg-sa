@@ -42,7 +42,7 @@ export default async function sitemap() {
     };
   });
 
-  // one sitemap entry per category page, e.g. .../category/food-drinks
+  // one sitemap entry per category page, e.g. .../category/baking-catering
   const categoryPages = CATEGORIES.map((category) => ({
     url: `${SITE_URL}/category/${category.slug}`,
     lastModified: today,

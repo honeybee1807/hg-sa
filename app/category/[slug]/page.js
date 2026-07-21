@@ -1,5 +1,5 @@
 // this is the page shown at hiddengemssa.co.za/category/whatever-slug —
-// e.g. /category/food-drinks — listing every approved business in one
+// e.g. /category/baking-catering — listing every approved business in one
 // category, plus a small FAQ section written specifically for that
 // category (see faqItems further down).
 
@@ -12,7 +12,7 @@ import { CATEGORIES, SITE_URL } from "@/lib/constants";
 // rebuild this page at most once an hour.
 export const revalidate = 3600;
 
-// turns the web-address version of a category (e.g. "food-drinks")
+// turns the web-address version of a category (e.g. "baking-catering")
 // back into the full category record from lib/constants.js.
 function slugToCategory(slug) {
   return CATEGORIES.find((c) => c.slug === slug) ?? null;
@@ -29,7 +29,7 @@ async function getBusinessesByCategory(categoryName) {
   return data ?? [];
 }
 
-// tells Next.js every category page that exists, so all 12 can be
+// tells Next.js every category page that exists, so all 14 can be
 // pre-built ahead of time.
 export async function generateStaticParams() {
   return CATEGORIES.map((cat) => ({ slug: cat.slug }));
