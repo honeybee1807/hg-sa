@@ -83,11 +83,11 @@ export default function DirectorySearch({ businesses }) {
   const [filtersOpen, setFiltersOpen] = useState(false); // whether the filter panel is currently showing
   const [openSections, setOpenSections] = useState({ category: true, province: true, businessType: true }); // which of the panel's three collapsible sections are expanded
 
-  // which of the three layouts is currently selected. starts as "grid2"
+  // which of the three layouts is currently selected. starts as "list"
   // (the default) so the very first server-rendered frame is predictable —
   // the effect below then swaps in whatever was actually saved from a
   // previous visit, once the page has loaded in the browser.
-  const [view, setView] = useState("grid2");
+  const [view, setView] = useState("list");
   const [isMobile, setIsMobile] = useState(false); // whether the screen is currently narrow enough to hide the compact-grid option
 
   const filterWrapRef = useRef(null); // points at the button + panel together, used to detect clicks landing outside both
@@ -146,11 +146,11 @@ export default function DirectorySearch({ businesses }) {
   }, [filtersOpen]);
 
   // the compact grid doesn't make sense on a narrow screen (there's no room
-  // for 3-4 columns), so on mobile it quietly falls back to the regular
-  // 2-column grid instead — without touching the actual saved preference,
-  // so the compact grid is exactly where they left it next time they're
-  // back on a wider screen.
-  const effectiveView = view === "compact" && isMobile ? "grid2" : view;
+  // for 3-4 columns), so on mobile it quietly falls back to list view
+  // instead — without touching the actual saved preference, so the compact
+  // grid is exactly where they left it next time they're back on a wider
+  // screen.
+  const effectiveView = view === "compact" && isMobile ? "list" : view;
 
   // opening the panel copies whatever's currently applied into the pending
   // (checkbox) state, so re-opening it after closing without applying shows
