@@ -31,18 +31,36 @@ async function getAllBusinesses() {
   return data ?? [];
 }
 
-// fetches whichever business is currently featured (if any), so the admin
-// panel can show who's featured right now at the top of the page.
+// fetches whichever business was most recently set as featured, so the
+// admin panel can show it at the top of the page — whether that feature is
+// still active or has since expired (unlike the public homepage's version
+// of this query, in app/page.js, which only ever wants an active one, this
+// one deliberately does NOT filter by "featured_until" still being in the
+// future, so the admin can see an expired gem and its "Expired" status
+// rather than the section just going blank once the week is up).
 async function getCurrentFeatured() {
   const db = getAdminClient();
   const { data } = await db
     .from("featured_gem")
     .select(`*, businesses(id, name, category, area, province, logo_url, slug, whatsapp, instagram, facebook, owner_name)`)
-    .gte("featured_until", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   return data;
+}
+
+// fetches the 5 featured-gem records before the current one, for the
+// admin panel's collapsible "Recent History" list. ".range(1, 5)" (after
+// sorting newest-first) skips row 0 — the current gem, already covered by
+// getCurrentFeatured() above — and returns the next 5.
+async function getFeaturedHistory() {
+  const db = getAdminClient();
+  const { data } = await db
+    .from("featured_gem")
+    .select(`id, created_at, featured_until, businesses(id, name)`)
+    .order("created_at", { ascending: false })
+    .range(1, 5);
+  return data ?? [];
 }
 
 export default async function AdminPage() {
@@ -52,17 +70,19 @@ export default async function AdminPage() {
   const isLoggedIn = await isAdminAuthed();
   if (!isLoggedIn) return <LoginForm />;
 
-  // fetch both things at once, rather than one after the other, so the
-  // page loads a little faster.
-  const [businesses, currentFeatured] = await Promise.all([
+  // fetch all three at once, rather than one after the other, so the page
+  // loads a little faster.
+  const [businesses, currentFeatured, featuredHistory] = await Promise.all([
     getAllBusinesses(),
     getCurrentFeatured(),
+    getFeaturedHistory(),
   ]);
 
   return (
     <AdminPanel
       businesses={businesses}
       currentFeatured={currentFeatured}
+      featuredHistory={featuredHistory}
     />
   );
 }

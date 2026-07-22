@@ -191,6 +191,12 @@ h1, h2, h3, h4, h5, h6 {
 .badge-approved { background: #D1FAE5; color: #065F46; }
 .badge-rejected { background: #FEE2E2; color: #991B1B; }
 
+/* featured-gem status — same tone as the badges above (green = good,
+   red = needs attention, grey = neutral/nothing set) */
+.badge-active   { background: #D1FAE5; color: #065F46; }
+.badge-expired  { background: #FEE2E2; color: #991B1B; }
+.badge-not-set  { background: #F3F4F6; color: #6b7280; }
+
 /* ─── section spacing ──────────────────────────────────────────────── */
 .section {
   padding: 4rem 0;
@@ -937,7 +943,34 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   gap: 0.5rem;
 }
 
-/* featured gem */
+/* featured gem — Area 1: Currently Featured (the most prominent of the
+   three areas; no border/tint of its own, so it reads as the "resting"
+   view rather than a mode the admin has stepped into) */
+.admin-feat-current-block { margin-bottom: 1.5rem; }
+
+.admin-feat-current-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-feat-current-heading h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--sapphire-deep);
+}
+
+.admin-feat-updating {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-left: auto;
+}
+
 .admin-feat-current {
   display: flex;
   align-items: center;
@@ -947,7 +980,6 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   padding: 1rem;
   background: var(--sapphire-pale);
   border-radius: var(--radius);
-  margin-bottom: 1.25rem;
 }
 
 .admin-feat-info {
@@ -956,9 +988,20 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   gap: 0.75rem;
 }
 
+.admin-feat-info-text { min-width: 0; }
 .admin-feat-info strong { display: block; }
 .admin-feat-info p      { font-size: 0.85rem; color: #6b7280; }
-.admin-feat-until       { color: var(--sapphire) !important; font-weight: 600; }
+
+.admin-feat-countdown {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 0.15rem;
+}
+.admin-feat-countdown--active   { color: #065F46; }
+.admin-feat-countdown--expired  { color: #991B1B; }
 
 .admin-feat-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
@@ -967,7 +1010,38 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   background-size: 200% 100%;
 }
 
-.admin-feat-empty { color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem; }
+/* the richer "nothing featured right now" state — replaces the old
+   one-line text with something that matches the weight of the card it's
+   standing in for. */
+.admin-feat-empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: #F9FAFB;
+  border: 1px dashed #e5e7eb;
+  border-radius: var(--radius);
+  color: #6b7280;
+}
+.admin-feat-empty-state i { font-size: 1.75rem; color: #d1d5db; margin-bottom: 0.6rem; display: block; }
+.admin-feat-empty-state p { font-weight: 600; color: #374151; margin-bottom: 0.2rem; }
+.admin-feat-empty-state span { font-size: 0.85rem; }
+
+/* featured gem — Area 2: Set This Week's Gem. deliberately given its own
+   tinted, bordered box so it always reads as a distinct "change mode",
+   never mistaken for part of the Area 1 status display above it. */
+.admin-feat-set-section {
+  background: #F9FAFB;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-feat-set-heading {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--sapphire-deep);
+  margin-bottom: 0.85rem;
+}
 
 .admin-feat-controls {
   display: flex;
@@ -1008,6 +1082,57 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .admin-search-result:last-child { border-bottom: none; }
 
 .admin-pick-btn { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+
+/* featured gem — Area 3: Recently Featured. collapsed by default, so it
+   stays out of the way of the two areas above it that matter far more
+   day-to-day. */
+.admin-feat-history { border-top: 1px solid #e5e7eb; padding-top: 1rem; }
+
+.admin-feat-history-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+}
+.admin-feat-history-toggle:hover { color: var(--sapphire); }
+.admin-feat-history-toggle span { display: flex; align-items: center; gap: 0.4rem; }
+
+.admin-feat-history-empty {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 0.75rem;
+}
+
+.admin-feat-history-list {
+  list-style: none;
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-feat-history-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  padding: 0.6rem 0.75rem;
+  background: #F9FAFB;
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+}
+
+.admin-feat-history-name { font-weight: 600; color: #374151; flex: 1; min-width: 120px; }
+.admin-feat-history-date { display: flex; align-items: center; gap: 0.3rem; color: #6b7280; }
+.admin-feat-history-duration { color: #6b7280; }
 
 /* tabs */
 .admin-tabs {

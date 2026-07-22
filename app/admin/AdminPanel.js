@@ -27,7 +27,36 @@ import { instagramUrl, facebookUrl } from "@/lib/social";
 // the four tabs above the business list.
 const TABS = ["pending", "approved", "rejected", "all"];
 
-export default function AdminPanel({ businesses, currentFeatured }) {
+// works out the traffic-light status shown for the currently-featured gem
+// (see the "Currently Featured Gem" card below): green "active" while
+// featured_until is still in the future, red "expired" once it's passed,
+// or grey "not-set" if there's no featured_gem row at all yet. also builds
+// the matching countdown line shown under the business's name.
+function getFeaturedStatus(gem) {
+  if (!gem) return { tone: "not-set", label: "Not Set", countdown: null };
+
+  const msRemaining = new Date(gem.featured_until).getTime() - Date.now();
+  if (msRemaining <= 0) {
+    return { tone: "expired", label: "Expired", countdown: "Expired — no gem currently set" };
+  }
+
+  const daysRemaining = Math.floor(msRemaining / (24 * 60 * 60 * 1000));
+  const countdown = daysRemaining < 1
+    ? "Expires today"
+    : `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} remaining`;
+  return { tone: "active", label: "Active", countdown };
+}
+
+// how many days a past featured_gem record actually ran for, from when it
+// was created to when it was set to expire — almost always 7, but computed
+// rather than hardcoded in case that ever changes (e.g. an admin manually
+// replacing a gem partway through its week).
+function formatFeaturedDuration(createdAt, featuredUntil) {
+  const days = Math.round((new Date(featuredUntil) - new Date(createdAt)) / (24 * 60 * 60 * 1000));
+  return `${days} day${days === 1 ? "" : "s"}`;
+}
+
+export default function AdminPanel({ businesses, currentFeatured, featuredHistory }) {
   const router  = useRouter();
   // "isPending" here just means "we're waiting for the page to refresh
   // itself after a change" — nothing to do with a business's "pending"
@@ -45,6 +74,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
   const [searchResults, setSearchResults] = useState([]);     // matching businesses for that search
   const [searching, setSearching]     = useState(false);      // true while that search is in progress
   const [message, setMessage]         = useState(null);       // the small "Approved!" / error banner shown after an action
+  const [historyOpen, setHistoryOpen] = useState(false);       // whether the "Recent History" list is expanded — collapsed by default
 
   // only show businesses matching the currently selected tab (or
   // everything, if the "all" tab is selected).
@@ -305,6 +335,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
   }
 
   const featBiz = currentFeatured?.businesses ?? null;
+  const featuredStatus = getFeaturedStatus(currentFeatured);
 
   // everything from here down is just the visible page itself — the
   // header bar, the featured-gem section, and the list of businesses with
@@ -341,73 +372,134 @@ export default function AdminPanel({ businesses, currentFeatured }) {
             <i className="fa-solid fa-gem text-rose" /> Featured Gem of the Week
           </h2>
 
-          {featBiz ? (
-            <div className="admin-feat-current">
-              <div className="admin-feat-info">
-                {featBiz.logo_url
-                  ? <Image src={featBiz.logo_url} alt="" width={56} height={56} className="avatar" />
-                  : <div className="avatar-monogram">{featBiz.name[0]}</div>}
-                <div>
-                  <strong>{featBiz.name}</strong>
-                  <p>{featBiz.category} · {featBiz.area}, {featBiz.province}</p>
-                  <p className="admin-feat-until">
-                    Until {new Date(currentFeatured.featured_until).toLocaleDateString("en-ZA")}
-                  </p>
+          {/* Area 1 — Currently Featured: the most prominent part of this
+              section, so an admin never has to guess who's live right now,
+              for how much longer, or whether the panel is just slow to
+              load. */}
+          <div className="admin-feat-current-block">
+            <div className="admin-feat-current-heading">
+              <h3>Currently Featured Gem</h3>
+              <span className={`badge badge-${featuredStatus.tone}`}>{featuredStatus.label}</span>
+              {isPending && (
+                <span className="admin-feat-updating">
+                  <i className="fa-solid fa-spinner fa-spin" /> Updating...
+                </span>
+              )}
+            </div>
+
+            {featBiz ? (
+              <div className="admin-feat-current">
+                <div className="admin-feat-info">
+                  {featBiz.logo_url
+                    ? <Image src={featBiz.logo_url} alt="" width={56} height={56} className="avatar" />
+                    : <div className="avatar-monogram">{featBiz.name[0]}</div>}
+                  <div className="admin-feat-info-text">
+                    <strong>{featBiz.name}</strong>
+                    <p>{featBiz.category} · {featBiz.area}, {featBiz.province}</p>
+                    <p className={`admin-feat-countdown admin-feat-countdown--${featuredStatus.tone}`}>
+                      <i className="fa-solid fa-clock" /> {featuredStatus.countdown}
+                    </p>
+                  </div>
+                </div>
+                <div className="admin-feat-actions">
+                  {featBiz.whatsapp && (
+                    <a
+                      href={buildWaMessage(featBiz)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary admin-wa-btn"
+                    >
+                      <i className="fa-brands fa-whatsapp" /> Notify Owner
+                    </a>
+                  )}
+                  <button
+                    className="btn-secondary"
+                    onClick={() => downloadGraphic(featBiz)}
+                  >
+                    <i className="fa-solid fa-download" /> Download Graphic
+                  </button>
                 </div>
               </div>
-              <div className="admin-feat-actions">
-                {featBiz.whatsapp && (
-                  <a
-                    href={buildWaMessage(featBiz)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary admin-wa-btn"
-                  >
-                    <i className="fa-brands fa-whatsapp" /> Notify Owner
-                  </a>
+            ) : (
+              <div className="admin-feat-empty-state">
+                <i className="fa-solid fa-gem" />
+                <p>No business is currently featured.</p>
+                <span>Use &ldquo;Set This Week&apos;s Gem&rdquo; below to choose one.</span>
+              </div>
+            )}
+          </div>
+
+          {/* Area 2 — Set This Week's Gem: visually separated (border +
+              tinted background) from Area 1 above, so it always reads as
+              "change mode" rather than part of the current-status display. */}
+          <div className="admin-feat-set-section">
+            <h3 className="admin-feat-set-heading">Set This Week&apos;s Gem</h3>
+            <div className="admin-feat-controls">
+              <button className="btn-primary" onClick={handleAutoSelect} disabled={isPending}>
+                <i className="fa-solid fa-rotate" /> Auto-select
+              </button>
+
+              <div className="admin-feat-search">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search to manually feature a business..."
+                  value={featSearch}
+                  onChange={handleFeatSearch}
+                />
+                {searching && <p className="admin-searching">Searching...</p>}
+                {searchResults.length > 0 && (
+                  <ul className="admin-search-results">
+                    {searchResults.map((b) => (
+                      <li key={b.id} className="admin-search-result">
+                        <span><strong>{b.name}</strong> — {b.area}, {b.province}</span>
+                        <button
+                          className="btn-primary admin-pick-btn"
+                          onClick={() => handleSetFeatured(b.id)}
+                        >
+                          Feature
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-                <button
-                  className="btn-secondary"
-                  onClick={() => downloadGraphic(featBiz)}
-                >
-                  <i className="fa-solid fa-download" /> Download Graphic
-                </button>
               </div>
             </div>
-          ) : (
-            <p className="admin-feat-empty">No featured gem set this week.</p>
-          )}
+          </div>
 
-          <div className="admin-feat-controls">
-            <button className="btn-primary" onClick={handleAutoSelect} disabled={isPending}>
-              <i className="fa-solid fa-rotate" /> Auto-select This Week&apos;s Gem
+          {/* Area 3 — Recently Featured: collapsed by default so it stays
+              out of the way of the two areas above, which matter far more
+              day-to-day. */}
+          <div className="admin-feat-history">
+            <button
+              type="button"
+              className="admin-feat-history-toggle"
+              onClick={() => setHistoryOpen((open) => !open)}
+              aria-expanded={historyOpen}
+            >
+              <span><i className="fa-solid fa-clock-rotate-left" /> Recent History</span>
+              <i className={`fa-solid ${historyOpen ? "fa-chevron-up" : "fa-chevron-down"}`} />
             </button>
 
-            <div className="admin-feat-search">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search to manually set featured gem..."
-                value={featSearch}
-                onChange={handleFeatSearch}
-              />
-              {searching && <p className="admin-searching">Searching...</p>}
-              {searchResults.length > 0 && (
-                <ul className="admin-search-results">
-                  {searchResults.map((b) => (
-                    <li key={b.id} className="admin-search-result">
-                      <span><strong>{b.name}</strong> — {b.area}, {b.province}</span>
-                      <button
-                        className="btn-primary admin-pick-btn"
-                        onClick={() => handleSetFeatured(b.id)}
-                      >
-                        Set Featured
-                      </button>
+            {historyOpen && (
+              featuredHistory.length === 0 ? (
+                <p className="admin-feat-history-empty">No past featured gems yet.</p>
+              ) : (
+                <ul className="admin-feat-history-list">
+                  {featuredHistory.map((gem) => (
+                    <li key={gem.id} className="admin-feat-history-row">
+                      <span className="admin-feat-history-name">{gem.businesses?.name ?? "Deleted business"}</span>
+                      <span className="admin-feat-history-date">
+                        <i className="fa-solid fa-calendar" /> {new Date(gem.created_at).toLocaleDateString("en-ZA")}
+                      </span>
+                      <span className="admin-feat-history-duration">
+                        Featured for {formatFeaturedDuration(gem.created_at, gem.featured_until)}
+                      </span>
                     </li>
                   ))}
                 </ul>
-              )}
-            </div>
+              )
+            )}
           </div>
         </section>
 
