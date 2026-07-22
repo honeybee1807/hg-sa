@@ -1,41 +1,54 @@
-// this is the page at hiddengemssa.co.za/towns — the "browse by town" hub,
-// showing all 12 towns as clickable cards with a live count of how many
-// approved businesses are in each one.
+// this is the page at hiddengemssa.co.za/towns — the "browse by area" hub.
+// unlike the category list, areas are no longer a fixed set picked ahead of
+// time — anyone can submit a business from anywhere in South Africa (see
+// app/submit/SubmitForm.js), so this page is built from whatever distinct
+// areas actually have an approved business right now, discovered fresh from
+// the database rather than looped from a constant.
 
 import Link from "next/link";
-import { TOWNS, SITE_URL } from "@/lib/constants";
+import { SITE_URL } from "@/lib/constants";
 import supabase from "@/lib/supabase";
 
 export const metadata = {
-  title: "Browse by Town — KwaZulu-Natal Local Businesses",
-  description: "Find local businesses in KwaZulu-Natal towns — Ladysmith, Pietermaritzburg, Dundee, Harrismith and more.",
+  title: "Browse by Area — South African Local Businesses",
+  description: "Find local South African businesses by area, suburb, or town.",
   alternates: { canonical: `${SITE_URL}/towns` },
 };
 
 export const revalidate = 3600;
 
-// counts how many approved businesses are in each town, so each card can
-// show something like "8 businesses". returns an object that looks like
-// { "Ladysmith": 8, "Estcourt": 3, ... }.
-async function getCountsByTown() {
+// finds every distinct area with at least one approved business, how many
+// businesses are in it, and which province it's in — returns an array like
+// [{ area: "Umhlanga", province: "KwaZulu-Natal", count: 3 }, ...],
+// sorted alphabetically by area name.
+async function getAreaSummaries() {
   const { data: approvedBusinesses } = await supabase
     .from("businesses")
-    .select("town")
+    .select("area, province")
     .eq("status", "approved");
 
-  if (!approvedBusinesses) return {};
+  if (!approvedBusinesses) return [];
 
-  // start with an empty tally, then go through every approved business one
-  // at a time, adding 1 to that business's town count. some older records
-  // store the town with extra text after it (like "Estcourt, KwaZulu-
-  // Natal"), so only the part before the first comma is used.
-  const countByTown = {};
+  // tally businesses per area, remembering that area's province along the
+  // way. some older records may store the area with extra text after it
+  // (like "Estcourt, KwaZulu-Natal"), so only the part before the first
+  // comma is used as the grouping key.
+  const summaryByArea = new Map();
   for (const business of approvedBusinesses) {
-    const townNameOnly = business.town.split(",")[0].trim();
-    const currentCount = countByTown[townNameOnly] ?? 0;
-    countByTown[townNameOnly] = currentCount + 1;
+    const areaNameOnly = business.area?.split(",")[0]?.trim();
+    if (!areaNameOnly) continue;
+
+    const existing = summaryByArea.get(areaNameOnly);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      summaryByArea.set(areaNameOnly, { province: business.province, count: 1 });
+    }
   }
-  return countByTown;
+
+  return [...summaryByArea.entries()]
+    .map(([area, { province, count }]) => ({ area, province, count }))
+    .sort((a, b) => a.area.localeCompare(b.area));
 }
 
 const jsonLd = {
@@ -43,12 +56,12 @@ const jsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home",  item: SITE_URL },
-    { "@type": "ListItem", position: 2, name: "Towns", item: `${SITE_URL}/towns` },
+    { "@type": "ListItem", position: 2, name: "Areas", item: `${SITE_URL}/towns` },
   ],
 };
 
 export default async function TownsPage() {
-  const counts = await getCountsByTown();
+  const areaSummaries = await getAreaSummaries();
 
   return (
     <>
@@ -60,21 +73,24 @@ export default async function TownsPage() {
       <section className="section">
         <div className="container">
           <div className="section-header">
-            <h1>Browse by Town</h1>
-            <p>Discover local businesses across our KwaZulu-Natal towns — more South African towns coming soon.</p>
+            <h1>Browse by Area</h1>
+            <p>
+              {areaSummaries.length > 0
+                ? "Discover local businesses across South Africa."
+                : "No areas listed yet — be the first to list your business."}
+            </p>
           </div>
 
           <div className="hub-grid">
-            {TOWNS.map((town) => {
-              const slug = town.toLowerCase().replace(/\s+/g, "-");
-              const count = counts[town] ?? 0;
+            {areaSummaries.map(({ area, province, count }) => {
+              const slug = area.toLowerCase().replace(/\s+/g, "-");
               return (
-                <Link key={town} href={`/town/${slug}`} className="hub-card">
+                <Link key={area} href={`/town/${slug}`} className="hub-card">
                   <div className="hub-card-icon">
                     <i className="fa-solid fa-location-dot" />
                   </div>
                   <div className="hub-card-body">
-                    <span className="hub-card-name">{town}</span>
+                    <span className="hub-card-name">{area}, {province}</span>
                     <span className="hub-card-count">
                       {count} {count === 1 ? "business" : "businesses"}
                     </span>

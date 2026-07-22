@@ -2,7 +2,7 @@
 
 // the big banner section at the very top of the homepage: the headline,
 // the "browse directory" / "list for free" buttons, three animated
-// counters (towns/categories/free), and — on the right-hand side — a
+// counters (areas/categories/free), and — on the right-hand side — a
 // preview of what a business listing looks like.
 //
 // that right-hand preview is actually two different things depending on
@@ -20,7 +20,7 @@ import { gsap } from "gsap";
 import Link from "next/link";
 import HeroBackground from "@/components/HeroBackground";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
-import { TOWNS, CATEGORIES } from "@/lib/constants";
+import { CATEGORIES } from "@/lib/constants";
 
 // a hand-written, always-the-same example of what a business listing card
 // looks like. purely decorative — "Y&L Enterprises" is not a real business
@@ -66,7 +66,7 @@ function MockupCard() {
   );
 }
 
-export default function Hero({ featuredGem }) {
+export default function Hero({ featuredGem, areaCount }) {
   const ref = useRef(null); // points at the outer <section>, used to scope all of the animations below to just this component
 
   useEffect(() => {
@@ -114,15 +114,17 @@ export default function Hero({ featuredGem }) {
         repeat: -1,
       });
 
-      // the three "Towns Covered / Categories / Free to List" numbers count
+      // the three "Areas Covered / Categories / Free to List" numbers count
       // up from zero once the hero loads, rather than just appearing as
       // static text. each one is set up the same way, so this loops over a
       // small list describing all three instead of writing the same setup
-      // code three separate times. the towns/categories totals come straight
-      // from lib/constants.js, so they can never drift out of sync with the
-      // actual lists shown elsewhere on the site.
+      // code three separate times. the categories total comes straight from
+      // lib/constants.js so it can never drift out of sync; the areas total
+      // is passed in as a prop (see app/page.js) since areas are no longer
+      // a fixed list — it's however many distinct areas currently have an
+      // approved business.
       const counters = [
-        { selector: ".hc-towns", finalValue: TOWNS.length,      suffix: "" },
+        { selector: ".hc-towns", finalValue: areaCount,          suffix: "" },
         { selector: ".hc-cats",  finalValue: CATEGORIES.length, suffix: "" },
         { selector: ".hc-free",  finalValue: 100,               suffix: "%" },
       ];
@@ -149,7 +151,7 @@ export default function Hero({ featuredGem }) {
     }, ref);
 
     return () => animationContext.revert();
-  }, []);
+  }, [areaCount]);
 
   // the actual markup: the rotating photo background, then two columns —
   // the headline/buttons/stats on the left, and either the decorative
@@ -196,7 +198,7 @@ export default function Hero({ featuredGem }) {
           <div className="h-stats">
             <div className="h-stat">
               <span className="h-stat-val hc-towns">0</span>
-              <span className="h-stat-label">Towns Covered</span>
+              <span className="h-stat-label">Areas Covered</span>
             </div>
             <div className="h-stat-sep" />
             <div className="h-stat">

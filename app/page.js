@@ -1,12 +1,12 @@
 // this is the homepage — hiddengemssa.co.za itself. it fetches the current
 // featured business and the full list of approved businesses, then lays out
 // every section a visitor sees: the hero banner, the featured business,
-// the live search, the category and town browsing grids, the "built by
+// the live search, the category and area browsing grids, the "built by
 // Olideen" panel, the FAQ, and the closing call-to-action.
 
 import Link from "next/link";
 import supabase from "@/lib/supabase";
-import { CATEGORIES, TOWNS, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
+import { CATEGORIES, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
 import Hero from "@/components/Hero";
 import OlideenPromo from "@/components/OlideenPromo";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
@@ -40,7 +40,7 @@ export const metadata = {
 async function getFeaturedGem() {
   const { data } = await supabase
     .from("featured_gem")
-    .select(`*, businesses(id, name, category, town, logo_url, slug, description)`)
+    .select(`*, businesses(id, name, category, area, province, logo_url, slug, description)`)
     .gte("featured_until", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(1)
@@ -54,12 +54,32 @@ async function getFeaturedGem() {
 async function getAllApprovedBusinesses() {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, town, logo_url, slug, description")
+    .select("id, name, category, area, province, logo_url, slug, description")
     .eq("status", "approved")
     .order("name");
   // if the lookup failed for some reason, show an empty list rather than
   // crashing the page.
   return data ?? [];
+}
+
+// finds every distinct area with at least one approved business, for the
+// homepage's "Browse by Area" pills — areas aren't a fixed list (see
+// lib/constants.js), so this asks the database rather than looping over a
+// constant. mirrors the same logic in app/towns/page.js.
+async function getAreaSummaries() {
+  const { data: approvedBusinesses } = await supabase
+    .from("businesses")
+    .select("area")
+    .eq("status", "approved");
+
+  if (!approvedBusinesses) return [];
+
+  const areasWithoutDuplicates = new Set(
+    approvedBusinesses
+      .map((business) => business.area?.split(",")[0]?.trim())
+      .filter(Boolean)
+  );
+  return [...areasWithoutDuplicates].sort();
 }
 
 // the questions and answers shown in the FAQ section near the bottom of the
@@ -77,7 +97,7 @@ const faqItems = [
   {
     question: "Which areas does Hidden Gems SA cover?",
     answer:
-      `We currently serve ${TOWNS.length} KwaZulu-Natal towns: ${TOWNS.slice(0, -1).join(", ")} and ${TOWNS[TOWNS.length - 1]} — with more South African towns coming soon.`,
+      "Hidden Gems SA covers all of South Africa — businesses can list from any area, suburb, or town in any province. Browse by Area to see exactly which areas currently have approved listings.",
   },
   {
     question: "How do I get my business listed on Hidden Gems SA?",
@@ -97,7 +117,7 @@ const faqItems = [
   {
     question: "Where can I find local businesses in Ladysmith or Pietermaritzburg?",
     answer:
-      "Visit the Towns section, select your town (e.g. Ladysmith or Pietermaritzburg), and browse all approved local businesses in that area. You can also filter by category.",
+      "Visit the Areas section, select your area (e.g. Ladysmith or Pietermaritzburg), and browse all approved local businesses there. You can also filter by province or category.",
   },
   {
     question: "Who runs Hidden Gems SA?",
@@ -122,7 +142,7 @@ const jsonLd = {
       "url": SITE_URL,
       "name": "Hidden Gems SA",
       "description":
-        `Free local business directory for KwaZulu-Natal, South Africa — find home bakers, tutors, transport, beauty services, trades and more across ${TOWNS.length} KZN towns.`,
+        "Free local business directory for South Africa — find home bakers, tutors, transport, beauty services, trades and more in any area, suburb, or town in any province.",
       "inLanguage": "en-ZA",
       "publisher": {
         "@type": "Organization",
@@ -143,9 +163,8 @@ const jsonLd = {
         "query-input": "required name=search_term_string",
       },
       "areaServed": {
-        "@type": "State",
-        "name": "KwaZulu-Natal",
-        "alternateName": "KZN",
+        "@type": "Country",
+        "name": "South Africa",
         "addressCountry": "ZA",
       },
     },
@@ -169,7 +188,7 @@ const jsonLd = {
           "@type": "HowToStep",
           "position": 1,
           "name": "Fill in the submission form",
-          "text": "Go to the List Your Business page and enter your business name, category, town, WhatsApp number, description and owner details.",
+          "text": "Go to the List Your Business page and enter your business name, category, area, province, WhatsApp number, description and owner details.",
         },
         {
           "@type": "HowToStep",
@@ -222,11 +241,12 @@ const jsonLd = {
 // are both already loaded by the time anyone sees the page — nothing needs
 // to "pop in" afterwards.
 export default async function HomePage() {
-  // fetch both things at the same time (rather than one after the other)
-  // so the page loads as fast as possible.
-  const [featuredGem, allBusinesses] = await Promise.all([
+  // fetch all three at the same time (rather than one after the other) so
+  // the page loads as fast as possible.
+  const [featuredGem, allBusinesses, areas] = await Promise.all([
     getFeaturedGem(),
     getAllApprovedBusinesses(),
+    getAreaSummaries(),
   ]);
 
   return (
@@ -236,7 +256,7 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Hero featuredGem={featuredGem} />
+      <Hero featuredGem={featuredGem} areaCount={areas.length} />
 
       {/* featured gem of the week — desktop only below 980px; on mobile the
           real card is already shown up in the hero (see Hero.js), so this
@@ -302,35 +322,39 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* browse by town — one clickable "pill" button per KZN town */}
-      <section className="home-section">
-        <div className="container">
-          <AnimatedSection>
-            <div className="section-header home-section-header">
-              <h2>Browse by Town</h2>
-              <p>Discover local businesses across our KwaZulu-Natal towns — more South African towns coming soon</p>
-            </div>
-          </AnimatedSection>
-          <AnimatedSection stagger className="towns-grid">
-            {TOWNS.map((town) => (
-              <Link
-                key={town}
-                href={`/town/${town.toLowerCase().replace(/\s+/g, "-")}`}
-                className="town-pill"
-              >
-                <i className="fa-solid fa-location-dot" /> {town}
-              </Link>
-            ))}
-          </AnimatedSection>
-          <AnimatedSection delay={0.15}>
-            <div className="text-center mt-3">
-              <Link href="/towns" className="btn-rose-outline">
-                <i className="fa-solid fa-map" /> All Towns
-              </Link>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
+      {/* browse by area — one clickable "pill" button per distinct area
+          that currently has an approved business (see getAreaSummaries
+          above); nothing shown at all if no business has been approved yet */}
+      {areas.length > 0 && (
+        <section className="home-section">
+          <div className="container">
+            <AnimatedSection>
+              <div className="section-header home-section-header">
+                <h2>Browse by Area</h2>
+                <p>Discover local businesses across South Africa</p>
+              </div>
+            </AnimatedSection>
+            <AnimatedSection stagger className="towns-grid">
+              {areas.map((area) => (
+                <Link
+                  key={area}
+                  href={`/town/${area.toLowerCase().replace(/\s+/g, "-")}`}
+                  className="town-pill"
+                >
+                  <i className="fa-solid fa-location-dot" /> {area}
+                </Link>
+              ))}
+            </AnimatedSection>
+            <AnimatedSection delay={0.15}>
+              <div className="text-center mt-3">
+                <Link href="/towns" className="btn-rose-outline">
+                  <i className="fa-solid fa-map" /> All Areas
+                </Link>
+              </div>
+            </AnimatedSection>
+          </div>
+        </section>
+      )}
 
       <OlideenPromo />
 

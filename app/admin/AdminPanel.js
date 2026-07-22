@@ -36,6 +36,10 @@ export default function AdminPanel({ businesses, currentFeatured }) {
   const [tab, setTab]                 = useState("pending"); // which tab is currently selected
   const [rejectingId, setRejectingId] = useState(null);       // which business's "reject" form is open, if any
   const [rejectNote, setRejectNote]   = useState("");         // the text typed into that reject form
+  // the admin's edited version of each pending business's area, keyed by
+  // business id — only populated once an admin actually types in that
+  // field. falls back to the submitted value (biz.area) until then.
+  const [editedAreas, setEditedAreas] = useState({});
   const [featSearch, setFeatSearch]   = useState("");         // what's typed in the "search to manually set featured gem" box
   const [searchResults, setSearchResults] = useState([]);     // matching businesses for that search
   const [searching, setSearching]     = useState(false);      // true while that search is in progress
@@ -57,9 +61,13 @@ export default function AdminPanel({ businesses, currentFeatured }) {
     startTransition(() => router.refresh());
   }
 
-  // called when the "Approve" button is clicked on a pending business.
+  // called when the "Approve" button is clicked on a pending business. uses
+  // whatever the admin has typed into the area field (falling back to the
+  // originally submitted value if they didn't touch it) — see the
+  // "Standardise before approving" note shown next to that field.
   async function handleApprove(biz) {
-    const result = await approveBusiness(biz.id, biz.name, biz.town, biz.category);
+    const area = editedAreas[biz.id] ?? biz.area;
+    const result = await approveBusiness(biz.id, biz.name, area, biz.category);
     if (result.success) {
       flash(`Approved — slug: ${result.slug}`);
       refresh();
@@ -238,10 +246,10 @@ export default function AdminPanel({ businesses, currentFeatured }) {
       const nameY = logoCenterY + logoRadius * 2 + 80;
       ctx.fillText(biz.name, 540, nameY);
 
-      // the category and town, just below the name
+      // the category and area, just below the name
       ctx.fillStyle = "rgba(255,255,255,0.75)";
       ctx.font = "36px Arial, sans-serif";
-      ctx.fillText(`${biz.category}  ·  ${biz.town}, KZN`, 540, nameY + 58);
+      ctx.fillText(`${biz.category}  ·  ${biz.area}, ${biz.province}`, 540, nameY + 58);
 
       // the owner's name, if one was given (some businesses don't have one)
       if (biz.owner_name) {
@@ -340,7 +348,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
                   : <div className="avatar-monogram">{featBiz.name[0]}</div>}
                 <div>
                   <strong>{featBiz.name}</strong>
-                  <p>{featBiz.category} · {featBiz.town}</p>
+                  <p>{featBiz.category} · {featBiz.area}, {featBiz.province}</p>
                   <p className="admin-feat-until">
                     Until {new Date(currentFeatured.featured_until).toLocaleDateString("en-ZA")}
                   </p>
@@ -387,7 +395,7 @@ export default function AdminPanel({ businesses, currentFeatured }) {
                 <ul className="admin-search-results">
                   {searchResults.map((b) => (
                     <li key={b.id} className="admin-search-result">
-                      <span><strong>{b.name}</strong> — {b.town}</span>
+                      <span><strong>{b.name}</strong> — {b.area}, {b.province}</span>
                       <button
                         className="btn-primary admin-pick-btn"
                         onClick={() => handleSetFeatured(b.id)}
@@ -452,9 +460,36 @@ export default function AdminPanel({ businesses, currentFeatured }) {
                         <i className="fa-solid fa-tag" /> {biz.category}
                         {biz.category === "Other" && biz.custom_category && ` (${biz.custom_category})`}
                         <span className="admin-meta-sep">·</span>
-                        <i className="fa-solid fa-location-dot" /> {biz.town.split(",")[0]}, KZN
+                        <i className="fa-solid fa-earth-africa" /> {biz.province}
                       </p>
                       {biz.description && <p className="admin-biz-desc">{biz.description}</p>}
+
+                      {/* the area is editable right up until approval, since
+                          it's free text typed by whoever submitted the
+                          listing and often needs standardising (see the
+                          hint below) — after approval there's nothing left
+                          to change it for, so it's shown as plain text. */}
+                      {biz.status === "pending" ? (
+                        <div className="admin-area-edit">
+                          <label htmlFor={`area-${biz.id}`} className="admin-area-edit-label">
+                            <i className="fa-solid fa-location-dot" /> Area
+                          </label>
+                          <input
+                            id={`area-${biz.id}`}
+                            type="text"
+                            className="form-control"
+                            value={editedAreas[biz.id] ?? biz.area}
+                            onChange={(e) => setEditedAreas((prev) => ({ ...prev, [biz.id]: e.target.value }))}
+                          />
+                          <span className="admin-area-hint">
+                            Standardise before approving — e.g. Johannesburg not JHB, Umhlanga not Umlanga
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="admin-biz-area-readonly">
+                          <i className="fa-solid fa-location-dot" /> {biz.area}
+                        </p>
+                      )}
                     </div>
                   </div>
 

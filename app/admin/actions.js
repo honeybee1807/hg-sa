@@ -66,15 +66,15 @@ export async function isAdminAuthed() {
   return cookieOnThisRequest === whatALoggedInCookieShouldBe;
 }
 
-// turns a business name and town into the web-address-friendly text used
+// turns a business name and area into the web-address-friendly text used
 // in a business's URL, e.g. "Thandi's Bakery" in "Ladysmith" becomes
 // "thandis-bakery-ladysmith" so the page lives at
 // hiddengemssa.co.za/business/thandis-bakery-ladysmith
 //
 // this is done as a series of small clean-up steps, each one removing or
 // replacing something that isn't allowed in a web address:
-function generateSlug(name, town) {
-  const combined = `${name}-${town}`;
+function generateSlug(name, area) {
+  const combined = `${name}-${area}`;
 
   // step 1: make everything lowercase, e.g. "Thandi's" -> "thandi's"
   let cleaned = combined.toLowerCase();
@@ -104,13 +104,15 @@ function generateSlug(name, town) {
   return cleaned;
 }
 
-// approves a pending business submission: gives it a web address (slug)
-// and flips its status to "approved" so it starts showing up on the site.
-export async function approveBusiness(id, name, town, category) {
+// approves a pending business submission: saves whatever area the admin
+// last had in the (possibly edited/standardised) area field, gives it a web
+// address (slug) built from that same area, and flips its status to
+// "approved" so it starts showing up on the site.
+export async function approveBusiness(id, name, area, category) {
   if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
 
   const db = getAdminClient();
-  let slug = generateSlug(name, town);
+  let slug = generateSlug(name, area);
 
   // two different businesses could end up wanting the exact same web
   // address (e.g. two different "Thandi's Bakery, Ladysmith" submissions).
@@ -130,7 +132,7 @@ export async function approveBusiness(id, name, town, category) {
 
   const { error } = await db
     .from("businesses")
-    .update({ status: "approved", slug, review_note: null })
+    .update({ status: "approved", slug, area, review_note: null })
     .eq("id", id);
 
   if (error) return { success: false, error: error.message };
@@ -140,13 +142,13 @@ export async function approveBusiness(id, name, town, category) {
   // just changed, throw away the cached version so the next visitor gets a
   // freshly built one." we do this for every page that could now be
   // showing this newly-approved business.
-  const townSlug = town.split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
+  const areaSlug = area.split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
   const categorySlug = CATEGORIES.find((c) => c.name === category)?.slug;
 
   revalidatePath("/");                                    // homepage (search results, counts)
-  revalidatePath("/towns");                                // "browse by town" listing counts
+  revalidatePath("/towns");                                // "browse by area" listing counts
   revalidatePath("/categories");                            // "browse by category" listing counts
-  revalidatePath(`/town/${townSlug}`);                      // this business's own town page
+  revalidatePath(`/town/${areaSlug}`);                      // this business's own area page
   if (categorySlug) revalidatePath(`/category/${categorySlug}`); // this business's own category page
   revalidatePath(`/business/${slug}`);                      // the business's own detail page
   revalidatePath("/admin");                                 // the admin panel's own listing view
@@ -178,7 +180,7 @@ export async function searchBusinesses(query) {
   const db = getAdminClient();
   const { data } = await db
     .from("businesses")
-    .select("id, name, category, town, logo_url, slug, whatsapp, owner_name")
+    .select("id, name, category, area, province, logo_url, slug, whatsapp, owner_name")
     .eq("status", "approved")
     .ilike("name", `%${query}%`)
     .limit(8);

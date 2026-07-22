@@ -6,13 +6,16 @@
 // to the database with a "pending" status, ready for an admin to review.
 
 import supabase from "@/lib/supabase";
-import { CATEGORIES, TOWNS } from "@/lib/constants";
+import { CATEGORIES, PROVINCES } from "@/lib/constants";
 
 // a quick-to-check list of every valid category name — used below to catch
 // someone submitting a category that isn't one of the real options (which
 // shouldn't be possible through the form itself, but is an easy, cheap
 // safety check in case the form is ever bypassed).
 const VALID_CATEGORIES = new Set(CATEGORIES.map((c) => c.name));
+
+// same idea, for the province dropdown.
+const VALID_PROVINCES = new Set(PROVINCES);
 
 // turns a WhatsApp number typed in any common format into the one format
 // WhatsApp's own links understand: digits only, starting with the "27"
@@ -47,7 +50,8 @@ export async function submitBusiness(formData) {
   const name        = formData.get("name")?.toString().trim();
   const category     = formData.get("category")?.toString().trim();
   const customCategory = formData.get("custom_category")?.toString().trim();
-  const town         = formData.get("town")?.toString().trim();
+  const province     = formData.get("province")?.toString().trim();
+  const area          = formData.get("area")?.toString().trim();
   const whatsapp      = formData.get("whatsapp")?.toString().trim();
   const website        = formData.get("website")?.toString().trim();
   const description   = formData.get("description")?.toString().trim();
@@ -65,7 +69,7 @@ export async function submitBusiness(formData) {
 
   // check every required field actually has something in it. (website,
   // owner_email, and logo_url are allowed to be empty — they're optional.)
-  const aRequiredFieldIsMissing = !name || !category || !town || !whatsapp || !description || !owner_name;
+  const aRequiredFieldIsMissing = !name || !category || !province || !area || !whatsapp || !description || !owner_name;
   if (aRequiredFieldIsMissing) {
     return { success: false, error: "Please fill in all required fields." };
   }
@@ -83,6 +87,10 @@ export async function submitBusiness(formData) {
 
   if (!VALID_CATEGORIES.has(category)) {
     return { success: false, error: "Invalid category selected." };
+  }
+
+  if (!VALID_PROVINCES.has(province)) {
+    return { success: false, error: "Invalid province selected." };
   }
 
   // "Other" is the one category that needs a follow-up description — for
@@ -107,17 +115,11 @@ export async function submitBusiness(formData) {
   // approval. it won't appear anywhere on the public site until then. the
   // "on behalf of" details are only saved when they're actually relevant —
   // for someone listing their own business, both are stored as empty.
-  // only the 12 listed KwaZulu-Natal towns are known to be in that
-  // province — anyone who typed in their own town via the "Somewhere else
-  // in South Africa" option could be anywhere, so their province is left
-  // unset rather than guessed.
-  const province = TOWNS.includes(town) ? "KwaZulu-Natal" : null;
-
   const { error } = await supabase.from("businesses").insert({
     name,
     category,
     custom_category:      category === "Other" ? customCategory : null,
-    town,
+    area,
     province,
     whatsapp:    normalizedWhatsapp,
     website:     website || null,

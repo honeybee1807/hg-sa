@@ -15,7 +15,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { submitBusiness } from "./actions";
-import { CATEGORIES, TOWNS } from "@/lib/constants";
+import { CATEGORIES, PROVINCES } from "@/lib/constants";
 
 // where uploaded logos get sent, and which "upload preset" (a pre-configured
 // set of rules on the Cloudinary side — image size limits, allowed formats,
@@ -30,18 +30,12 @@ const CLOUDINARY_PRESET = "hidden_gems_sa_logos";
 // are listing their own — someone submitting on behalf of another business
 // has to actively switch it to "no".
 const INITIAL = {
-  name: "", category: "", custom_category: "", town: "", other_town: "",
+  name: "", category: "", custom_category: "", province: "", area: "",
   whatsapp: "", website: "", description: "",
   owner_name: "", owner_email: "",
   is_own_business: "yes",
   on_behalf_of_name: "", on_behalf_of_reason: "",
 };
-
-// the value used for the town dropdown's "somewhere else in South Africa"
-// option — never sent to the database as-is; whatever the person types
-// into the follow-up text field replaces it before submitting (see
-// handleSubmit below).
-const OTHER_TOWN_VALUE = "__other__";
 
 export default function SubmitForm() {
   const [fields, setFields]       = useState(INITIAL);      // every text field in the form, kept together in one object
@@ -199,23 +193,15 @@ export default function SubmitForm() {
 
     // copy every field currently in state onto the FormData one at a time,
     // rather than one long chained expression, so it's obvious exactly what
-    // is being sent. two exceptions:
-    //  - "town": if someone picked "Other" in the town dropdown, what
-    //    actually gets sent is whatever they typed into the follow-up text
-    //    field, not the placeholder "__other__" value.
-    //  - "custom_category": only ever sent when the category itself is
-    //    "Other" — for any other category it's blanked out here as a last
-    //    line of defence, even though the field is already cleared the
-    //    moment the category selection changes away from "Other" (see
-    //    set("category") below).
+    // is being sent. "custom_category" is the one exception: only ever sent
+    // when the category itself is "Other" — for any other category it's
+    // blanked out here as a last line of defence, even though the field is
+    // already cleared the moment the category selection changes away from
+    // "Other" (see handleCategoryChange above).
     for (const fieldName of Object.keys(fields)) {
-      if (fieldName === "other_town") continue;
-      let value = fields[fieldName];
-      if (fieldName === "town" && fields.town === OTHER_TOWN_VALUE) {
-        value = fields.other_town;
-      } else if (fieldName === "custom_category" && fields.category !== "Other") {
-        value = "";
-      }
+      const value = fieldName === "custom_category" && fields.category !== "Other"
+        ? ""
+        : fields[fieldName];
       formDataToSubmit.append(fieldName, value);
     }
     formDataToSubmit.append("logo_url", logoUrl);
@@ -303,14 +289,20 @@ export default function SubmitForm() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="town">Town <span className="required">*</span></label>
-            <select id="town" className="form-control" value={fields.town}
-              onChange={set("town")} required>
-              <option value="">Select your town...</option>
-              {TOWNS.map((t) => <option key={t} value={t}>{t}</option>)}
-              <option value={OTHER_TOWN_VALUE}>Somewhere else in South Africa...</option>
+            <label htmlFor="province">Province <span className="required">*</span></label>
+            <select id="province" className="form-control" value={fields.province}
+              onChange={set("province")} required>
+              <option value="">Select your province...</option>
+              {PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="area">Area / Suburb / Town <span className="required">*</span></label>
+          <input id="area" className="form-control" type="text" value={fields.area}
+            onChange={set("area")} required placeholder="e.g. Umhlanga, Estcourt, Sandton" />
+          <span className="form-hint">Type the area, suburb, or town your business operates in</span>
         </div>
 
         {/* only shown once someone picks "Other" as their category — for
@@ -320,17 +312,6 @@ export default function SubmitForm() {
             <label htmlFor="custom_category">Please describe your category <span className="required">*</span></label>
             <input id="custom_category" className="form-control" type="text" value={fields.custom_category}
               onChange={set("custom_category")} required placeholder="e.g. Pet Grooming" />
-          </div>
-        )}
-
-        {/* only shown once someone picks "Somewhere else in South Africa" —
-            for one of the listed KwaZulu-Natal towns, there's nothing more
-            to ask here. */}
-        {fields.town === OTHER_TOWN_VALUE && (
-          <div className="form-group">
-            <label htmlFor="other_town">Your Town <span className="required">*</span></label>
-            <input id="other_town" className="form-control" type="text" value={fields.other_town}
-              onChange={set("other_town")} required placeholder="e.g. Boksburg" />
           </div>
         )}
 

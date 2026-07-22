@@ -20,7 +20,7 @@ export const revalidate = 3600; // 3600 seconds = 1 hour
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
-    .select("name, category, custom_category, town, description, logo_url, slug, website, whatsapp, owner_name, business_detail")
+    .select("name, category, custom_category, area, province, description, logo_url, slug, website, whatsapp, owner_name, business_detail")
     .eq("status", "approved")
     .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();
@@ -48,8 +48,8 @@ export async function generateMetadata({ params }) {
   if (!biz) return { title: "Business Not Found" };
 
   return {
-    title: `${biz.name} — ${biz.category} in ${biz.town}`,
-    description: biz.description ?? `${biz.name} is a local business in ${biz.town}, KwaZulu-Natal.`,
+    title: `${biz.name} — ${biz.category} in ${biz.area}, ${biz.province} | Hidden Gems SA`,
+    description: biz.description ?? `${biz.name} is a local business in ${biz.area}, ${biz.province}.`,
     alternates: { canonical: `${SITE_URL}/business/${biz.slug}` },
     openGraph: {
       title: biz.name,
@@ -93,7 +93,11 @@ export default async function BusinessPage({ params }) {
   const initial = biz.name[0].toUpperCase(); // fallback monogram letter, used if there's no logo
   const waNumber = formatWhatsApp(biz.whatsapp);
   const catSlug = CATEGORIES.find((c) => c.name === biz.category)?.slug ?? "";
-  const townSlug = biz.town.split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
+  // some older records may store the area with extra text after it (like
+  // "Estcourt, KwaZulu-Natal" instead of just "Estcourt") — only the part
+  // before the first comma is the actual area name.
+  const areaName = biz.area.split(",")[0].trim();
+  const areaSlug = areaName.toLowerCase().replace(/\s+/g, "-");
 
   // the hidden, machine-readable description of this business (see the
   // longer explanation of structured data / JSON-LD in app/page.js) —
@@ -111,8 +115,8 @@ export default async function BusinessPage({ params }) {
         url: biz.website ?? undefined,
         address: {
           "@type": "PostalAddress",
-          addressLocality: biz.town,
-          addressRegion: "KwaZulu-Natal",
+          addressLocality: areaName,
+          addressRegion: biz.province,
           addressCountry: "ZA",
         },
         ...(waNumber && {
@@ -123,7 +127,7 @@ export default async function BusinessPage({ params }) {
             contactType: "customer service",
           },
         }),
-        areaServed: { "@type": "AdministrativeArea", name: biz.town },
+        areaServed: { "@type": "AdministrativeArea", name: areaName },
         knowsAbout: biz.category,
       },
       {
@@ -183,7 +187,7 @@ export default async function BusinessPage({ params }) {
                 </span>
                 <span>
                   <i className="fa-solid fa-location-dot" />
-                  {biz.town.split(",")[0]}, KZN
+                  {areaName}, {biz.province}
                 </span>
               </div>
             </div>
@@ -261,10 +265,10 @@ export default async function BusinessPage({ params }) {
               <i className="fa-solid fa-map" /> Location
             </h2>
             <p>
-              <Link href={`/town/${townSlug}`} className="biz-town-link">
-                {biz.town.split(",")[0]}
+              <Link href={`/town/${areaSlug}`} className="biz-town-link">
+                {areaName}
               </Link>
-              , KwaZulu-Natal
+              , {biz.province}
             </p>
           </div>
         </aside>

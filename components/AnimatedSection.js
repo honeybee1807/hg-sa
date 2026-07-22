@@ -2,7 +2,7 @@
 
 // a reusable wrapper that makes whatever is inside it gently fade and slide
 // upward into view the moment it scrolls onto the screen. used all over the
-// site (category grid, town grid, FAQ, etc.) so that animation only needs
+// site (category grid, area grid, FAQ, etc.) so that animation only needs
 // to be built once here rather than repeated everywhere.
 //
 // on phones and small tablets (screens 767px wide or narrower) this

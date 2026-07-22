@@ -26,7 +26,7 @@ export default function Footer() {
         {/* nav links */}
         <nav className="footer-links">
           <Link href="/">Home</Link>
-          <Link href="/towns">Browse by Town</Link>
+          <Link href="/towns">Browse by Area</Link>
           <Link href="/categories">Browse by Category</Link>
           <Link href="/submit">Submit a Business</Link>
         </nav>

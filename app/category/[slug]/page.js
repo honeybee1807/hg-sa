@@ -22,7 +22,7 @@ function slugToCategory(slug) {
 async function getBusinessesByCategory(categoryName) {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, town, logo_url, slug, description")
+    .select("id, name, category, area, province, logo_url, slug, description")
     .eq("status", "approved")
     .eq("category", categoryName)
     .order("name");
@@ -40,8 +40,8 @@ export async function generateMetadata({ params }) {
   const cat = slugToCategory(slug);
   if (!cat) return { title: "Category Not Found" };
   return {
-    title: `${cat.name} — KwaZulu-Natal Local Businesses`,
-    description: `Browse local ${cat.name.toLowerCase()} businesses in KwaZulu-Natal. Free directory by Hidden Gems SA.`,
+    title: `${cat.name} — South African Local Businesses`,
+    description: `Browse local ${cat.name.toLowerCase()} businesses across South Africa. Free directory by Hidden Gems SA.`,
     alternates: { canonical: `${SITE_URL}/category/${slug}` },
   };
 }
@@ -53,13 +53,13 @@ export default async function CategoryPage({ params }) {
 
   const businesses = await getBusinessesByCategory(cat.name);
 
-  // build the list of distinct towns that actually have a business in this
+  // build the list of distinct areas that actually have a business in this
   // category, so the FAQ answer below can name them specifically (e.g.
   // "we list baking businesses in Estcourt, Ladysmith..."). "new Set(...)"
-  // is just a quick way to remove duplicate town names before sorting
+  // is just a quick way to remove duplicate area names before sorting
   // them alphabetically.
-  const townNamesWithoutDuplicates = new Set(businesses.map((b) => b.town.split(",")[0].trim()));
-  const towns = [...townNamesWithoutDuplicates].sort();
+  const areaNamesWithoutDuplicates = new Set(businesses.map((b) => b.area.split(",")[0].trim()));
+  const areas = [...areaNamesWithoutDuplicates].sort();
 
   const catLower = cat.name.toLowerCase();
 
@@ -67,11 +67,11 @@ export default async function CategoryPage({ params }) {
   // answer a real search like "where can I find a caterer in Estcourt".
   const faqItems = [
     {
-      question: `Where can I find ${catLower} businesses in KwaZulu-Natal?`,
+      question: `Where can I find ${catLower} businesses in South Africa?`,
       answer:
-        towns.length > 0
-          ? `Hidden Gems SA currently lists ${businesses.length} approved ${catLower} ${businesses.length === 1 ? "business" : "businesses"} in ${towns.join(", ")}. Browse the full list above, or visit the Towns page to search by area.`
-          : `Hidden Gems SA is currently building its ${catLower} directory for KwaZulu-Natal. Check back soon, or list your own ${catLower} business for free.`,
+        areas.length > 0
+          ? `Hidden Gems SA currently lists ${businesses.length} approved ${catLower} ${businesses.length === 1 ? "business" : "businesses"} in ${areas.join(", ")}. Browse the full list above, or visit the Areas page to search by area.`
+          : `Hidden Gems SA is currently building its ${catLower} directory. Check back soon, or list your own ${catLower} business for free.`,
     },
     {
       question: `Is it free to list a ${catLower} business on Hidden Gems SA?`,
@@ -100,7 +100,7 @@ export default async function CategoryPage({ params }) {
       },
       {
         "@type": "ItemList",
-        name: `${cat.name} businesses in KwaZulu-Natal`,
+        name: `${cat.name} businesses in South Africa`,
         itemListElement: businesses.map((b, i) => ({
           "@type": "ListItem",
           position: i + 1,
@@ -120,7 +120,7 @@ export default async function CategoryPage({ params }) {
         "@type": "WebPage",
         "@id": `${SITE_URL}/category/${slug}#webpage`,
         url: `${SITE_URL}/category/${slug}`,
-        name: `${cat.name} — KwaZulu-Natal Local Businesses`,
+        name: `${cat.name} — South African Local Businesses`,
         speakable: {
           "@type": "SpeakableSpecification",
           cssSelector: [".page-faq-question", ".page-faq-answer"],
@@ -195,6 +195,10 @@ export default async function CategoryPage({ params }) {
 
 function BusinessCard({ biz }) {
   const initial = biz.name[0].toUpperCase();
+  // some older records may store the area with extra text after it (like
+  // "Estcourt, KwaZulu-Natal" instead of just "Estcourt") — only the part
+  // before the first comma is the actual area name.
+  const areaName = biz.area.split(",")[0].trim();
   return (
     <Link href={`/business/${biz.slug}`} className="listing-card">
       <div className="listing-card-logo">
@@ -207,7 +211,7 @@ function BusinessCard({ biz }) {
       <div className="listing-card-body">
         <h3 className="listing-card-name">{biz.name}</h3>
         <p className="listing-card-meta">
-          <span><i className="fa-solid fa-location-dot" /> {biz.town.split(",")[0]}</span>
+          <span><i className="fa-solid fa-location-dot" /> {areaName}, {biz.province}</span>
         </p>
         {biz.description && (
           <p className="listing-card-desc">{biz.description}</p>

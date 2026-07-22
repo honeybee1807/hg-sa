@@ -67,7 +67,7 @@ export default function FeaturedGemCard({ gem }) {
           <h3>{biz.name}</h3>
           <p className="featured-gem-meta">
             <span><i className="fa-solid fa-tag" /> {biz.category}</span>
-            <span><i className="fa-solid fa-location-dot" /> {biz.town}, KZN</span>
+            <span><i className="fa-solid fa-location-dot" /> {biz.area}, {biz.province}</span>
           </p>
           {biz.description && (
             <p className="featured-gem-desc">{biz.description}</p>
