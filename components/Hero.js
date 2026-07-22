@@ -2,71 +2,19 @@
 
 // the big banner section at the very top of the homepage: the headline,
 // the "browse directory" / "list for free" buttons, three animated
-// counters (areas/categories/free), and — on the right-hand side — a
-// preview of what a business listing looks like.
-//
-// that right-hand preview is actually two different things depending on
-// screen size (decided purely by CSS, both exist in the markup at once):
-//   - on desktop (980px and wider): MockupCard below, a purely decorative,
-//     hand-written example card that never changes — it exists just to
-//     show what a listing looks like, it is NOT a real business
-//   - on mobile (below 980px): the decorative mockup is hidden, and the
-//     REAL current Featured Gem card (see [[FeaturedGemCard]]) is promoted
-//     up into the hero instead, so mobile visitors still see something
-//     real and current rather than losing this space entirely
-
+// counters (areas/categories/free), and — on the right-hand side — the
+// real current Featured Gem card (see [[FeaturedGemCard]]), at every screen
+// size. this used to swap between a hand-written decorative mockup on
+// desktop and the real card on mobile, which meant desktop visitors never
+// actually saw live Supabase data in the hero — now it's the same real
+// card (or the genuine "Could this be your business?" placeholder, if none
+// is set) everywhere.
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import Link from "next/link";
 import HeroBackground from "@/components/HeroBackground";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
 import { CATEGORIES } from "@/lib/constants";
-
-// a hand-written, always-the-same example of what a business listing card
-// looks like. purely decorative — "Your Business Name" is a deliberately
-// generic placeholder, not a real business in the database — it's just
-// there to make the hero look populated on desktop screens before any
-// animation or real data loads. named unmistakably as a placeholder so it's
-// never mistaken for leftover fallback data.
-function MockupCard() {
-  return (
-    <div className="hero-mockup">
-      <div className="hero-mockup-glow" aria-hidden="true" />
-      <div className="hero-mockup-card">
-        <div className="hero-mc-gem-badge">
-          <i className="fa-solid fa-gem" /> Featured Gem
-        </div>
-        <div className="hero-mc-header">
-          <div className="hero-mc-avatar">YB</div>
-          <div className="hero-mc-meta">
-            <strong className="hero-mc-name">Your Business Name</strong>
-            <div className="hero-mc-tags">
-              <span className="hero-mc-tag hero-mc-tag--cat">
-                <i className="fa-solid fa-bread-slice" /> Baking &amp; Catering
-              </span>
-              <span className="hero-mc-tag hero-mc-tag--town">
-                <i className="fa-solid fa-location-dot" /> Ladysmith
-              </span>
-            </div>
-          </div>
-        </div>
-        <p className="hero-mc-desc">
-          Homemade meals, event catering &amp; baked goods — trusted by the Ladysmith community since 2019.
-        </p>
-        <div className="hero-mc-actions">
-          <span className="hero-mc-wa">
-            <i className="fa-brands fa-whatsapp" /> WhatsApp
-          </span>
-          <span className="hero-mc-view">
-            View Profile <i className="fa-solid fa-arrow-right" />
-          </span>
-        </div>
-        <div className="hero-mc-glare" aria-hidden="true" />
-      </div>
-      <div className="hero-mockup-shadow-card" aria-hidden="true" />
-    </div>
-  );
-}
 
 export default function Hero({ featuredGem, areaCount }) {
   const ref = useRef(null); // points at the outer <section>, used to scope all of the animations below to just this component
@@ -76,7 +24,7 @@ export default function Hero({ featuredGem, areaCount }) {
       // the entrance sequence: each piece of the hero fades and slides in
       // one after another, in this order — eyebrow tag, first headline
       // line, second headline line, subheading paragraph, the two buttons,
-      // the mockup card, then the three stat numbers. the negative
+      // the featured gem card, then the three stat numbers. the negative
       // "-=0.x" timings make each step start slightly before the previous
       // one finishes, so it reads as one flowing motion rather than a
       // series of separate, disconnected pops.
@@ -98,23 +46,12 @@ export default function Hero({ featuredGem, areaCount }) {
         .fromTo(".h-ctas",
           { y: 16, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, "-=0.35")
-        .fromTo(".hero-mockup",
+        .fromTo(".hero-featured-slot",
           { x: 56, opacity: 0, scale: 0.93 },
           { x: 0, opacity: 1, scale: 1, duration: 1.1, ease: "expo.out" }, "-=0.7")
         .fromTo(".h-stat",
           { y: 12, opacity: 0 },
           { y: 0, opacity: 1, stagger: 0.09, duration: 0.45, ease: "power3.out" }, "-=0.4");
-
-      // once the mockup card has entered, it keeps gently floating up and
-      // down forever (repeat: -1 means "repeat endlessly", yoyo means
-      // "reverse back and forth" rather than snapping back to the start).
-      gsap.to(".hero-mockup-card", {
-        y: -14,
-        duration: 3.8,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1,
-      });
 
       // the three "Areas Covered / Categories / Free to List" numbers count
       // up from zero once the hero loads, rather than just appearing as
@@ -156,9 +93,8 @@ export default function Hero({ featuredGem, areaCount }) {
   }, [areaCount]);
 
   // the actual markup: the rotating photo background, then two columns —
-  // the headline/buttons/stats on the left, and either the decorative
-  // mockup or the real Featured Gem on the right (see the top-of-file note
-  // for how those two are switched between by CSS).
+  // the headline/buttons/stats on the left, and the real Featured Gem card
+  // on the right.
   return (
     <section className="hero" ref={ref}>
       <HeroBackground />
@@ -215,12 +151,8 @@ export default function Hero({ featuredGem, areaCount }) {
           </div>
         </div>
 
-        {/* ── right: mockup (desktop only, decorative) ── */}
-        <MockupCard />
-
-        {/* ── mobile only: the real Featured Gem, promoted up into the hero
-             since the decorative mockup above is hidden below 980px ── */}
-        <div className="hero-mobile-gem">
+        {/* ── right: the real Featured Gem, at every screen size ── */}
+        <div className="hero-featured-slot">
           <FeaturedGemCard gem={featuredGem} />
         </div>
       </div>

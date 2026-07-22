@@ -1,15 +1,15 @@
 // this is the homepage — hiddengemssa.co.za itself. it fetches the current
 // featured business and the full list of approved businesses, then lays out
-// every section a visitor sees: the hero banner, the featured business,
-// the live search, the category and area browsing grids, the "built by
-// Olideen" panel, the FAQ, and the closing call-to-action.
+// every section a visitor sees: the hero banner (which includes the
+// featured business card — see Hero.js), the live search, the category and
+// area browsing grids, the "built by Olideen" panel, the FAQ, and the
+// closing call-to-action.
 
 import Link from "next/link";
 import supabase from "@/lib/supabase";
 import { CATEGORIES, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
 import Hero from "@/components/Hero";
 import OlideenPromo from "@/components/OlideenPromo";
-import FeaturedGemCard from "@/components/FeaturedGemCard";
 import AnimatedSection from "@/components/AnimatedSection";
 import DirectorySearch from "@/components/DirectorySearch";
 
@@ -267,25 +267,6 @@ export default async function HomePage() {
       />
 
       <Hero featuredGem={featuredGem} areaCount={areas.length} />
-
-      {/* featured gem of the week — desktop only below 980px; on mobile the
-          real card is already shown up in the hero (see Hero.js), so this
-          would otherwise duplicate the same business twice on one page */}
-      <section className="home-section featured-gem-section">
-        <div className="container">
-          <AnimatedSection>
-            <div className="section-header home-section-header">
-              <h2>
-                <i className="fa-solid fa-gem" style={{ color: "#9966CC" }} /> Featured Gem of the Week
-              </h2>
-              <p>Spotlight on an outstanding South African local business</p>
-            </div>
-          </AnimatedSection>
-          <AnimatedSection delay={0.1}>
-            <FeaturedGemCard gem={featuredGem} />
-          </AnimatedSection>
-        </div>
-      </section>
 
       {/* search & filter the whole directory — live results, no page reload */}
       <section className="home-section">

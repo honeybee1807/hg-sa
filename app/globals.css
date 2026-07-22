@@ -2246,183 +2246,13 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   background: rgba(255,255,255,0.1);
 }
 
-/* ── hero right — mockup card ──────────────────────────────────── */
-.hero-mockup {
+/* ── hero right — real Featured Gem card slot ─────────────────────── */
+.hero-featured-slot {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-/* real Featured Gem card, promoted into the hero on mobile only —
-   desktop keeps the decorative mockup instead (see @media 980px below) */
-.hero-mobile-gem {
-  display: none;
-}
-
-.hero-mockup-glow {
-  position: absolute;
-  width: 380px;
-  height: 380px;
-  background: radial-gradient(circle, rgba(153,102,204,0.22) 0%, transparent 65%);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  opacity: 0.6;
-  transition: opacity 0.45s ease, transform 0.45s ease;
-}
-
-/* bloom the background glow when hovering the card */
-.hero-mockup:hover .hero-mockup-glow {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1.45);
-}
-
-.hero-mockup-card {
-  position: relative;
-  z-index: 2;
-  background: var(--ink-1);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 20px;
-  padding: 1.75rem;
   width: 100%;
-  max-width: 380px;
-  box-shadow:
-    0 30px 70px rgba(0,0,0,0.55),
-    0 0 0 1px rgba(255,255,255,0.04),
-    inset 0 1px 0 rgba(255,255,255,0.07);
-  transition: box-shadow 0.45s ease, border-color 0.45s ease;
-}
-
-/* pink glow ring that appears on hover */
-.hero-mockup-card:hover {
-  border-color: rgba(153,102,204,0.4);
-  box-shadow:
-    0 30px 70px rgba(0,0,0,0.55),
-    0 0 0 1px rgba(255,255,255,0.04),
-    inset 0 1px 0 rgba(255,255,255,0.07),
-    0 0 32px rgba(153,102,204,0.55),
-    0 0 72px rgba(153,102,204,0.22);
-}
-
-.hero-mc-glare {
-  position: absolute;
-  inset: 0;
-  border-radius: 20px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.hero-mockup-shadow-card {
-  position: absolute;
-  z-index: 1;
-  inset: 12px -8px -8px 8px;
-  background: #060b14;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.04);
-  transform: rotate(2.5deg) scale(0.97);
-}
-
-/* mockup internals */
-.hero-mc-gem-badge {
-  position: absolute;
-  top: -13px;
-  right: 18px;
-  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  padding: 0.22rem 0.8rem;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  box-shadow: 0 2px 12px rgba(153,102,204,0.4);
-}
-
-.hero-mc-header {
-  display: flex;
-  gap: 0.9rem;
-  align-items: flex-start;
-  margin-bottom: 0.9rem;
-}
-
-.hero-mc-avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--amethyst), var(--sapphire));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-heading);
-  font-style: italic;
-  font-weight: 700;
-  font-size: 1rem;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.hero-mc-name {
-  display: block;
-  color: var(--dtext);
-  font-size: 0.97rem;
-  font-weight: 700;
-  margin-bottom: 0.45rem;
-}
-
-.hero-mc-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-
-.hero-mc-tag {
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 0.16rem 0.55rem;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.22rem;
-}
-
-.hero-mc-tag--cat  { background: rgba(153,102,204,0.14); color: var(--amethyst-light); }
-.hero-mc-tag--town { background: rgba(31,148,210,0.14);  color: var(--topaz); }
-
-.hero-mc-desc {
-  color: var(--dtext-2);
-  font-size: 0.83rem;
-  line-height: 1.6;
-  margin-bottom: 1.1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--ink-border);
-}
-
-.hero-mc-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.hero-mc-wa {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: linear-gradient(120deg, #25d366, #128c7e);
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.42rem 0.95rem;
-  border-radius: 8px;
-}
-
-.hero-mc-view {
-  font-size: 0.78rem;
-  color: var(--amethyst-light);
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
 }
 
 /* ── hero responsive ───────────────────────────────────────────── */
@@ -2434,18 +2264,10 @@ details[open] .faq-question::after { transform: rotate(180deg); }
     gap: 3.5rem;
   }
 
-  .hero-mockup { display: none; }
-
-  .hero-mobile-gem {
-    display: block;
-    width: 100%;
+  .hero-featured-slot {
     margin-top: 0.5rem;
     margin-bottom: 1rem;
   }
-
-  /* the real featured gem now lives in the hero on mobile — avoid
-     showing the same business twice on one page */
-  .featured-gem-section { display: none; }
 }
 
 @media (max-width: 560px) {
