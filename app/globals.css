@@ -1155,6 +1155,18 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 .admin-owner-link:hover { color: var(--sapphire); }
 
+.admin-ig-link, .admin-fb-link {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: color 0.2s;
+}
+.admin-ig-link:hover { color: #dd2a7b; }
+.admin-fb-link:hover { color: #1877F2; }
+
 .admin-wa-contact-btn {
   display: inline-flex;
   align-items: center;
@@ -1569,14 +1581,22 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   background: #fff;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  text-decoration: none;
-  color: inherit;
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .listing-card:hover {
   box-shadow: var(--shadow-lg);
   transform: translateX(4px);
+}
+
+.listing-card-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
 }
 
 .listing-card-logo { flex-shrink: 0; }
@@ -1623,6 +1643,29 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .listing-card-arrow { color: #d1d5db; font-size: 0.8rem; flex-shrink: 0; }
 .listing-card:hover .listing-card-arrow { color: var(--sapphire); }
+
+.listing-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ── shared instagram/facebook icon buttons — reused on every listing
+   card style (dir-card, dir-row, listing-card) wherever a business has
+   set one of these fields; sized via the --sm/--md modifier. ── */
+.social-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: #fff;
+}
+.social-icon-btn--instagram { background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af, #515bd4); }
+.social-icon-btn--facebook  { background: #1877F2; }
+.social-icon-btn--sm { width: 30px; height: 30px; font-size: 0.8rem; }
+.social-icon-btn--md { width: 38px; height: 38px; font-size: 1rem; }
 
 .listing-empty {
   text-align: center;
@@ -1736,6 +1779,18 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .biz-web-btn {
   width: 100%;
   justify-content: center;
+}
+
+.biz-ig-btn {
+  width: 100%;
+  justify-content: center;
+  background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af, #515bd4);
+}
+
+.biz-fb-btn {
+  width: 100%;
+  justify-content: center;
+  background: #1877F2;
 }
 
 .biz-no-contact { color: #6b7280; font-size: 0.9rem; }
@@ -2738,17 +2793,28 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .dir-card {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
   padding: 1.25rem;
   background: #fff;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  text-decoration: none;
-  color: inherit;
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .dir-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+
+.dir-card-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.dir-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
 
 .dir-card-top { display: flex; align-items: center; gap: 0.85rem; }
 .dir-card-logo { flex-shrink: 0; }
@@ -2784,15 +2850,16 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 /* the compact grid: same card, tighter everywhere */
 .dir-card--compact {
   padding: 0.75rem;
-  gap: 0.4rem;
 }
 
+.dir-card--compact .dir-card-link { gap: 0.4rem; }
 .dir-card--compact .dir-card-top { gap: 0.6rem; }
 .dir-card--compact .dir-card-name { font-size: 0.88rem; margin-bottom: 0.1rem; }
 .dir-card--compact .dir-card-location { font-size: 0.7rem; }
 .dir-card--compact .dir-card-cat-pill { font-size: 0.65rem; padding: 0.1rem 0.5rem; }
 .dir-card--compact .business-type-badge { font-size: 0.62rem; padding: 0.1rem 0.45rem; }
 .dir-card--compact .dir-card-desc { font-size: 0.75rem; -webkit-line-clamp: 2; }
+.dir-card--compact .dir-card-actions { margin-top: 0.4rem; gap: 0.35rem; }
 
 /* ── row (list view) ── */
 .dir-row {

@@ -7,6 +7,7 @@
 
 import supabase from "@/lib/supabase";
 import { CATEGORIES, PROVINCES } from "@/lib/constants";
+import { normalizeInstagramInput } from "@/lib/social";
 
 // a quick-to-check list of every valid category name — used below to catch
 // someone submitting a category that isn't one of the real options (which
@@ -73,6 +74,8 @@ export async function submitBusiness(formData) {
   const area          = formData.get("area")?.toString().trim();
   const whatsapp      = formData.get("whatsapp")?.toString().trim();
   const website        = formData.get("website")?.toString().trim();
+  const instagram      = formData.get("instagram")?.toString().trim();
+  const facebook        = formData.get("facebook")?.toString().trim();
   const description   = formData.get("description")?.toString().trim();
   const owner_name     = formData.get("owner_name")?.toString().trim();
   const owner_email    = formData.get("owner_email")?.toString().trim();
@@ -163,6 +166,8 @@ export async function submitBusiness(formData) {
     province,
     whatsapp:    normalizedWhatsapp,
     website:     website || null,
+    instagram:   normalizeInstagramInput(instagram),
+    facebook:    facebook || null,
     description,
     owner_name,
     owner_email,

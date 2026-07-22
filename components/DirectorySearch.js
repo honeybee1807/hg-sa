@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CATEGORIES, PROVINCES } from "@/lib/constants";
+import SocialLink from "@/components/SocialLink";
 
 // the options shown in the "Business Type" filter section — kept here
 // rather than in lib/constants.js since this exact list is also
@@ -404,32 +405,42 @@ function DirectoryCard({ biz, compact }) {
   // "Estcourt, KwaZulu-Natal" instead of just "Estcourt") — only the part
   // before the first comma is the actual area name.
   const areaName = biz.area.split(",")[0].trim();
+  const socialSize = compact ? "sm" : "md";
 
   return (
-    <Link href={`/business/${biz.slug}`} className={`dir-card ${compact ? "dir-card--compact" : ""}`}>
-      <div className="dir-card-top">
-        <div className="dir-card-logo">
-          {biz.logo_url ? (
-            <Image src={biz.logo_url} alt={`${biz.name} logo`} width={56} height={56} className="avatar" />
-          ) : (
-            <div className="avatar-monogram">{initial}</div>
-          )}
+    <div className={`dir-card ${compact ? "dir-card--compact" : ""}`}>
+      <Link href={`/business/${biz.slug}`} className="dir-card-link">
+        <div className="dir-card-top">
+          <div className="dir-card-logo">
+            {biz.logo_url ? (
+              <Image src={biz.logo_url} alt={`${biz.name} logo`} width={56} height={56} className="avatar" />
+            ) : (
+              <div className="avatar-monogram">{initial}</div>
+            )}
+          </div>
+          <div className="dir-card-heading">
+            <h3 className="dir-card-name">{biz.name}</h3>
+            <p className="dir-card-location">
+              <i className="fa-solid fa-location-dot" aria-hidden="true" /> {areaName}, {biz.province}
+            </p>
+          </div>
         </div>
-        <div className="dir-card-heading">
-          <h3 className="dir-card-name">{biz.name}</h3>
-          <p className="dir-card-location">
-            <i className="fa-solid fa-location-dot" aria-hidden="true" /> {areaName}, {biz.province}
-          </p>
+
+        <div className="dir-card-tags">
+          <span className="dir-card-cat-pill"><i className="fa-solid fa-tag" aria-hidden="true" /> {biz.category}</span>
+          {biz.business_type && <span className="business-type-badge">{biz.business_type}</span>}
         </div>
-      </div>
 
-      <div className="dir-card-tags">
-        <span className="dir-card-cat-pill"><i className="fa-solid fa-tag" aria-hidden="true" /> {biz.category}</span>
-        {biz.business_type && <span className="business-type-badge">{biz.business_type}</span>}
-      </div>
+        {biz.description && <p className="dir-card-desc">{biz.description}</p>}
+      </Link>
 
-      {biz.description && <p className="dir-card-desc">{biz.description}</p>}
-    </Link>
+      {(biz.instagram || biz.facebook) && (
+        <div className="dir-card-actions">
+          <SocialLink platform="instagram" value={biz.instagram} className={`social-icon-btn social-icon-btn--instagram social-icon-btn--${socialSize}`} iconOnly />
+          <SocialLink platform="facebook" value={biz.facebook} className={`social-icon-btn social-icon-btn--facebook social-icon-btn--${socialSize}`} iconOnly />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -473,6 +484,8 @@ function DirectoryRow({ biz }) {
             <i className="fa-brands fa-whatsapp" aria-hidden="true" />
           </a>
         )}
+        <SocialLink platform="instagram" value={biz.instagram} className="social-icon-btn social-icon-btn--instagram social-icon-btn--md" iconOnly />
+        <SocialLink platform="facebook" value={biz.facebook} className="social-icon-btn social-icon-btn--facebook social-icon-btn--md" iconOnly />
         <Link href={`/business/${biz.slug}`} className="dir-row-view-link">
           <span className="dir-row-view-label">View Profile</span>
           <i className="fa-solid fa-arrow-right" aria-hidden="true" />

@@ -22,6 +22,7 @@ import {
   searchBusinesses,
 } from "./actions";
 import { SITE_URL, OLIDEEN_URL } from "@/lib/constants";
+import { instagramUrl, facebookUrl } from "@/lib/social";
 
 // the four tabs above the business list.
 const TABS = ["pending", "approved", "rejected", "all"];
@@ -508,6 +509,26 @@ export default function AdminPanel({ businesses, currentFeatured }) {
                         className="admin-wa-contact-btn"
                       >
                         <i className="fa-brands fa-whatsapp" /> Contact on WhatsApp
+                      </a>
+                    )}
+                    {instagramUrl(biz.instagram) && (
+                      <a
+                        href={instagramUrl(biz.instagram)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="admin-ig-link"
+                      >
+                        <i className="fa-brands fa-instagram" /> Instagram
+                      </a>
+                    )}
+                    {facebookUrl(biz.facebook) && (
+                      <a
+                        href={facebookUrl(biz.facebook)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="admin-fb-link"
+                      >
+                        <i className="fa-brands fa-facebook" /> Facebook
                       </a>
                     )}
                   </div>

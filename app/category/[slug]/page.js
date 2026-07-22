@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
 import { CATEGORIES, SITE_URL } from "@/lib/constants";
+import SocialLink from "@/components/SocialLink";
 
 // rebuild this page at most once an hour.
 export const revalidate = 3600;
@@ -22,7 +23,7 @@ function slugToCategory(slug) {
 async function getBusinessesByCategory(categoryName) {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description")
+    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook")
     .eq("status", "approved")
     .eq("category", categoryName)
     .order("name");
@@ -200,27 +201,33 @@ function BusinessCard({ biz }) {
   // before the first comma is the actual area name.
   const areaName = biz.area.split(",")[0].trim();
   return (
-    <Link href={`/business/${biz.slug}`} className="listing-card">
-      <div className="listing-card-logo">
-        {biz.logo_url ? (
-          <Image src={biz.logo_url} alt={`${biz.name} logo`} width={56} height={56} className="avatar" />
-        ) : (
-          <div className="avatar-monogram">{initial}</div>
-        )}
+    <div className="listing-card">
+      <Link href={`/business/${biz.slug}`} className="listing-card-link">
+        <div className="listing-card-logo">
+          {biz.logo_url ? (
+            <Image src={biz.logo_url} alt={`${biz.name} logo`} width={56} height={56} className="avatar" />
+          ) : (
+            <div className="avatar-monogram">{initial}</div>
+          )}
+        </div>
+        <div className="listing-card-body">
+          <h3 className="listing-card-name">{biz.name}</h3>
+          <p className="listing-card-meta">
+            <span><i className="fa-solid fa-location-dot" /> {areaName}, {biz.province}</span>
+          </p>
+          {biz.business_type && (
+            <span className="business-type-badge">{biz.business_type}</span>
+          )}
+          {biz.description && (
+            <p className="listing-card-desc">{biz.description}</p>
+          )}
+        </div>
+      </Link>
+      <div className="listing-card-actions">
+        <SocialLink platform="instagram" value={biz.instagram} className="social-icon-btn social-icon-btn--instagram social-icon-btn--sm" iconOnly />
+        <SocialLink platform="facebook" value={biz.facebook} className="social-icon-btn social-icon-btn--facebook social-icon-btn--sm" iconOnly />
+        <i className="fa-solid fa-chevron-right listing-card-arrow" />
       </div>
-      <div className="listing-card-body">
-        <h3 className="listing-card-name">{biz.name}</h3>
-        <p className="listing-card-meta">
-          <span><i className="fa-solid fa-location-dot" /> {areaName}, {biz.province}</span>
-        </p>
-        {biz.business_type && (
-          <span className="business-type-badge">{biz.business_type}</span>
-        )}
-        {biz.description && (
-          <p className="listing-card-desc">{biz.description}</p>
-        )}
-      </div>
-      <i className="fa-solid fa-chevron-right listing-card-arrow" />
-    </Link>
+    </div>
   );
 }

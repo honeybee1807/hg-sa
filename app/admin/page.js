@@ -26,7 +26,7 @@ async function getAllBusinesses() {
   const db = getAdminClient();
   const { data } = await db
     .from("businesses")
-    .select("id, name, category, custom_category, area, province, whatsapp, description, owner_name, owner_email, logo_url, status, review_note, slug, is_own_business, on_behalf_of_name, on_behalf_of_reason")
+    .select("id, name, category, custom_category, area, province, whatsapp, instagram, facebook, description, owner_name, owner_email, logo_url, status, review_note, slug, is_own_business, on_behalf_of_name, on_behalf_of_reason")
     .order("created_at", { ascending: false }) // newest submissions first
   return data ?? [];
 }
@@ -37,7 +37,7 @@ async function getCurrentFeatured() {
   const db = getAdminClient();
   const { data } = await db
     .from("featured_gem")
-    .select(`*, businesses(id, name, category, area, province, logo_url, slug, whatsapp, owner_name)`)
+    .select(`*, businesses(id, name, category, area, province, logo_url, slug, whatsapp, instagram, facebook, owner_name)`)
     .gte("featured_until", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(1)

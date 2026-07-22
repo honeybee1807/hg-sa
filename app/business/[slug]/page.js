@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
 import { SITE_URL, CATEGORIES } from "@/lib/constants";
+import SocialLink from "@/components/SocialLink";
 
 // rebuild a business's page at most once an hour, so a recent admin change
 // (like approving it) shows up reasonably quickly without needing to
@@ -20,7 +21,7 @@ export const revalidate = 3600; // 3600 seconds = 1 hour
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
-    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, owner_name, business_detail")
+    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, instagram, facebook, owner_name, business_detail")
     .eq("status", "approved")
     .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();
@@ -247,7 +248,10 @@ export default async function BusinessPage({ params }) {
               </a>
             )}
 
-            {!waNumber && !biz.website && (
+            <SocialLink platform="instagram" value={biz.instagram} className="btn-primary biz-ig-btn" />
+            <SocialLink platform="facebook" value={biz.facebook} className="btn-primary biz-fb-btn" />
+
+            {!waNumber && !biz.website && !biz.instagram && !biz.facebook && (
               <p className="biz-no-contact">This business hasn&apos;t added contact details yet.</p>
             )}
           </div>

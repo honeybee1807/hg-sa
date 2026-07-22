@@ -180,7 +180,7 @@ export async function searchBusinesses(query) {
   const db = getAdminClient();
   const { data } = await db
     .from("businesses")
-    .select("id, name, category, area, province, logo_url, slug, whatsapp, owner_name")
+    .select("id, name, category, area, province, logo_url, slug, whatsapp, instagram, facebook, owner_name")
     .eq("status", "approved")
     .ilike("name", `%${query}%`)
     .limit(8);

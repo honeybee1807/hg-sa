@@ -63,7 +63,7 @@ const REFERRAL_SOURCES = [
 // has to actively switch it to "no".
 const INITIAL = {
   name: "", category: "", custom_category: "", business_type: "", province: "", area: "",
-  whatsapp: "", website: "", description: "",
+  whatsapp: "", website: "", instagram: "", facebook: "", description: "",
   owner_name: "", owner_email: "", referral_source: "",
   is_own_business: "yes",
   on_behalf_of_name: "", on_behalf_of_reason: "",
@@ -501,6 +501,22 @@ export default function SubmitForm() {
             <label htmlFor="website">Website <span className="optional">(optional)</span></label>
             <input id="website" className="form-control" type="url" value={fields.website}
               onChange={set("website")} placeholder="https://..." />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="instagram">Instagram Profile <span className="optional">(optional)</span></label>
+            <input id="instagram" className="form-control" type="text" value={fields.instagram}
+              onChange={set("instagram")} placeholder="https://instagram.com/yourbusiness or @yourbusiness" />
+            <span className="form-hint">Enter your Instagram handle or full profile link</span>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="facebook">Facebook Page <span className="optional">(optional)</span></label>
+            <input id="facebook" className="form-control" type="text" value={fields.facebook}
+              onChange={set("facebook")} placeholder="https://facebook.com/yourbusiness" />
+            <span className="form-hint">Enter your Facebook page link</span>
           </div>
         </div>
       </div>
