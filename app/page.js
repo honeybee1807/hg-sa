@@ -54,7 +54,7 @@ async function getFeaturedGem() {
 async function getAllApprovedBusinesses() {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description")
+    .select("id, name, category, business_type, area, province, logo_url, slug, description, whatsapp")
     .eq("status", "approved")
     .order("name");
   // if the lookup failed for some reason, show an empty list rather than
