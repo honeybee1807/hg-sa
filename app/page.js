@@ -13,6 +13,16 @@ import FeaturedGemCard from "@/components/FeaturedGemCard";
 import AnimatedSection from "@/components/AnimatedSection";
 import DirectorySearch from "@/components/DirectorySearch";
 
+// always render this page fresh on every request rather than serving a
+// statically-built snapshot — without this, Next.js prerenders the
+// homepage once at build/deploy time and keeps serving that same HTML
+// forever, so a newly-approved business, a newly-picked Featured Gem, or
+// any other change made directly in Supabase (rather than through an
+// admin-panel action that calls revalidatePath) would never show up until
+// the next deploy. mirrors the same directive already used on
+// app/admin/page.js, for the same reason.
+export const dynamic = "force-dynamic";
+
 // the title/description search engines show for the homepage specifically
 // (this overrides the sitewide default set in app/layout.js).
 export const metadata = {

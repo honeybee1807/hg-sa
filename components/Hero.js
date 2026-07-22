@@ -23,9 +23,11 @@ import FeaturedGemCard from "@/components/FeaturedGemCard";
 import { CATEGORIES } from "@/lib/constants";
 
 // a hand-written, always-the-same example of what a business listing card
-// looks like. purely decorative — "Y&L Enterprises" is not a real business
-// in the database, it's just there to make the hero look populated on
-// desktop screens before any animation or real data loads.
+// looks like. purely decorative — "Your Business Name" is a deliberately
+// generic placeholder, not a real business in the database — it's just
+// there to make the hero look populated on desktop screens before any
+// animation or real data loads. named unmistakably as a placeholder so it's
+// never mistaken for leftover fallback data.
 function MockupCard() {
   return (
     <div className="hero-mockup">
@@ -35,9 +37,9 @@ function MockupCard() {
           <i className="fa-solid fa-gem" /> Featured Gem
         </div>
         <div className="hero-mc-header">
-          <div className="hero-mc-avatar">YL</div>
+          <div className="hero-mc-avatar">YB</div>
           <div className="hero-mc-meta">
-            <strong className="hero-mc-name">Y&amp;L Enterprises</strong>
+            <strong className="hero-mc-name">Your Business Name</strong>
             <div className="hero-mc-tags">
               <span className="hero-mc-tag hero-mc-tag--cat">
                 <i className="fa-solid fa-bread-slice" /> Baking &amp; Catering
