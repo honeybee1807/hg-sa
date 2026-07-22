@@ -155,6 +155,9 @@ function DirectoryCard({ biz }) {
           <span><i className="fa-solid fa-tag" /> {biz.category}</span>
           <span><i className="fa-solid fa-location-dot" /> {areaName}, {biz.province}</span>
         </p>
+        {biz.business_type && (
+          <span className="business-type-badge">{biz.business_type}</span>
+        )}
         {biz.description && <p className="listing-card-desc">{biz.description}</p>}
       </div>
       <i className="fa-solid fa-chevron-right listing-card-arrow" />

@@ -22,7 +22,7 @@ function slugToCategory(slug) {
 async function getBusinessesByCategory(categoryName) {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, area, province, logo_url, slug, description")
+    .select("id, name, category, business_type, area, province, logo_url, slug, description")
     .eq("status", "approved")
     .eq("category", categoryName)
     .order("name");
@@ -213,6 +213,9 @@ function BusinessCard({ biz }) {
         <p className="listing-card-meta">
           <span><i className="fa-solid fa-location-dot" /> {areaName}, {biz.province}</span>
         </p>
+        {biz.business_type && (
+          <span className="business-type-badge">{biz.business_type}</span>
+        )}
         {biz.description && (
           <p className="listing-card-desc">{biz.description}</p>
         )}

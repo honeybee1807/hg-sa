@@ -69,6 +69,9 @@ export default function FeaturedGemCard({ gem }) {
             <span><i className="fa-solid fa-tag" /> {biz.category}</span>
             <span><i className="fa-solid fa-location-dot" /> {biz.area}, {biz.province}</span>
           </p>
+          {biz.business_type && (
+            <span className="business-type-badge">{biz.business_type}</span>
+          )}
           {biz.description && (
             <p className="featured-gem-desc">{biz.description}</p>
           )}

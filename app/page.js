@@ -40,7 +40,7 @@ export const metadata = {
 async function getFeaturedGem() {
   const { data } = await supabase
     .from("featured_gem")
-    .select(`*, businesses(id, name, category, area, province, logo_url, slug, description)`)
+    .select(`*, businesses(id, name, category, business_type, area, province, logo_url, slug, description)`)
     .gte("featured_until", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(1)
@@ -54,7 +54,7 @@ async function getFeaturedGem() {
 async function getAllApprovedBusinesses() {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, area, province, logo_url, slug, description")
+    .select("id, name, category, business_type, area, province, logo_url, slug, description")
     .eq("status", "approved")
     .order("name");
   // if the lookup failed for some reason, show an empty list rather than

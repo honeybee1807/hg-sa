@@ -1446,6 +1446,16 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   gap: 0.5rem;
 }
 
+/* an inline validation message shown directly under one form field —
+   reuses the exact same red already defined on .submit-error above,
+   rather than introducing a second error colour. */
+.field-error {
+  display: block;
+  color: #991B1B;
+  font-size: 0.8rem;
+  margin-top: 0.35rem;
+}
+
 /* crop modal */
 .crop-overlay {
   position: fixed;
@@ -1596,6 +1606,19 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* the small "Home-based" / "Mobile" / etc. badge shown alongside the
+   category on a listing card or the business detail page. */
+.business-type-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #F3F4F6;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  margin-top: 0.35rem;
 }
 
 .listing-card-arrow { color: #d1d5db; font-size: 0.8rem; flex-shrink: 0; }

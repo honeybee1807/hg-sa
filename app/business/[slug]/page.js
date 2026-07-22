@@ -20,7 +20,7 @@ export const revalidate = 3600; // 3600 seconds = 1 hour
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
-    .select("name, category, custom_category, area, province, description, logo_url, slug, website, whatsapp, owner_name, business_detail")
+    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, owner_name, business_detail")
     .eq("status", "approved")
     .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();
@@ -190,6 +190,9 @@ export default async function BusinessPage({ params }) {
                   {areaName}, {biz.province}
                 </span>
               </div>
+              {biz.business_type && (
+                <span className="business-type-badge">{biz.business_type}</span>
+              )}
             </div>
           </div>
 

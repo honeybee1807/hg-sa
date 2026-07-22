@@ -12,6 +12,15 @@
 // straight to Cloudinary (an image-hosting service) from the browser. the
 // business itself isn't saved to our database until the very end, once a
 // logo URL (if any) is ready.
+//
+// every required field is checked here, in the browser, before the form is
+// ever sent to the server — each problem shows up as its own small message
+// directly under the field it belongs to, rather than one combined message
+// at the top. app/submit/actions.js repeats the same checks server-side as
+// a backstop (in case JavaScript is ever unavailable or bypassed); if that
+// backstop is what catches something, its message shows in the banner at
+// the top of the form instead, since there's no per-field context to attach
+// it to at that point.
 
 import { useState, useRef, useEffect } from "react";
 import { submitBusiness } from "./actions";
@@ -24,27 +33,78 @@ import { CATEGORIES, PROVINCES } from "@/lib/constants";
 const CLOUDINARY_URL    = "https://api.cloudinary.com/v1_1/dfxhlv8jc/image/upload";
 const CLOUDINARY_PRESET = "hidden_gems_sa_logos";
 
+// the options shown in the "Business Type" dropdown — kept here rather than
+// in lib/constants.js since this list is only ever used on this form.
+const BUSINESS_TYPES = [
+  "Physical location — customers visit us",
+  "Home-based — we operate from home",
+  "Mobile — we come to the customer",
+  "Online only — no physical location",
+];
+
+// the options shown in the optional "how did you hear about us" dropdown —
+// for internal tracking only, never shown anywhere public.
+const REFERRAL_SOURCES = [
+  "WhatsApp",
+  "Facebook",
+  "Instagram",
+  "TikTok",
+  "Google Search",
+  "A friend or family member",
+  "Saw it shared online",
+  "Olideen Technologies",
+  "Other",
+];
+
 // what every field in the form starts out as — all empty. used both when the
 // form first loads and to reset everything after a successful submission.
 // "is_own_business" defaults to "yes" since most people listing a business
 // are listing their own — someone submitting on behalf of another business
 // has to actively switch it to "no".
 const INITIAL = {
-  name: "", category: "", custom_category: "", province: "", area: "",
+  name: "", category: "", custom_category: "", business_type: "", province: "", area: "",
   whatsapp: "", website: "", description: "",
-  owner_name: "", owner_email: "",
+  owner_name: "", owner_email: "", referral_source: "",
   is_own_business: "yes",
   on_behalf_of_name: "", on_behalf_of_reason: "",
 };
 
+// turns a WhatsApp number typed in any common format into the one format
+// WhatsApp's own links understand: digits only, starting with the "27"
+// South Africa country code. mirrors the exact same logic in
+// app/submit/actions.js, kept here too so the browser can check a number
+// looks valid before ever sending the form off.
+function normalizeWhatsApp(raw) {
+  if (!raw) return null;
+
+  let digitsOnly = raw.replace(/\D/g, "");
+  if (!digitsOnly) return null;
+
+  if (digitsOnly.startsWith("00")) {
+    digitsOnly = digitsOnly.slice(2);
+  }
+
+  if (digitsOnly.startsWith("27")) return digitsOnly;
+  if (digitsOnly.startsWith("0")) return "27" + digitsOnly.slice(1);
+  return "27" + digitsOnly;
+}
+
+// checks that a normalized number actually looks like a real South African
+// mobile number: the "27" country code, then a mobile prefix digit (6, 7,
+// or 8 — landlines start with 01-05 instead), then exactly 8 more digits.
+function isValidSouthAfricanMobile(normalized) {
+  return /^27[678]\d{8}$/.test(normalized ?? "");
+}
+
 export default function SubmitForm() {
   const [fields, setFields]       = useState(INITIAL);      // every text field in the form, kept together in one object
+  const [fieldErrors, setFieldErrors] = useState({});         // one inline validation message per field name, only for fields currently failing validation
   const [logoUrl, setLogoUrl]     = useState("");            // the Cloudinary web address of the uploaded logo, once there is one
   const [cropSrc, setCropSrc]     = useState("");            // a temporary local link to the photo the person just picked, for the crop popup to display
   const [cropOpen, setCropOpen]   = useState(false);          // whether the "crop your logo" popup is currently showing
   const [uploading, setUploading] = useState(false);          // true while the cropped logo is being sent to Cloudinary
   const [submitting, setSubmitting] = useState(false);         // true while the whole form is being sent to our database
-  const [result, setResult]       = useState(null);            // the outcome of the last submit attempt: { success: true } or { success: false, error: "..." }
+  const [result, setResult]       = useState(null);            // the outcome of a server-side rejection: { success: false, error: "..." } — only used as a backstop, see the top-of-file note
   const [charCount, setCharCount] = useState(0);               // how many characters are currently in the description box, for the "x/200" counter
 
   const imgRef     = useRef(null);  // points at the <img> element that Cropper.js attaches itself to
@@ -86,6 +146,18 @@ export default function SubmitForm() {
     };
   }, [cropOpen]);
 
+  // clears one field's inline error message, if it currently has one —
+  // called whenever that field changes, so a message doesn't linger on
+  // screen after the person has already started fixing it.
+  function clearFieldError(field) {
+    setFieldErrors((previousErrors) => {
+      if (!previousErrors[field]) return previousErrors;
+      const nextErrors = { ...previousErrors };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  }
+
   // builds a small onChange handler for one specific text field. instead of
   // writing a separate handler function for "name", another for "category",
   // and so on, every input below calls set("name"), set("category"), etc.,
@@ -97,6 +169,7 @@ export default function SubmitForm() {
         ...previousFields,
         [field]: event.target.value,
       }));
+      clearFieldError(field);
     };
   }
 
@@ -112,6 +185,8 @@ export default function SubmitForm() {
       category: newCategory,
       custom_category: newCategory === "Other" ? previousFields.custom_category : "",
     }));
+    clearFieldError("category");
+    clearFieldError("custom_category");
   }
 
   // runs the moment someone picks a photo from their device. it doesn't
@@ -179,13 +254,73 @@ export default function SubmitForm() {
       }, "image/jpeg", 0.9); // save the crop as a jpeg at 90% quality
   }
 
-  // runs when the whole form is submitted. it gathers everything typed into
-  // "fields" plus whatever logo URL is currently set, packages it into a
-  // FormData object (the format Server Actions expect), and hands it off to
-  // submitBusiness() in actions.js, which does the real validation and
-  // saving.
+  // checks every field in the form and returns an object of { fieldName:
+  // message } for whichever ones aren't valid right now — empty object
+  // means the form is entirely valid. each message is a complete sentence
+  // that says what's needed and why, shown inline right under that field.
+  function validateForm() {
+    const errors = {};
+
+    if (!fields.name.trim()) {
+      errors.name = "Please enter your business name.";
+    }
+    if (!fields.category) {
+      errors.category = "Please select a category for your business.";
+    }
+    if (fields.category === "Other" && !fields.custom_category.trim()) {
+      errors.custom_category = "Please describe your business category.";
+    }
+    if (!fields.business_type) {
+      errors.business_type = "Please select the business type that best describes how your business operates.";
+    }
+    if (!fields.province) {
+      errors.province = "Please select your province.";
+    }
+    if (!fields.area.trim()) {
+      errors.area = "Please enter the area, suburb, or town your business operates in.";
+    }
+    if (!fields.description.trim()) {
+      errors.description = "Please describe what your business offers.";
+    }
+    if (!fields.whatsapp.trim()) {
+      errors.whatsapp = "A WhatsApp number is required. We use this to contact you directly regarding your listing.";
+    } else if (!isValidSouthAfricanMobile(normalizeWhatsApp(fields.whatsapp))) {
+      errors.whatsapp = "Please enter a valid South African mobile number, starting with 0 or +27.";
+    }
+    if (!fields.owner_name.trim()) {
+      errors.owner_name = "Please enter your name.";
+    }
+    if (!fields.owner_email.trim()) {
+      errors.owner_email = "An email address is required. We use this to notify you when your listing has been reviewed.";
+    }
+    if (fields.is_own_business === "no") {
+      if (!fields.on_behalf_of_name.trim()) {
+        errors.on_behalf_of_name = "Please tell us whose business this is.";
+      }
+      if (!fields.on_behalf_of_reason.trim()) {
+        errors.on_behalf_of_reason = "Please tell us why you're listing it on their behalf.";
+      }
+    }
+
+    return errors;
+  }
+
+  // runs when the whole form is submitted. checks everything in the browser
+  // first — if anything's wrong, it stops right there and shows each
+  // problem under its own field, without ever contacting the server. only
+  // once everything passes does it gather "fields" plus whatever logo URL
+  // is currently set, package it into a FormData object (the format Server
+  // Actions expect), and hand it off to submitBusiness() in actions.js.
   async function handleSubmit(event) {
     event.preventDefault();
+
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
     setSubmitting(true);
     setResult(null);
 
@@ -234,6 +369,7 @@ export default function SubmitForm() {
   // Another Business" button shown after a successful submission.
   function handleSubmitAnotherClick() {
     setFields(INITIAL);
+    setFieldErrors({});
     setLogoUrl("");
     setResult(null);
   }
@@ -258,6 +394,9 @@ export default function SubmitForm() {
   // by the submit button and, when open, the crop popup.
   return (
     <form onSubmit={handleSubmit} className="submit-form" noValidate>
+      {/* only ever shown if the server-side backstop in actions.js rejects
+          a submission that somehow got past the checks above (e.g.
+          JavaScript was unavailable) — see the top-of-file note. */}
       {result?.error && (
         <div className="submit-error">
           <i className="fa-solid fa-triangle-exclamation" /> {result.error}
@@ -273,36 +412,32 @@ export default function SubmitForm() {
         <div className="form-group">
           <label htmlFor="name">Business Name <span className="required">*</span></label>
           <input id="name" className="form-control" type="text" value={fields.name}
-            onChange={set("name")} required placeholder="e.g. Thandi's Home Bakery" />
+            onChange={set("name")} placeholder="e.g. Thandi's Home Bakery" />
+          {fieldErrors.name && <span className="field-error">{fieldErrors.name}</span>}
         </div>
 
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="category">Category <span className="required">*</span></label>
             <select id="category" className="form-control" value={fields.category}
-              onChange={handleCategoryChange} required>
+              onChange={handleCategoryChange}>
               <option value="">Select a category...</option>
               {CATEGORIES.map((c) => (
                 <option key={c.slug} value={c.name}>{c.name}</option>
               ))}
             </select>
+            {fieldErrors.category && <span className="field-error">{fieldErrors.category}</span>}
           </div>
 
           <div className="form-group">
             <label htmlFor="province">Province <span className="required">*</span></label>
             <select id="province" className="form-control" value={fields.province}
-              onChange={set("province")} required>
+              onChange={set("province")}>
               <option value="">Select your province...</option>
               {PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
+            {fieldErrors.province && <span className="field-error">{fieldErrors.province}</span>}
           </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="area">Area / Suburb / Town <span className="required">*</span></label>
-          <input id="area" className="form-control" type="text" value={fields.area}
-            onChange={set("area")} required placeholder="e.g. Umhlanga, Estcourt, Sandton" />
-          <span className="form-hint">Type the area, suburb, or town your business operates in</span>
         </div>
 
         {/* only shown once someone picks "Other" as their category — for
@@ -311,9 +446,28 @@ export default function SubmitForm() {
           <div className="form-group">
             <label htmlFor="custom_category">Please describe your category <span className="required">*</span></label>
             <input id="custom_category" className="form-control" type="text" value={fields.custom_category}
-              onChange={set("custom_category")} required placeholder="e.g. Pet Grooming" />
+              onChange={set("custom_category")} placeholder="e.g. Pet Grooming" />
+            {fieldErrors.custom_category && <span className="field-error">{fieldErrors.custom_category}</span>}
           </div>
         )}
+
+        <div className="form-group">
+          <label htmlFor="business_type">Business Type <span className="required">*</span></label>
+          <select id="business_type" className="form-control" value={fields.business_type}
+            onChange={set("business_type")}>
+            <option value="">Select business type...</option>
+            {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          {fieldErrors.business_type && <span className="field-error">{fieldErrors.business_type}</span>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="area">Area / Suburb / Town <span className="required">*</span></label>
+          <input id="area" className="form-control" type="text" value={fields.area}
+            onChange={set("area")} placeholder="e.g. Umhlanga, Estcourt, Sandton" />
+          <span className="form-hint">Type the area, suburb, or town your business operates in</span>
+          {fieldErrors.area && <span className="field-error">{fieldErrors.area}</span>}
+        </div>
 
         <div className="form-group">
           <label htmlFor="description">
@@ -322,8 +476,9 @@ export default function SubmitForm() {
           </label>
           <textarea id="description" className="form-control" value={fields.description}
             onChange={handleDescriptionChange}
-            required rows={3} maxLength={200}
+            rows={3} maxLength={200}
             placeholder="1–2 sentences about your products or services" />
+          {fieldErrors.description && <span className="field-error">{fieldErrors.description}</span>}
         </div>
       </div>
 
@@ -337,8 +492,9 @@ export default function SubmitForm() {
           <div className="form-group">
             <label htmlFor="whatsapp">WhatsApp Number <span className="required">*</span></label>
             <input id="whatsapp" className="form-control" type="tel" value={fields.whatsapp}
-              onChange={set("whatsapp")} required placeholder="e.g. 082 123 4567" />
+              onChange={set("whatsapp")} placeholder="e.g. 082 123 4567" />
             <span className="form-hint">Enter your number starting with 0 — we&apos;ll format it automatically.</span>
+            {fieldErrors.whatsapp && <span className="field-error">{fieldErrors.whatsapp}</span>}
           </div>
 
           <div className="form-group">
@@ -363,15 +519,17 @@ export default function SubmitForm() {
           <div className="form-group">
             <label htmlFor="owner_name">Your Name <span className="required">*</span></label>
             <input id="owner_name" className="form-control" type="text" value={fields.owner_name}
-              onChange={set("owner_name")} required placeholder="Full name" />
+              onChange={set("owner_name")} placeholder="Full name" />
+            {fieldErrors.owner_name && <span className="field-error">{fieldErrors.owner_name}</span>}
           </div>
 
           <div className="form-group">
             <label htmlFor="owner_email">
-              Your Email <span className="optional">(optional)</span>
+              Your Email <span className="required">*</span>
             </label>
             <input id="owner_email" className="form-control" type="email" value={fields.owner_email}
               onChange={set("owner_email")} placeholder="For approval notifications" />
+            {fieldErrors.owner_email && <span className="field-error">{fieldErrors.owner_email}</span>}
           </div>
         </div>
       </div>
@@ -421,7 +579,8 @@ export default function SubmitForm() {
                 Whose Business Is It? <span className="required">*</span>
               </label>
               <input id="on_behalf_of_name" className="form-control" type="text" value={fields.on_behalf_of_name}
-                onChange={set("on_behalf_of_name")} required placeholder="Business owner's name" />
+                onChange={set("on_behalf_of_name")} placeholder="Business owner's name" />
+              {fieldErrors.on_behalf_of_name && <span className="field-error">{fieldErrors.on_behalf_of_name}</span>}
             </div>
 
             <div className="form-group">
@@ -429,7 +588,8 @@ export default function SubmitForm() {
                 Why Are You Listing It for Them? <span className="required">*</span>
               </label>
               <input id="on_behalf_of_reason" className="form-control" type="text" value={fields.on_behalf_of_reason}
-                onChange={set("on_behalf_of_reason")} required placeholder="e.g. Their son, helping them get online" />
+                onChange={set("on_behalf_of_reason")} placeholder="e.g. Their son, helping them get online" />
+              {fieldErrors.on_behalf_of_reason && <span className="field-error">{fieldErrors.on_behalf_of_reason}</span>}
             </div>
           </div>
         )}
@@ -461,6 +621,20 @@ export default function SubmitForm() {
               onChange={handleFileChange} className="logo-file-input" />
           </label>
         )}
+      </div>
+
+      {/* ── How did you hear about us (internal tracking only) ── */}
+      <div className="form-section">
+        <div className="form-group">
+          <label htmlFor="referral_source">
+            How did you hear about Hidden Gems SA? <span className="optional">(optional)</span>
+          </label>
+          <select id="referral_source" className="form-control" value={fields.referral_source}
+            onChange={set("referral_source")}>
+            <option value="">Select an option...</option>
+            {REFERRAL_SOURCES.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* ── Submit ── */}

@@ -17,6 +17,14 @@ const VALID_CATEGORIES = new Set(CATEGORIES.map((c) => c.name));
 // same idea, for the province dropdown.
 const VALID_PROVINCES = new Set(PROVINCES);
 
+// same idea, for the business type dropdown.
+const VALID_BUSINESS_TYPES = new Set([
+  "Physical location — customers visit us",
+  "Home-based — we operate from home",
+  "Mobile — we come to the customer",
+  "Online only — no physical location",
+]);
+
 // turns a WhatsApp number typed in any common format into the one format
 // WhatsApp's own links understand: digits only, starting with the "27"
 // South Africa country code. handles someone typing:
@@ -41,6 +49,16 @@ function normalizeWhatsApp(raw) {
   return "27" + digitsOnly; // no recognisable prefix — just add the country code on the front
 }
 
+// checks that a normalized number ("27" followed by digits) actually looks
+// like a real South African mobile number: the "27" country code, then a
+// mobile prefix digit (6, 7, or 8 — landlines start with 01-05 instead), then
+// exactly 8 more digits. this catches things normalizeWhatsApp() would
+// otherwise happily accept, like a landline number or a string of the wrong
+// length, which aren't real WhatsApp-reachable mobile numbers.
+function isValidSouthAfricanMobile(normalized) {
+  return /^27[678]\d{8}$/.test(normalized ?? "");
+}
+
 // this is what runs when the submit form is sent. it's given the raw form
 // data, checks it thoroughly, and only saves it to the database if
 // everything looks valid.
@@ -50,6 +68,7 @@ export async function submitBusiness(formData) {
   const name        = formData.get("name")?.toString().trim();
   const category     = formData.get("category")?.toString().trim();
   const customCategory = formData.get("custom_category")?.toString().trim();
+  const businessType = formData.get("business_type")?.toString().trim();
   const province     = formData.get("province")?.toString().trim();
   const area          = formData.get("area")?.toString().trim();
   const whatsapp      = formData.get("whatsapp")?.toString().trim();
@@ -57,6 +76,7 @@ export async function submitBusiness(formData) {
   const description   = formData.get("description")?.toString().trim();
   const owner_name     = formData.get("owner_name")?.toString().trim();
   const owner_email    = formData.get("owner_email")?.toString().trim();
+  const referralSource = formData.get("referral_source")?.toString().trim();
   const logo_url        = formData.get("logo_url")?.toString().trim();
 
   // whether the person submitting this form is the business's actual
@@ -68,10 +88,25 @@ export async function submitBusiness(formData) {
   const onBehalfOfReason  = formData.get("on_behalf_of_reason")?.toString().trim();
 
   // check every required field actually has something in it. (website,
-  // owner_email, and logo_url are allowed to be empty — they're optional.)
-  const aRequiredFieldIsMissing = !name || !category || !province || !area || !whatsapp || !description || !owner_name;
+  // referral_source, and logo_url are allowed to be empty — they're
+  // optional.) owner_email, whatsapp, and business_type each get their own
+  // specific, field-level message below instead of this generic one, since
+  // they're shown inline right under their own field on the form.
+  const aRequiredFieldIsMissing = !name || !category || !province || !area || !description || !owner_name;
   if (aRequiredFieldIsMissing) {
     return { success: false, error: "Please fill in all required fields." };
+  }
+
+  if (!owner_email) {
+    return { success: false, error: "An email address is required. We use this to notify you when your listing has been reviewed." };
+  }
+
+  if (!whatsapp) {
+    return { success: false, error: "A WhatsApp number is required. We use this to contact you directly regarding your listing." };
+  }
+
+  if (!businessType) {
+    return { success: false, error: "Please select the business type that best describes how your business operates." };
   }
 
   // if this is being listed on someone else's behalf, both follow-up
@@ -93,6 +128,10 @@ export async function submitBusiness(formData) {
     return { success: false, error: "Invalid province selected." };
   }
 
+  if (!VALID_BUSINESS_TYPES.has(businessType)) {
+    return { success: false, error: "Please select the business type that best describes how your business operates." };
+  }
+
   // "Other" is the one category that needs a follow-up description — for
   // every other category, whatever came through in this field (there
   // shouldn't be anything, since the form clears and hides it) is ignored
@@ -106,8 +145,8 @@ export async function submitBusiness(formData) {
   }
 
   const normalizedWhatsapp = normalizeWhatsApp(whatsapp);
-  if (!normalizedWhatsapp) {
-    return { success: false, error: "Please enter a valid WhatsApp number." };
+  if (!isValidSouthAfricanMobile(normalizedWhatsapp)) {
+    return { success: false, error: "Please enter a valid South African mobile number, starting with 0 or +27." };
   }
 
   // everything checked out — save the new business with a "pending"
@@ -119,13 +158,15 @@ export async function submitBusiness(formData) {
     name,
     category,
     custom_category:      category === "Other" ? customCategory : null,
+    business_type:         businessType,
     area,
     province,
     whatsapp:    normalizedWhatsapp,
     website:     website || null,
     description,
     owner_name,
-    owner_email:         owner_email || null,
+    owner_email,
+    referral_source:      referralSource || null,
     logo_url:             logo_url || null,
     status:               "pending",
     is_own_business:      isOwnBusiness,
