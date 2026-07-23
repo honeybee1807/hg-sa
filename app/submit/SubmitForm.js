@@ -63,11 +63,18 @@ const REFERRAL_SOURCES = [
 // has to actively switch it to "no".
 const INITIAL = {
   name: "", category: "", custom_category: "", business_type: "", province: "", area: "",
+  street_address: "",
   whatsapp: "", website: "", instagram: "", facebook: "", description: "",
   owner_name: "", owner_email: "", referral_source: "",
   is_own_business: "yes",
   on_behalf_of_name: "", on_behalf_of_reason: "",
 };
+
+// the one business type that has a real, visitable street address —
+// street_address only ever appears on the form (and only ever gets saved)
+// when this is selected, since it's meaningless for a home-based, mobile,
+// or online-only business.
+const PHYSICAL_BUSINESS_TYPE = "Physical location — customers visit us";
 
 // turns a WhatsApp number typed in any common format into the one format
 // WhatsApp's own links understand: digits only, starting with the "27"
@@ -187,6 +194,21 @@ export default function SubmitForm() {
     }));
     clearFieldError("category");
     clearFieldError("custom_category");
+  }
+
+  // same idea as handleCategoryChange above: the street address field only
+  // makes sense (and is only shown) for a physical location, so switching
+  // to any other business type clears whatever was typed there — otherwise
+  // it could linger in state and get submitted for a business that no
+  // longer claims to have a visitable address.
+  function handleBusinessTypeChange(event) {
+    const newBusinessType = event.target.value;
+    setFields((previousFields) => ({
+      ...previousFields,
+      business_type: newBusinessType,
+      street_address: newBusinessType === PHYSICAL_BUSINESS_TYPE ? previousFields.street_address : "",
+    }));
+    clearFieldError("business_type");
   }
 
   // runs the moment someone picks a photo from their device. it doesn't
@@ -454,12 +476,24 @@ export default function SubmitForm() {
         <div className="form-group">
           <label htmlFor="business_type">Business Type <span className="required">*</span></label>
           <select id="business_type" className="form-control" value={fields.business_type}
-            onChange={set("business_type")}>
+            onChange={handleBusinessTypeChange}>
             <option value="">Select business type...</option>
             {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           {fieldErrors.business_type && <span className="field-error">{fieldErrors.business_type}</span>}
         </div>
+
+        {/* only shown for a physical location — a home-based, mobile, or
+            online-only business has no street address for customers to be
+            shown a map of. */}
+        {fields.business_type === PHYSICAL_BUSINESS_TYPE && (
+          <div className="form-group">
+            <label htmlFor="street_address">Street Address <span className="optional">(optional)</span></label>
+            <input id="street_address" className="form-control" type="text" value={fields.street_address}
+              onChange={set("street_address")} placeholder="e.g. 12 Main Street, Estcourt" />
+            <span className="form-hint">This will be used to show your location on a map. Only enter if customers need to find you physically.</span>
+          </div>
+        )}
 
         <div className="form-group">
           <label htmlFor="area">Area / Suburb / Town <span className="required">*</span></label>

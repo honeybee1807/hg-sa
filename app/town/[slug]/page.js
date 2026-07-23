@@ -50,7 +50,7 @@ async function findAreaBySlug(slug) {
 async function getBusinessesByArea(area) {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook")
+    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook, street_address")
     .eq("status", "approved")
     .filter("area", "ilike", `${area}%`)
     .order("name");

@@ -9,6 +9,11 @@ import Image from "next/image";
 import supabase from "@/lib/supabase";
 import { SITE_URL, CATEGORIES } from "@/lib/constants";
 import SocialLink from "@/components/SocialLink";
+import BusinessMap from "@/components/BusinessMapLoader";
+
+// the one business type that has a real, visitable street address — mirrors
+// the same constant in app/submit/SubmitForm.js and app/submit/actions.js.
+const PHYSICAL_BUSINESS_TYPE = "Physical location — customers visit us";
 
 // rebuild a business's page at most once an hour, so a recent admin change
 // (like approving it) shows up reasonably quickly without needing to
@@ -21,7 +26,7 @@ export const revalidate = 3600; // 3600 seconds = 1 hour
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
-    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, instagram, facebook, owner_name, business_detail")
+    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, instagram, facebook, street_address, owner_name, business_detail")
     .eq("status", "approved")
     .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();
@@ -215,6 +220,13 @@ export default async function BusinessPage({ params }) {
               </h2>
               <p>{biz.business_detail}</p>
             </div>
+          )}
+
+          {/* Map — only for a physical location that's actually given a
+              street address; a home-based, mobile, or online-only business
+              has no fixed address to show a map of. */}
+          {biz.business_type === PHYSICAL_BUSINESS_TYPE && biz.street_address && (
+            <BusinessMap streetAddress={biz.street_address} area={areaName} province={biz.province} />
           )}
         </article>
 

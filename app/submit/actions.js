@@ -26,6 +26,13 @@ const VALID_BUSINESS_TYPES = new Set([
   "Online only — no physical location",
 ]);
 
+// the one business type that has a real, visitable street address — mirrors
+// the same constant in app/submit/SubmitForm.js. used below as a server-side
+// backstop, so a street address can never be saved against a business type
+// that doesn't claim to have one, even if the form's own client-side clearing
+// (see handleBusinessTypeChange there) were somehow bypassed.
+const PHYSICAL_BUSINESS_TYPE = "Physical location — customers visit us";
+
 // turns a WhatsApp number typed in any common format into the one format
 // WhatsApp's own links understand: digits only, starting with the "27"
 // South Africa country code. handles someone typing:
@@ -72,6 +79,7 @@ export async function submitBusiness(formData) {
   const businessType = formData.get("business_type")?.toString().trim();
   const province     = formData.get("province")?.toString().trim();
   const area          = formData.get("area")?.toString().trim();
+  const streetAddress = formData.get("street_address")?.toString().trim();
   const whatsapp      = formData.get("whatsapp")?.toString().trim();
   const website        = formData.get("website")?.toString().trim();
   const instagram      = formData.get("instagram")?.toString().trim();
@@ -163,6 +171,7 @@ export async function submitBusiness(formData) {
     custom_category:      category === "Other" ? customCategory : null,
     business_type:         businessType,
     area,
+    street_address:       businessType === PHYSICAL_BUSINESS_TYPE ? (streetAddress || null) : null,
     province,
     whatsapp:    normalizedWhatsapp,
     website:     website || null,

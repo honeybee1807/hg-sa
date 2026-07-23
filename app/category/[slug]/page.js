@@ -23,7 +23,7 @@ function slugToCategory(slug) {
 async function getBusinessesByCategory(categoryName) {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook")
+    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook, street_address")
     .eq("status", "approved")
     .eq("category", categoryName)
     .order("name");

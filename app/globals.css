@@ -1257,6 +1257,16 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   gap: 0.35rem;
 }
 
+.admin-biz-street-address {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.admin-biz-street-address strong { color: #374151; font-weight: 600; }
+
 .admin-biz-owner {
   display: flex;
   flex-wrap: wrap;
@@ -1925,9 +1935,53 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .biz-town-link { color: var(--sapphire); font-weight: 600; }
 .biz-town-link:hover { text-decoration: underline; }
 
+/* ─── business detail page: map ("Find Us") ──────────────────────── */
+.biz-map {
+  height: 300px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  /* "position: relative" + a real z-index (not "auto") gives this its own
+     stacking context, so Leaflet's internal layers — its zoom control sits
+     at z-index 1000 — can never rise above the site's sticky header. */
+  position: relative;
+  z-index: 0;
+}
+
+.biz-map-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+  padding: 2rem 0;
+}
+
+.biz-map-fallback {
+  color: #6b7280;
+  font-size: 0.9rem;
+  background: #F9FAFB;
+  border: 1px dashed #e5e7eb;
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.biz-map-directions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+  color: var(--sapphire);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.biz-map-directions:hover { text-decoration: underline; }
+
 @media (max-width: 560px) {
   .biz-header { flex-direction: column; align-items: center; text-align: center; }
   .biz-meta   { justify-content: center; }
+  .biz-map    { height: 220px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════

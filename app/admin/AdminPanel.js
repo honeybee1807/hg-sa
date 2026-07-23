@@ -583,6 +583,16 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
                           <i className="fa-solid fa-location-dot" /> {biz.area}
                         </p>
                       )}
+
+                      {/* street address is only ever set for a physical
+                          business (see app/submit/SubmitForm.js) and is
+                          purely informational here — nothing for the admin
+                          to edit, it's just useful to see before approving. */}
+                      {biz.street_address && (
+                        <p className="admin-biz-street-address">
+                          <i className="fa-solid fa-map-pin" /> <strong>Street Address:</strong> {biz.street_address}
+                        </p>
+                      )}
                     </div>
                   </div>
 
