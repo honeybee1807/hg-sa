@@ -24,7 +24,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { submitBusiness } from "./actions";
-import { CATEGORIES, PROVINCES } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE } from "@/lib/constants";
+import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 
 // where uploaded logos get sent, and which "upload preset" (a pre-configured
 // set of rules on the Cloudinary side — image size limits, allowed formats,
@@ -32,15 +33,6 @@ import { CATEGORIES, PROVINCES } from "@/lib/constants";
 // are designed to be called directly from a browser.
 const CLOUDINARY_URL    = "https://api.cloudinary.com/v1_1/dfxhlv8jc/image/upload";
 const CLOUDINARY_PRESET = "hidden_gems_sa_logos";
-
-// the options shown in the "Business Type" dropdown — kept here rather than
-// in lib/constants.js since this list is only ever used on this form.
-const BUSINESS_TYPES = [
-  "Physical location — customers visit us",
-  "Home-based — we operate from home",
-  "Mobile — we come to the customer",
-  "Online only — no physical location",
-];
 
 // the options shown in the optional "how did you hear about us" dropdown —
 // for internal tracking only, never shown anywhere public.
@@ -69,39 +61,6 @@ const INITIAL = {
   is_own_business: "yes",
   on_behalf_of_name: "", on_behalf_of_reason: "",
 };
-
-// the one business type that has a real, visitable street address —
-// street_address only ever appears on the form (and only ever gets saved)
-// when this is selected, since it's meaningless for a home-based, mobile,
-// or online-only business.
-const PHYSICAL_BUSINESS_TYPE = "Physical location — customers visit us";
-
-// turns a WhatsApp number typed in any common format into the one format
-// WhatsApp's own links understand: digits only, starting with the "27"
-// South Africa country code. mirrors the exact same logic in
-// app/submit/actions.js, kept here too so the browser can check a number
-// looks valid before ever sending the form off.
-function normalizeWhatsApp(raw) {
-  if (!raw) return null;
-
-  let digitsOnly = raw.replace(/\D/g, "");
-  if (!digitsOnly) return null;
-
-  if (digitsOnly.startsWith("00")) {
-    digitsOnly = digitsOnly.slice(2);
-  }
-
-  if (digitsOnly.startsWith("27")) return digitsOnly;
-  if (digitsOnly.startsWith("0")) return "27" + digitsOnly.slice(1);
-  return "27" + digitsOnly;
-}
-
-// checks that a normalized number actually looks like a real South African
-// mobile number: the "27" country code, then a mobile prefix digit (6, 7,
-// or 8 — landlines start with 01-05 instead), then exactly 8 more digits.
-function isValidSouthAfricanMobile(normalized) {
-  return /^27[678]\d{8}$/.test(normalized ?? "");
-}
 
 export default function SubmitForm() {
   const [fields, setFields]       = useState(INITIAL);      // every text field in the form, kept together in one object

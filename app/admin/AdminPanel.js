@@ -20,12 +20,48 @@ import {
   setFeaturedGem,
   autoSelectFeaturedGem,
   searchBusinesses,
+  approveEditRequest,
+  rejectEditRequest,
 } from "./actions";
 import { SITE_URL, OLIDEEN_URL } from "@/lib/constants";
 import { instagramUrl, facebookUrl } from "@/lib/social";
 
-// the four tabs above the business list.
-const TABS = ["pending", "approved", "rejected", "all"];
+// the five tabs above the business list. "edit-requests" is handled
+// separately from the other four everywhere below (it lists rows from
+// business_edit_requests, not businesses), so it carries its own label
+// here rather than being auto-capitalised from its id the way the others
+// are.
+const TABS = [
+  { id: "pending",       label: "Pending" },
+  { id: "approved",      label: "Approved" },
+  { id: "rejected",      label: "Rejected" },
+  { id: "all",           label: "All" },
+  { id: "edit-requests", label: "Edit Requests" },
+];
+
+// how each proposed-change field name (a raw businesses column name) should
+// read in the admin's side-by-side comparison card — see the "Edit
+// Requests" tab further down.
+const EDIT_FIELD_LABELS = {
+  name: "Business Name",
+  category: "Category",
+  custom_category: "Custom Category",
+  business_type: "Business Type",
+  province: "Province",
+  area: "Area",
+  street_address: "Street Address",
+  whatsapp: "WhatsApp",
+  website: "Website",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  description: "Description",
+};
+
+// a null/empty field reads as an actual dash in the comparison card,
+// rather than a blank space that could be mistaken for a loading glitch.
+function formatEditValue(value) {
+  return value === null || value === undefined || value === "" ? "—" : value;
+}
 
 // works out the traffic-light status shown for the currently-featured gem
 // (see the "Currently Featured Gem" card below): green "active" while
@@ -56,7 +92,7 @@ function formatFeaturedDuration(createdAt, featuredUntil) {
   return `${days} day${days === 1 ? "" : "s"}`;
 }
 
-export default function AdminPanel({ businesses, currentFeatured, featuredHistory }) {
+export default function AdminPanel({ businesses, currentFeatured, featuredHistory, editRequests }) {
   const router  = useRouter();
   // "isPending" here just means "we're waiting for the page to refresh
   // itself after a change" — nothing to do with a business's "pending"
@@ -75,10 +111,25 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
   const [searching, setSearching]     = useState(false);      // true while that search is in progress
   const [message, setMessage]         = useState(null);       // the small "Approved!" / error banner shown after an action
   const [historyOpen, setHistoryOpen] = useState(false);       // whether the "Recent History" list is expanded — collapsed by default
+  // which edit request's "reject" form is open, if any, and the text typed
+  // into it — kept separate from rejectingId/rejectNote above rather than
+  // reused, since a business id and an edit_request id could otherwise
+  // collide (they're rows in two different tables) and open the wrong form.
+  const [rejectingEditId, setRejectingEditId] = useState(null);
+  const [editRejectNote, setEditRejectNote]   = useState("");
 
   // only show businesses matching the currently selected tab (or
-  // everything, if the "all" tab is selected).
+  // everything, if the "all" tab is selected) — irrelevant for the
+  // "edit-requests" tab, which lists rows from a different table entirely
+  // (see the "Edit Requests" section further down).
   const filtered = businesses.filter((b) => tab === "all" || b.status === tab);
+
+  // the number shown in each tab's little count badge.
+  function tabCount(tabId) {
+    if (tabId === "all") return businesses.length;
+    if (tabId === "edit-requests") return editRequests.length;
+    return businesses.filter((b) => b.status === tabId).length;
+  }
 
   // shows a small message banner for 4 seconds, then hides it again.
   function flash(msg, isError = false) {
@@ -114,6 +165,32 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
       setRejectingId(null);
       setRejectNote("");
       flash("Rejected.");
+      refresh();
+    } else {
+      flash(result.error, true);
+    }
+  }
+
+  // called when "Approve Changes" is clicked on an edit request — applies
+  // the proposed changes to the live listing (see approveEditRequest in
+  // app/admin/actions.js for exactly what that updates).
+  async function handleApproveEdit(requestId) {
+    const result = await approveEditRequest(requestId);
+    if (result.success) {
+      flash("Changes approved and applied to the listing.");
+      refresh();
+    } else {
+      flash(result.error, true);
+    }
+  }
+
+  // called when "Confirm Reject" is clicked on an edit request's reject form.
+  async function handleRejectEdit(requestId) {
+    const result = await rejectEditRequest(requestId, editRejectNote);
+    if (result.success) {
+      setRejectingEditId(null);
+      setEditRejectNote("");
+      flash("Edit request rejected.");
       refresh();
     } else {
       flash(result.error, true);
@@ -511,25 +588,109 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
 
           {/* Tabs */}
           <div className="admin-tabs">
-            {TABS.map((t) => {
-              const count = t === "all"
-                ? businesses.length
-                : businesses.filter((b) => b.status === t).length;
-              return (
-                <button
-                  key={t}
-                  className={`admin-tab ${tab === t ? "admin-tab--active" : ""}`}
-                  onClick={() => setTab(t)}
-                >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                  <span className="admin-tab-count">{count}</span>
-                </button>
-              );
-            })}
+            {TABS.map(({ id, label }) => (
+              <button
+                key={id}
+                className={`admin-tab ${tab === id ? "admin-tab--active" : ""}`}
+                onClick={() => setTab(id)}
+              >
+                {label}
+                <span className="admin-tab-count">{tabCount(id)}</span>
+              </button>
+            ))}
           </div>
 
+          {/* Edit Requests tab */}
+          {tab === "edit-requests" && (
+            editRequests.length === 0 ? (
+              <div className="admin-empty">
+                <i className="fa-solid fa-inbox" />
+                <p>No pending edit requests.</p>
+              </div>
+            ) : (
+              <div className="admin-biz-list">
+                {editRequests.map((request) => {
+                  const biz = request.businesses;
+                  const changedFields = Object.keys(request.proposed_changes);
+                  return (
+                    <div key={request.id} className="admin-edit-card">
+                      <div className="admin-edit-card-header">
+                        {biz?.logo_url
+                          ? <Image src={biz.logo_url} alt="" width={48} height={48} className="avatar" />
+                          : <div className="avatar-monogram">{biz?.name?.[0] ?? "?"}</div>}
+                        <div>
+                          <strong>{biz?.name ?? "Unknown business"}</strong>
+                          <p className="admin-edit-card-meta">
+                            Requested {new Date(request.created_at).toLocaleDateString("en-ZA")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="admin-edit-compare">
+                        <div className="admin-edit-compare-col">
+                          <span className="badge admin-edit-badge-current">Current</span>
+                          {changedFields.map((field) => (
+                            <div key={field} className="admin-edit-field">
+                              <span className="admin-edit-field-label">{EDIT_FIELD_LABELS[field] ?? field}</span>
+                              <span className="admin-edit-field-value">{formatEditValue(biz?.[field])}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="admin-edit-compare-col">
+                          <span className="badge admin-edit-badge-proposed">Proposed</span>
+                          {changedFields.map((field) => (
+                            <div key={field} className="admin-edit-field">
+                              <span className="admin-edit-field-label">{EDIT_FIELD_LABELS[field] ?? field}</span>
+                              <span className="admin-edit-field-value">{formatEditValue(request.proposed_changes[field])}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {rejectingEditId === request.id ? (
+                        <div className="admin-reject-form">
+                          <textarea
+                            className="form-control"
+                            rows={2}
+                            placeholder="Rejection reason (optional)..."
+                            value={editRejectNote}
+                            onChange={(e) => setEditRejectNote(e.target.value)}
+                          />
+                          <div className="admin-reject-btns">
+                            <button className="btn-secondary" onClick={() => { setRejectingEditId(null); setEditRejectNote(""); }}>
+                              Cancel
+                            </button>
+                            <button className="admin-reject-confirm-btn" onClick={() => handleRejectEdit(request.id)}>
+                              <i className="fa-solid fa-xmark" /> Confirm Reject
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="admin-biz-actions">
+                          <button
+                            className="btn-primary admin-approve-btn admin-approve-edit-btn"
+                            onClick={() => handleApproveEdit(request.id)}
+                            disabled={isPending}
+                          >
+                            <i className="fa-solid fa-check" /> Approve Changes
+                          </button>
+                          <button
+                            className="admin-reject-btn"
+                            onClick={() => setRejectingEditId(request.id)}
+                          >
+                            <i className="fa-solid fa-xmark" /> Reject Changes
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+
           {/* Business list */}
-          {filtered.length === 0 ? (
+          {tab !== "edit-requests" && (filtered.length === 0 ? (
             <div className="admin-empty">
               <i className="fa-solid fa-inbox" />
               <p>No {tab === "all" ? "" : tab} listings.</p>
@@ -710,7 +871,7 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
                 </div>
               ))}
             </div>
-          )}
+          ))}
         </section>
       </div>
     </div>

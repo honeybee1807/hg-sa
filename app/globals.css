@@ -790,6 +790,14 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .footer-copy { font-size: 0.78rem; color: rgba(255,255,255,0.35); }
 
+.footer-edit-link {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.35);
+  text-decoration: underline;
+  text-decoration-color: rgba(255,255,255,0.2);
+}
+.footer-edit-link:hover { color: rgba(255,255,255,0.6); }
+
 /* ─── olideen logo pulse animation ─────────────────────────────── */
 @keyframes otLogoPulse {
   0%, 100% { transform: scale(1); }
@@ -1359,6 +1367,82 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 .admin-approve-btn { font-size: 0.875rem; padding: 0.5rem 1.25rem; }
+
+/* the "Approve Changes" button on an edit request specifically needs to
+   read as green (see .admin-approve-btn above, which inherits the site's
+   default blue btn-primary) — this overrides just the colour. */
+.admin-approve-edit-btn {
+  background: #16A34A;
+  background-image: none;
+}
+.admin-approve-edit-btn:hover { background: #15803D; }
+
+/* ── Edit Requests tab: side-by-side current-vs-proposed comparison ── */
+.admin-edit-card {
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-edit-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.admin-edit-card-header strong { display: block; }
+
+.admin-edit-card-meta { font-size: 0.8rem; color: #6b7280; }
+
+.admin-edit-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 560px) {
+  .admin-edit-compare { grid-template-columns: 1fr; }
+}
+
+.admin-edit-compare-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  background: #F9FAFB;
+  border-radius: var(--radius);
+}
+
+.admin-edit-badge-current  { background: #F3F4F6; color: #6b7280; align-self: flex-start; }
+.admin-edit-badge-proposed { background: var(--sapphire-pale); color: var(--sapphire-deep); align-self: flex-start; }
+
+.admin-edit-field {
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius);
+  /* every field shown here is, by construction, one that actually
+     changed (see the "changedFields" filtering in AdminPanel.js) — this
+     subtle amber tint is what makes that visible at a glance. */
+  background: #FEF3C7;
+}
+
+.admin-edit-field-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #92400E;
+  margin-bottom: 0.15rem;
+}
+
+.admin-edit-field-value {
+  display: block;
+  font-size: 0.85rem;
+  color: #374151;
+  word-break: break-word;
+}
 
 .admin-reject-btn {
   padding: 0.5rem 1.25rem;

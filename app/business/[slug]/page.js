@@ -7,13 +7,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
-import { SITE_URL, CATEGORIES } from "@/lib/constants";
+import { SITE_URL, CATEGORIES, PHYSICAL_BUSINESS_TYPE } from "@/lib/constants";
 import SocialLink from "@/components/SocialLink";
 import BusinessMap from "@/components/BusinessMapLoader";
-
-// the one business type that has a real, visitable street address — mirrors
-// the same constant in app/submit/SubmitForm.js and app/submit/actions.js.
-const PHYSICAL_BUSINESS_TYPE = "Physical location — customers visit us";
 
 // rebuild a business's page at most once an hour, so a recent admin change
 // (like approving it) shows up reasonably quickly without needing to

@@ -63,6 +63,24 @@ async function getFeaturedHistory() {
   return data ?? [];
 }
 
+// fetches every listing-edit request still awaiting review, alongside the
+// business it belongs to, for the admin panel's "Edit Requests" tab.
+// filters out rows that exist only because someone requested a magic link
+// but never actually submitted any changes yet — proposed_changes starts
+// out as an empty object (see requestEditLink in app/edit/actions.js) and
+// only gets filled in once they submit the form at /edit/[token], so
+// there's nothing yet for an admin to review or count.
+async function getEditRequests() {
+  const db = getAdminClient();
+  const { data } = await db
+    .from("business_edit_requests")
+    .select(`id, business_id, proposed_changes, created_at, businesses(id, name, category, custom_category, business_type, province, area, street_address, whatsapp, website, instagram, facebook, description, logo_url, slug)`)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  return (data ?? []).filter((request) => Object.keys(request.proposed_changes ?? {}).length > 0);
+}
+
 export default async function AdminPage() {
   // the most important line in this whole file: if this comes back false,
   // stop here and show only the login form. nothing below this point ever
@@ -70,12 +88,13 @@ export default async function AdminPage() {
   const isLoggedIn = await isAdminAuthed();
   if (!isLoggedIn) return <LoginForm />;
 
-  // fetch all three at once, rather than one after the other, so the page
+  // fetch everything at once, rather than one after the other, so the page
   // loads a little faster.
-  const [businesses, currentFeatured, featuredHistory] = await Promise.all([
+  const [businesses, currentFeatured, featuredHistory, editRequests] = await Promise.all([
     getAllBusinesses(),
     getCurrentFeatured(),
     getFeaturedHistory(),
+    getEditRequests(),
   ]);
 
   return (
@@ -83,6 +102,7 @@ export default async function AdminPage() {
       businesses={businesses}
       currentFeatured={currentFeatured}
       featuredHistory={featuredHistory}
+      editRequests={editRequests}
     />
   );
 }

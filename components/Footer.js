@@ -50,6 +50,7 @@ export default function Footer() {
             />
           </a>
           <p className="footer-copy">&copy; {year} Hidden Gems SA</p>
+          <Link href="/edit" className="footer-edit-link">Edit your listing</Link>
         </div>
 
       </div>

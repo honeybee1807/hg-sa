@@ -6,8 +6,9 @@
 // to the database with a "pending" status, ready for an admin to review.
 
 import supabase from "@/lib/supabase";
-import { CATEGORIES, PROVINCES } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE } from "@/lib/constants";
 import { normalizeInstagramInput } from "@/lib/social";
+import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 
 // a quick-to-check list of every valid category name — used below to catch
 // someone submitting a category that isn't one of the real options (which
@@ -19,53 +20,7 @@ const VALID_CATEGORIES = new Set(CATEGORIES.map((c) => c.name));
 const VALID_PROVINCES = new Set(PROVINCES);
 
 // same idea, for the business type dropdown.
-const VALID_BUSINESS_TYPES = new Set([
-  "Physical location — customers visit us",
-  "Home-based — we operate from home",
-  "Mobile — we come to the customer",
-  "Online only — no physical location",
-]);
-
-// the one business type that has a real, visitable street address — mirrors
-// the same constant in app/submit/SubmitForm.js. used below as a server-side
-// backstop, so a street address can never be saved against a business type
-// that doesn't claim to have one, even if the form's own client-side clearing
-// (see handleBusinessTypeChange there) were somehow bypassed.
-const PHYSICAL_BUSINESS_TYPE = "Physical location — customers visit us";
-
-// turns a WhatsApp number typed in any common format into the one format
-// WhatsApp's own links understand: digits only, starting with the "27"
-// South Africa country code. handles someone typing:
-//   - a number starting with 0, e.g. "082 123 4567"
-//   - a number already starting with the country code, e.g. "27821234567"
-//   - a number with the international dialling prefix, e.g. "0027821234567"
-function normalizeWhatsApp(raw) {
-  if (!raw) return null;
-
-  let digitsOnly = raw.replace(/\D/g, ""); // strip out everything that isn't a digit — spaces, dashes, brackets, "+"
-  if (!digitsOnly) return null; // nothing left after stripping — not a real number
-
-  // someone dialling the "international" way types "00" before the country
-  // code instead of "+" — remove it so what's left starts with "27" like
-  // the other formats below.
-  if (digitsOnly.startsWith("00")) {
-    digitsOnly = digitsOnly.slice(2);
-  }
-
-  if (digitsOnly.startsWith("27")) return digitsOnly; // already in the right format
-  if (digitsOnly.startsWith("0")) return "27" + digitsOnly.slice(1); // swap the leading 0 for the country code
-  return "27" + digitsOnly; // no recognisable prefix — just add the country code on the front
-}
-
-// checks that a normalized number ("27" followed by digits) actually looks
-// like a real South African mobile number: the "27" country code, then a
-// mobile prefix digit (6, 7, or 8 — landlines start with 01-05 instead), then
-// exactly 8 more digits. this catches things normalizeWhatsApp() would
-// otherwise happily accept, like a landline number or a string of the wrong
-// length, which aren't real WhatsApp-reachable mobile numbers.
-function isValidSouthAfricanMobile(normalized) {
-  return /^27[678]\d{8}$/.test(normalized ?? "");
-}
+const VALID_BUSINESS_TYPES = new Set(BUSINESS_TYPES);
 
 // this is what runs when the submit form is sent. it's given the raw form
 // data, checks it thoroughly, and only saves it to the database if

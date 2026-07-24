@@ -171,6 +171,118 @@ export async function rejectBusiness(id, note) {
   return { success: true };
 }
 
+// approves a pending listing-edit request (see app/edit/actions.js for how
+// one gets created): applies exactly the fields in "proposed_changes" to
+// the live businesses row — nothing else — and puts both the business and
+// the request itself back into their normal, non-pending state. this is
+// the only place a self-service edit ever actually reaches the public
+// listing; up until now it's only ever existed as a proposal.
+export async function approveEditRequest(requestId) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+
+  const db = getAdminClient();
+
+  const { data: editRequest } = await db
+    .from("business_edit_requests")
+    .select("id, business_id, status, proposed_changes")
+    .eq("id", requestId)
+    .maybeSingle();
+
+  if (!editRequest || editRequest.status !== "pending") {
+    return { success: false, error: "This edit request has already been reviewed." };
+  }
+
+  // fetch the business's current slug, category, and area before applying
+  // anything — needed below to revalidate both where it used to show up
+  // and (if the category or area is one of the changed fields) where it
+  // now shows up instead.
+  const { data: business } = await db
+    .from("businesses")
+    .select("slug, category, area")
+    .eq("id", editRequest.business_id)
+    .maybeSingle();
+
+  const { error: applyError } = await db
+    .from("businesses")
+    .update({ ...editRequest.proposed_changes, edit_status: "none" })
+    .eq("id", editRequest.business_id);
+
+  if (applyError) return { success: false, error: applyError.message };
+
+  const { error: requestError } = await db
+    .from("business_edit_requests")
+    .update({ status: "approved" })
+    .eq("id", requestId);
+
+  if (requestError) return { success: false, error: requestError.message };
+
+  // revalidate every page that could have shown this business before the
+  // edit, plus (if the category or area actually changed) every page it
+  // could now show up on instead — the same belt-and-braces approach
+  // approveBusiness() above takes for a brand-new listing.
+  revalidatePath("/");
+  revalidatePath("/towns");
+  revalidatePath("/categories");
+  revalidatePath("/admin");
+  if (business?.slug) revalidatePath(`/business/${business.slug}`);
+
+  const areasToRevalidate = new Set();
+  const categoriesToRevalidate = new Set();
+  if (business?.area) areasToRevalidate.add(business.area);
+  if (editRequest.proposed_changes.area) areasToRevalidate.add(editRequest.proposed_changes.area);
+  if (business?.category) categoriesToRevalidate.add(business.category);
+  if (editRequest.proposed_changes.category) categoriesToRevalidate.add(editRequest.proposed_changes.category);
+
+  for (const area of areasToRevalidate) {
+    const areaSlug = area.split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
+    revalidatePath(`/town/${areaSlug}`);
+  }
+  for (const category of categoriesToRevalidate) {
+    const categorySlug = CATEGORIES.find((c) => c.name === category)?.slug;
+    if (categorySlug) revalidatePath(`/category/${categorySlug}`);
+  }
+
+  return { success: true };
+}
+
+// rejects a pending listing-edit request: the proposed changes are simply
+// never applied (they stay sitting in the business_edit_requests row,
+// which is harmless — see the "Edit Requests" tab in app/admin/AdminPanel.js,
+// which only ever shows rows still at status "pending"), and the business
+// goes back to normal so its owner can request a fresh edit link later.
+export async function rejectEditRequest(requestId, note) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+
+  const db = getAdminClient();
+
+  const { data: editRequest } = await db
+    .from("business_edit_requests")
+    .select("id, business_id, status")
+    .eq("id", requestId)
+    .maybeSingle();
+
+  if (!editRequest || editRequest.status !== "pending") {
+    return { success: false, error: "This edit request has already been reviewed." };
+  }
+
+  const { error: requestError } = await db
+    .from("business_edit_requests")
+    .update({ status: "rejected", review_note: note || null })
+    .eq("id", requestId);
+
+  if (requestError) return { success: false, error: requestError.message };
+
+  const { error: businessError } = await db
+    .from("businesses")
+    .update({ edit_status: "none" })
+    .eq("id", editRequest.business_id);
+
+  if (businessError) return { success: false, error: businessError.message };
+
+  revalidatePath("/admin");
+  return { success: true };
+}
+
 // used by the "search to manually set featured gem" box in the admin
 // panel — finds up to 8 approved businesses whose name contains whatever
 // was typed (case doesn't matter, thanks to "ilike").
