@@ -307,6 +307,27 @@ export async function searchBusinesses(query) {
 async function setFeaturedGemInternal(businessId) {
   const db = getAdminClient();
 
+  // whichever row is currently the most-recently-created one (the "current"
+  // gem, active or already expired — same rule getCurrentFeatured() in
+  // app/admin/page.js uses) is about to be dethroned by the new one below —
+  // stamp it with exactly when that happened, so the admin panel's "Recent
+  // History" list can show "featured from ... to ..." instead of just a
+  // duration. harmless no-op the very first time this ever runs, when
+  // there's no previous row yet.
+  const { data: previousGem } = await db
+    .from("featured_gem")
+    .select("id")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (previousGem) {
+    await db
+      .from("featured_gem")
+      .update({ replaced_at: new Date().toISOString() })
+      .eq("id", previousGem.id);
+  }
+
   const sevenDaysFromNowInMilliseconds = Date.now() + 7 * 24 * 60 * 60 * 1000;
   const featuredUntil = new Date(sevenDaysFromNowInMilliseconds).toISOString();
 

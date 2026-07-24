@@ -52,12 +52,15 @@ async function getCurrentFeatured() {
 // fetches the 5 featured-gem records before the current one, for the
 // admin panel's collapsible "Recent History" list. ".range(1, 5)" (after
 // sorting newest-first) skips row 0 — the current gem, already covered by
-// getCurrentFeatured() above — and returns the next 5.
+// getCurrentFeatured() above — and returns the next 5. "replaced_at" is
+// when the *next* gem after this one was set (see setFeaturedGemInternal
+// in app/admin/actions.js) — it's what lets the history list show
+// "featured from ... to ..." instead of just a start date.
 async function getFeaturedHistory() {
   const db = getAdminClient();
   const { data } = await db
     .from("featured_gem")
-    .select(`id, created_at, featured_until, businesses(id, name)`)
+    .select(`id, created_at, featured_until, replaced_at, businesses(id, name, logo_url)`)
     .order("created_at", { ascending: false })
     .range(1, 5);
   return data ?? [];

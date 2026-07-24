@@ -63,6 +63,8 @@ function formatEditValue(value) {
   return value === null || value === undefined || value === "" ? "—" : value;
 }
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 // works out the traffic-light status shown for the currently-featured gem
 // (see the "Currently Featured Gem" card below): green "active" while
 // featured_until is still in the future, red "expired" once it's passed,
@@ -72,24 +74,29 @@ function getFeaturedStatus(gem) {
   if (!gem) return { tone: "not-set", label: "Not Set", countdown: null };
 
   const msRemaining = new Date(gem.featured_until).getTime() - Date.now();
+
   if (msRemaining <= 0) {
-    return { tone: "expired", label: "Expired", countdown: "Expired — no gem currently set" };
+    const daysAgo = Math.floor(Math.abs(msRemaining) / ONE_DAY_MS);
+    const countdown = daysAgo < 1 ? "Expired today" : `Expired ${daysAgo} day${daysAgo === 1 ? "" : "s"} ago`;
+    return { tone: "expired", label: "Expired", countdown };
   }
 
-  const daysRemaining = Math.floor(msRemaining / (24 * 60 * 60 * 1000));
+  const daysRemaining = Math.floor(msRemaining / ONE_DAY_MS);
   const countdown = daysRemaining < 1
     ? "Expires today"
     : `${daysRemaining} day${daysRemaining === 1 ? "" : "s"} remaining`;
   return { tone: "active", label: "Active", countdown };
 }
 
-// how many days a past featured_gem record actually ran for, from when it
-// was created to when it was set to expire — almost always 7, but computed
-// rather than hardcoded in case that ever changes (e.g. an admin manually
-// replacing a gem partway through its week).
-function formatFeaturedDuration(createdAt, featuredUntil) {
-  const days = Math.round((new Date(featuredUntil) - new Date(createdAt)) / (24 * 60 * 60 * 1000));
-  return `${days} day${days === 1 ? "" : "s"}`;
+// the "featured from ... to ..." line shown on each row of the "Recent
+// History" list. "to" prefers replaced_at — exactly when the *next* gem
+// was set, see setFeaturedGemInternal in app/admin/actions.js — falling
+// back to the row's own featured_until for any history predating that
+// column being added, where replaced_at will be null forever.
+function formatFeaturedRange(createdAt, featuredUntil, replacedAt) {
+  const from = new Date(createdAt).toLocaleDateString("en-ZA");
+  const to = new Date(replacedAt ?? featuredUntil).toLocaleDateString("en-ZA");
+  return `Featured from ${from} to ${to}`;
 }
 
 export default function AdminPanel({ businesses, currentFeatured, featuredHistory, editRequests }) {
@@ -197,11 +204,11 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
     }
   }
 
-  // called when "Auto-select This Week's Gem" is clicked.
+  // called when "Auto-select" is clicked.
   async function handleAutoSelect() {
     const result = await autoSelectFeaturedGem();
     if (result.success) {
-      flash("Featured Gem auto-selected for this week!");
+      flash("Featured gem updated successfully.");
       refresh();
     } else {
       flash(result.error ?? "Auto-select failed.", true);
@@ -234,7 +241,7 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
     if (result.success) {
       setFeatSearch("");
       setSearchResults([]);
-      flash("Featured Gem updated!");
+      flash("Featured gem updated successfully.");
       refresh();
     } else {
       flash(result.error, true);
@@ -500,8 +507,7 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
             ) : (
               <div className="admin-feat-empty-state">
                 <i className="fa-solid fa-gem" />
-                <p>No business is currently featured.</p>
-                <span>Use &ldquo;Set This Week&apos;s Gem&rdquo; below to choose one.</span>
+                <p>No business is currently featured. Use the section below to set one.</p>
               </div>
             )}
           </div>
@@ -560,17 +566,17 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
 
             {historyOpen && (
               featuredHistory.length === 0 ? (
-                <p className="admin-feat-history-empty">No past featured gems yet.</p>
+                <p className="admin-feat-history-empty">No featured gem history yet.</p>
               ) : (
                 <ul className="admin-feat-history-list">
                   {featuredHistory.map((gem) => (
                     <li key={gem.id} className="admin-feat-history-row">
+                      {gem.businesses?.logo_url
+                        ? <Image src={gem.businesses.logo_url} alt="" width={32} height={32} className="avatar avatar--sm" />
+                        : <div className="avatar-monogram avatar-monogram--sm">{gem.businesses?.name?.[0] ?? "?"}</div>}
                       <span className="admin-feat-history-name">{gem.businesses?.name ?? "Deleted business"}</span>
-                      <span className="admin-feat-history-date">
-                        <i className="fa-solid fa-calendar" /> {new Date(gem.created_at).toLocaleDateString("en-ZA")}
-                      </span>
-                      <span className="admin-feat-history-duration">
-                        Featured for {formatFeaturedDuration(gem.created_at, gem.featured_until)}
+                      <span className="admin-feat-history-range">
+                        {formatFeaturedRange(gem.created_at, gem.featured_until, gem.replaced_at)}
                       </span>
                     </li>
                   ))}
