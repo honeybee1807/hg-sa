@@ -1488,6 +1488,88 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   gap: 0.35rem;
 }
 
+/* ── Delete Listing: deliberately kept visually separate from
+   Approve/Reject above (border-top + top margin acts as the divider) so it
+   can't be clicked by accident, and uses a darker red than the Reject
+   outline button so a permanent delete doesn't read the same as a
+   reversible reject. ── */
+.admin-delete-zone {
+  border-top: 1px dashed #e5e7eb;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  display: flex;
+}
+
+.admin-delete-btn {
+  padding: 0.5rem 1.25rem;
+  border: 1.5px solid #b91c1c;
+  border-radius: var(--radius);
+  background: none;
+  color: #b91c1c;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.admin-delete-btn:hover { background: #b91c1c; color: #fff; }
+
+.admin-delete-confirm {
+  margin-top: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-delete-warning {
+  font-size: 0.85rem;
+  color: #991B1B;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.admin-delete-warning--featured {
+  color: #92400E;
+  background: #FEF3C7;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius);
+}
+
+.admin-delete-confirm-btns { display: flex; gap: 0.5rem; }
+
+.admin-delete-confirm-btn {
+  padding: 0.45rem 1rem;
+  background: #b91c1c;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-delete-confirm-btn:hover { background: #991B1B; }
+.admin-delete-confirm-btn:disabled,
+.admin-delete-confirm-btns .btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .admin-view-link {
   font-size: 0.8rem;
   color: var(--sapphire);

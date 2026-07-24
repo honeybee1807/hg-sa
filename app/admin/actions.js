@@ -283,6 +283,50 @@ export async function rejectEditRequest(requestId, note) {
   return { success: true };
 }
 
+// permanently deletes a business, regardless of its current status
+// (pending, approved, or rejected). the businesses table has "on delete
+// cascade" set up for both business_edit_requests and featured_gem, so the
+// database itself takes care of removing any pending edit request or
+// featured-gem record tied to this business — nothing else needs to be
+// deleted by hand here.
+export async function deleteBusiness(id) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+
+  const db = getAdminClient();
+
+  // fetch these before deleting, purely so the revalidation calls below can
+  // still target the exact pages this business used to appear on — once the
+  // row is gone there's no way to look this up again.
+  const { data: business } = await db
+    .from("businesses")
+    .select("slug, area, category")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await db
+    .from("businesses")
+    .delete()
+    .eq("id", id);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/towns");
+  revalidatePath("/categories");
+  revalidatePath("/admin");
+  if (business?.slug) revalidatePath(`/business/${business.slug}`);
+  if (business?.area) {
+    const areaSlug = business.area.split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
+    revalidatePath(`/town/${areaSlug}`);
+  }
+  if (business?.category) {
+    const categorySlug = CATEGORIES.find((c) => c.name === business.category)?.slug;
+    if (categorySlug) revalidatePath(`/category/${categorySlug}`);
+  }
+
+  return { success: true };
+}
+
 // used by the "search to manually set featured gem" box in the admin
 // panel — finds up to 8 approved businesses whose name contains whatever
 // was typed (case doesn't matter, thanks to "ilike").

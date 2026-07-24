@@ -17,6 +17,7 @@ import {
   logoutAdmin,
   approveBusiness,
   rejectBusiness,
+  deleteBusiness,
   setFeaturedGem,
   autoSelectFeaturedGem,
   searchBusinesses,
@@ -99,6 +100,44 @@ function formatFeaturedRange(createdAt, featuredUntil, replacedAt) {
   return `Featured from ${from} to ${to}`;
 }
 
+// the "Delete Listing" button plus its inline confirmation state, shared by
+// every card type (pending/approved/rejected businesses and edit requests)
+// so all four stay in sync rather than drifting into slightly different
+// copies. never uses window.confirm()/alert() — the confirmation lives
+// entirely in the card itself, see Change 2 in the task this was built for.
+function DeleteControls({ isConfirming, isFeaturedActive, deleting, onRequestDelete, onCancel, onConfirmDelete }) {
+  if (!isConfirming) {
+    return (
+      <div className="admin-delete-zone">
+        <button type="button" className="admin-delete-btn" onClick={onRequestDelete}>
+          <i className="fa-solid fa-trash" /> Delete Listing
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-delete-confirm">
+      <p className="admin-delete-warning">
+        <i className="fa-solid fa-triangle-exclamation" /> This will permanently delete this listing and cannot be undone. Are you sure?
+      </p>
+      {isFeaturedActive && (
+        <p className="admin-delete-warning admin-delete-warning--featured">
+          <i className="fa-solid fa-gem" /> Warning: This business is currently the featured Gem of the Week. Deleting it will remove it from the homepage immediately.
+        </p>
+      )}
+      <div className="admin-delete-confirm-btns">
+        <button type="button" className="btn-secondary" onClick={onCancel} disabled={deleting}>
+          Cancel
+        </button>
+        <button type="button" className="admin-delete-confirm-btn" onClick={onConfirmDelete} disabled={deleting}>
+          <i className="fa-solid fa-trash" /> {deleting ? "Deleting..." : "Yes, Delete Permanently"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPanel({ businesses, currentFeatured, featuredHistory, editRequests }) {
   const router  = useRouter();
   // "isPending" here just means "we're waiting for the page to refresh
@@ -124,6 +163,12 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
   // collide (they're rows in two different tables) and open the wrong form.
   const [rejectingEditId, setRejectingEditId] = useState(null);
   const [editRejectNote, setEditRejectNote]   = useState("");
+  // which business is showing its "are you sure?" delete confirmation, if
+  // any — shared across business cards and edit-request cards, since an
+  // edit request's delete button targets the underlying business, not the
+  // request itself.
+  const [deletingBizId, setDeletingBizId] = useState(null);
+  const [deleting, setDeleting]           = useState(false); // true only while a delete is actually in flight, so the buttons can't be double-clicked
 
   // only show businesses matching the currently selected tab (or
   // everything, if the "all" tab is selected) — irrelevant for the
@@ -202,6 +247,30 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
     } else {
       flash(result.error, true);
     }
+  }
+
+  // called when "Yes, Delete Permanently" is clicked. leaves deletingBizId
+  // set on failure, so the confirmation (and its warning text) stays open
+  // rather than silently reverting to the normal buttons.
+  async function handleDeleteConfirm(id) {
+    setDeleting(true);
+    const result = await deleteBusiness(id);
+    setDeleting(false);
+    if (result.success) {
+      setDeletingBizId(null);
+      flash("Listing deleted successfully.");
+      refresh();
+    } else {
+      flash(result.error, true);
+    }
+  }
+
+  // true if the given business id is the one currently live as the
+  // featured gem (i.e. its featured_gem row hasn't expired yet) — an
+  // already-expired past feature doesn't need the extra warning, since
+  // deleting it wouldn't change anything visible on the homepage.
+  function isFeaturedActive(bizId) {
+    return !!bizId && featBiz?.id === bizId && featuredStatus.tone === "active";
   }
 
   // called when "Auto-select" is clicked.
@@ -653,40 +722,59 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
                         </div>
                       </div>
 
-                      {rejectingEditId === request.id ? (
-                        <div className="admin-reject-form">
-                          <textarea
-                            className="form-control"
-                            rows={2}
-                            placeholder="Rejection reason (optional)..."
-                            value={editRejectNote}
-                            onChange={(e) => setEditRejectNote(e.target.value)}
-                          />
-                          <div className="admin-reject-btns">
-                            <button className="btn-secondary" onClick={() => { setRejectingEditId(null); setEditRejectNote(""); }}>
-                              Cancel
-                            </button>
-                            <button className="admin-reject-confirm-btn" onClick={() => handleRejectEdit(request.id)}>
-                              <i className="fa-solid fa-xmark" /> Confirm Reject
-                            </button>
-                          </div>
-                        </div>
+                      {biz?.id && deletingBizId === biz.id ? (
+                        <DeleteControls
+                          isConfirming
+                          isFeaturedActive={isFeaturedActive(biz.id)}
+                          deleting={deleting}
+                          onCancel={() => setDeletingBizId(null)}
+                          onConfirmDelete={() => handleDeleteConfirm(biz.id)}
+                        />
                       ) : (
-                        <div className="admin-biz-actions">
-                          <button
-                            className="btn-primary admin-approve-btn admin-approve-edit-btn"
-                            onClick={() => handleApproveEdit(request.id)}
-                            disabled={isPending}
-                          >
-                            <i className="fa-solid fa-check" /> Approve Changes
-                          </button>
-                          <button
-                            className="admin-reject-btn"
-                            onClick={() => setRejectingEditId(request.id)}
-                          >
-                            <i className="fa-solid fa-xmark" /> Reject Changes
-                          </button>
-                        </div>
+                        <>
+                          {rejectingEditId === request.id ? (
+                            <div className="admin-reject-form">
+                              <textarea
+                                className="form-control"
+                                rows={2}
+                                placeholder="Rejection reason (optional)..."
+                                value={editRejectNote}
+                                onChange={(e) => setEditRejectNote(e.target.value)}
+                              />
+                              <div className="admin-reject-btns">
+                                <button className="btn-secondary" onClick={() => { setRejectingEditId(null); setEditRejectNote(""); }}>
+                                  Cancel
+                                </button>
+                                <button className="admin-reject-confirm-btn" onClick={() => handleRejectEdit(request.id)}>
+                                  <i className="fa-solid fa-xmark" /> Confirm Reject
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="admin-biz-actions">
+                              <button
+                                className="btn-primary admin-approve-btn admin-approve-edit-btn"
+                                onClick={() => handleApproveEdit(request.id)}
+                                disabled={isPending}
+                              >
+                                <i className="fa-solid fa-check" /> Approve Changes
+                              </button>
+                              <button
+                                className="admin-reject-btn"
+                                onClick={() => setRejectingEditId(request.id)}
+                              >
+                                <i className="fa-solid fa-xmark" /> Reject Changes
+                              </button>
+                            </div>
+                          )}
+
+                          {biz?.id && (
+                            <DeleteControls
+                              isConfirming={false}
+                              onRequestDelete={() => setDeletingBizId(biz.id)}
+                            />
+                          )}
+                        </>
                       )}
                     </div>
                   );
@@ -826,42 +914,59 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
                     </div>
                   )}
 
-                  {biz.status === "pending" && (
-                    <div className="admin-biz-actions">
-                      <button
-                        className="btn-primary admin-approve-btn"
-                        onClick={() => handleApprove(biz)}
-                        disabled={isPending}
-                      >
-                        <i className="fa-solid fa-check" /> Approve
-                      </button>
-                      {rejectingId === biz.id ? (
-                        <div className="admin-reject-form">
-                          <textarea
-                            className="form-control"
-                            rows={2}
-                            placeholder="Rejection reason (optional)..."
-                            value={rejectNote}
-                            onChange={(e) => setRejectNote(e.target.value)}
-                          />
-                          <div className="admin-reject-btns">
-                            <button className="btn-secondary" onClick={() => { setRejectingId(null); setRejectNote(""); }}>
-                              Cancel
+                  {deletingBizId === biz.id ? (
+                    <DeleteControls
+                      isConfirming
+                      isFeaturedActive={isFeaturedActive(biz.id)}
+                      deleting={deleting}
+                      onCancel={() => setDeletingBizId(null)}
+                      onConfirmDelete={() => handleDeleteConfirm(biz.id)}
+                    />
+                  ) : (
+                    <>
+                      {biz.status === "pending" && (
+                        <div className="admin-biz-actions">
+                          <button
+                            className="btn-primary admin-approve-btn"
+                            onClick={() => handleApprove(biz)}
+                            disabled={isPending}
+                          >
+                            <i className="fa-solid fa-check" /> Approve
+                          </button>
+                          {rejectingId === biz.id ? (
+                            <div className="admin-reject-form">
+                              <textarea
+                                className="form-control"
+                                rows={2}
+                                placeholder="Rejection reason (optional)..."
+                                value={rejectNote}
+                                onChange={(e) => setRejectNote(e.target.value)}
+                              />
+                              <div className="admin-reject-btns">
+                                <button className="btn-secondary" onClick={() => { setRejectingId(null); setRejectNote(""); }}>
+                                  Cancel
+                                </button>
+                                <button className="admin-reject-confirm-btn" onClick={() => handleReject(biz.id)}>
+                                  <i className="fa-solid fa-xmark" /> Confirm Reject
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              className="admin-reject-btn"
+                              onClick={() => setRejectingId(biz.id)}
+                            >
+                              <i className="fa-solid fa-xmark" /> Reject
                             </button>
-                            <button className="admin-reject-confirm-btn" onClick={() => handleReject(biz.id)}>
-                              <i className="fa-solid fa-xmark" /> Confirm Reject
-                            </button>
-                          </div>
+                          )}
                         </div>
-                      ) : (
-                        <button
-                          className="admin-reject-btn"
-                          onClick={() => setRejectingId(biz.id)}
-                        >
-                          <i className="fa-solid fa-xmark" /> Reject
-                        </button>
                       )}
-                    </div>
+
+                      <DeleteControls
+                        isConfirming={false}
+                        onRequestDelete={() => setDeletingBizId(biz.id)}
+                      />
+                    </>
                   )}
 
                   {biz.slug && (
