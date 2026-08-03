@@ -24,7 +24,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { submitBusiness } from "./actions";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 
 // where uploaded logos get sent, and which "upload preset" (a pre-configured
@@ -60,6 +60,9 @@ const INITIAL = {
   owner_name: "", owner_email: "", referral_source: "",
   is_own_business: "yes",
   on_behalf_of_name: "", on_behalf_of_reason: "",
+  halal: false, halal_certificate: "",
+  delivery_available: false,
+  callouts_available: false,
 };
 
 export default function SubmitForm() {
@@ -168,6 +171,31 @@ export default function SubmitForm() {
       street_address: newBusinessType === PHYSICAL_BUSINESS_TYPE ? previousFields.street_address : "",
     }));
     clearFieldError("business_type");
+  }
+
+  // a generic on/off toggle for the plain (non-Halal) badge checkboxes —
+  // Halal needs its own handler below, since unchecking it also has to
+  // clear the certificate dropdown underneath it.
+  function toggleCheckbox(field) {
+    return function handleToggle(event) {
+      setFields((previousFields) => ({ ...previousFields, [field]: event.target.checked }));
+      clearFieldError(field);
+    };
+  }
+
+  // unlike the other two badges, Halal reveals a second field (the
+  // certificate dropdown) when checked — so unchecking it has to clear
+  // that field too, rather than leaving a stale, now-hidden value sitting
+  // in state.
+  function handleHalalChange(event) {
+    const checked = event.target.checked;
+    setFields((previousFields) => ({
+      ...previousFields,
+      halal: checked,
+      halal_certificate: checked ? previousFields.halal_certificate : "",
+    }));
+    clearFieldError("halal");
+    clearFieldError("halal_certificate");
   }
 
   // runs the moment someone picks a photo from their device. it doesn't
@@ -282,6 +310,9 @@ export default function SubmitForm() {
         errors.on_behalf_of_reason = "Please tell us why you're listing it on their behalf.";
       }
     }
+    if (isBadgeVisible("halal", fields.category) && fields.halal && !fields.halal_certificate) {
+      errors.halal_certificate = "Please select your Halal certificate type.";
+    }
 
     return errors;
   }
@@ -307,17 +338,36 @@ export default function SubmitForm() {
 
     const formDataToSubmit = new FormData();
 
+    // a badge whose checkbox is no longer visible for the currently
+    // selected category (e.g. Delivery was checked, then the category was
+    // changed to one that hides it) is cleared here, right before sending
+    // — not just visually — the same last-line-of-defence idea as
+    // "custom_category" below. Halal's certificate is cleared too whenever
+    // Halal itself ends up cleared.
+    const halalVisible    = isBadgeVisible("halal", fields.category);
+    const deliveryVisible = isBadgeVisible("delivery", fields.category);
+    const calloutsVisible = isBadgeVisible("callouts", fields.category);
+
+    const cleanedHalal             = halalVisible && fields.halal;
+    const cleanedHalalCertificate  = cleanedHalal ? fields.halal_certificate : "";
+    const cleanedDelivery          = deliveryVisible && fields.delivery_available;
+    const cleanedCallouts          = calloutsVisible && fields.callouts_available;
+
     // copy every field currently in state onto the FormData one at a time,
     // rather than one long chained expression, so it's obvious exactly what
     // is being sent. "custom_category" is the one exception: only ever sent
     // when the category itself is "Other" — for any other category it's
     // blanked out here as a last line of defence, even though the field is
     // already cleared the moment the category selection changes away from
-    // "Other" (see handleCategoryChange above).
+    // "Other" (see handleCategoryChange above). the four badge fields go
+    // through the "cleaned" values computed just above for the same reason.
     for (const fieldName of Object.keys(fields)) {
-      const value = fieldName === "custom_category" && fields.category !== "Other"
-        ? ""
-        : fields[fieldName];
+      let value = fields[fieldName];
+      if (fieldName === "custom_category" && fields.category !== "Other") value = "";
+      if (fieldName === "halal") value = cleanedHalal;
+      if (fieldName === "halal_certificate") value = cleanedHalalCertificate;
+      if (fieldName === "delivery_available") value = cleanedDelivery;
+      if (fieldName === "callouts_available") value = cleanedCallouts;
       formDataToSubmit.append(fieldName, value);
     }
     formDataToSubmit.append("logo_url", logoUrl);
@@ -451,6 +501,57 @@ export default function SubmitForm() {
             <input id="street_address" className="form-control" type="text" value={fields.street_address}
               onChange={set("street_address")} placeholder="e.g. 12 Main Street, Estcourt" />
             <span className="form-hint">This will be used to show your location on a map. Only enter if customers need to find you physically.</span>
+          </div>
+        )}
+
+        {/* only shown once at least one badge is available for the currently
+            selected category — nothing renders at all before a category is
+            picked, or for a category none of the three badges apply to. */}
+        {(isBadgeVisible("halal", fields.category) ||
+          isBadgeVisible("delivery", fields.category) ||
+          isBadgeVisible("callouts", fields.category)) && (
+          <div className="form-group">
+            <label>Badges <span className="optional">(optional)</span></label>
+
+            {isBadgeVisible("halal", fields.category) && (
+              <>
+                <label className="badge-checkbox">
+                  <input type="checkbox" checked={fields.halal} onChange={handleHalalChange} />
+                  Halal
+                </label>
+                {fields.halal && (
+                  <div className="badge-cert-group">
+                    <select
+                      className="form-control"
+                      value={fields.halal_certificate}
+                      onChange={set("halal_certificate")}
+                    >
+                      <option value="" disabled>Select certificate type...</option>
+                      {HALAL_CERTIFICATES.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                    {fieldErrors.halal_certificate && (
+                      <span className="field-error">{fieldErrors.halal_certificate}</span>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {isBadgeVisible("delivery", fields.category) && (
+              <label className="badge-checkbox">
+                <input type="checkbox" checked={fields.delivery_available} onChange={toggleCheckbox("delivery_available")} />
+                We offer delivery
+              </label>
+            )}
+
+            {isBadgeVisible("callouts", fields.category) && (
+              <label className="badge-checkbox">
+                <input type="checkbox" checked={fields.callouts_available} onChange={toggleCheckbox("callouts_available")} />
+                We come to you (call-outs available)
+              </label>
+            )}
           </div>
         )}
 

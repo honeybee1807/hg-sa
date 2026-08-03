@@ -5,6 +5,7 @@
 // area browsing grids, the "built by Olideen" panel, the FAQ, and the
 // closing call-to-action.
 
+import { Suspense } from "react";
 import Link from "next/link";
 import supabase from "@/lib/supabase";
 import { CATEGORIES, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
@@ -64,7 +65,7 @@ async function getFeaturedGem() {
 async function getAllApprovedBusinesses() {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description, whatsapp, instagram, facebook, street_address")
+    .select("id, name, category, business_type, area, province, logo_url, slug, description, whatsapp, instagram, facebook, street_address, halal, delivery_available, callouts_available")
     .eq("status", "approved")
     .order("name");
   // if the lookup failed for some reason, show an empty list rather than
@@ -278,7 +279,12 @@ export default async function HomePage() {
             </div>
           </AnimatedSection>
           <AnimatedSection delay={0.1}>
-            <DirectorySearch businesses={allBusinesses} />
+            {/* DirectorySearch reads the "?halal=" etc. badge-filter query
+                params via useSearchParams() (see Part F), which requires a
+                Suspense boundary around it. */}
+            <Suspense fallback={null}>
+              <DirectorySearch businesses={allBusinesses} />
+            </Suspense>
           </AnimatedSection>
         </div>
       </section>

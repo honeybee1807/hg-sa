@@ -21,7 +21,7 @@
 
 import { randomUUID } from "crypto";
 import { getAdminClient } from "@/lib/supabase-admin";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, SITE_URL } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, SITE_URL, BADGE_CATEGORY_VISIBILITY } from "@/lib/constants";
 import { normalizeInstagramInput } from "@/lib/social";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 import { sendEditLinkEmail } from "@/lib/email";
@@ -127,6 +127,11 @@ function buildEditedValues(formData) {
   const facebook           = formData.get("facebook")?.toString().trim();
   const description       = formData.get("description")?.toString().trim();
 
+  const halal              = formData.get("halal")?.toString() === "true";
+  const halalCertificate   = formData.get("halal_certificate")?.toString().trim();
+  const deliveryAvailable  = formData.get("delivery_available")?.toString() === "true";
+  const calloutsAvailable  = formData.get("callouts_available")?.toString() === "true";
+
   if (!name || !category || !businessType || !province || !area || !description) {
     return { error: "Please fill in all required fields." };
   }
@@ -153,6 +158,18 @@ function buildEditedValues(formData) {
     return { error: "Please enter a valid South African mobile number, starting with 0 or +27." };
   }
 
+  // same backstop as submitBusiness() in app/submit/actions.js: re-check
+  // each badge against the now-validated category, in case one was still
+  // marked true for a category that doesn't offer it.
+  const finalHalal            = BADGE_CATEGORY_VISIBILITY.halal.includes(category) && halal;
+  const finalHalalCertificate = finalHalal ? (halalCertificate || null) : null;
+  const finalDelivery         = BADGE_CATEGORY_VISIBILITY.delivery.includes(category) && deliveryAvailable;
+  const finalCallouts         = BADGE_CATEGORY_VISIBILITY.callouts.includes(category) && calloutsAvailable;
+
+  if (finalHalal && !finalHalalCertificate) {
+    return { error: "Please select your Halal certificate type." };
+  }
+
   return {
     values: {
       name,
@@ -167,6 +184,10 @@ function buildEditedValues(formData) {
       instagram: normalizeInstagramInput(instagram),
       facebook: facebook || null,
       description,
+      halal: finalHalal,
+      halal_certificate: finalHalalCertificate,
+      delivery_available: finalDelivery,
+      callouts_available: finalCallouts,
     },
   };
 }
@@ -207,7 +228,7 @@ export async function submitEditRequest(token, formData) {
 
   const { data: currentBusiness } = await db
     .from("businesses")
-    .select("name, category, custom_category, business_type, province, area, street_address, whatsapp, website, instagram, facebook, description")
+    .select("name, category, custom_category, business_type, province, area, street_address, whatsapp, website, instagram, facebook, description, halal, halal_certificate, delivery_available, callouts_available")
     .eq("id", editRequest.business_id)
     .maybeSingle();
 

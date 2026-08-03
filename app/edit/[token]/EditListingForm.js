@@ -17,7 +17,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { submitEditRequest } from "../actions";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 
 export default function EditListingForm({ token, business }) {
@@ -37,6 +37,10 @@ export default function EditListingForm({ token, business }) {
     instagram: business.instagram ?? "",
     facebook: business.facebook ?? "",
     description: business.description ?? "",
+    halal: business.halal ?? false,
+    halal_certificate: business.halal_certificate ?? "",
+    delivery_available: business.delivery_available ?? false,
+    callouts_available: business.callouts_available ?? false,
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting]   = useState(false);
@@ -85,6 +89,27 @@ export default function EditListingForm({ token, business }) {
     setCharCount(event.target.value.length);
   }
 
+  // mirrors SubmitForm.js: a generic toggle for the plain badges, and a
+  // dedicated handler for Halal since unchecking it also has to clear the
+  // certificate dropdown underneath it.
+  function toggleCheckbox(field) {
+    return function handleToggle(event) {
+      setFields((previous) => ({ ...previous, [field]: event.target.checked }));
+      clearFieldError(field);
+    };
+  }
+
+  function handleHalalChange(event) {
+    const checked = event.target.checked;
+    setFields((previous) => ({
+      ...previous,
+      halal: checked,
+      halal_certificate: checked ? previous.halal_certificate : "",
+    }));
+    clearFieldError("halal");
+    clearFieldError("halal_certificate");
+  }
+
   function validateForm() {
     const errors = {};
 
@@ -110,6 +135,9 @@ export default function EditListingForm({ token, business }) {
     } else if (!isValidSouthAfricanMobile(normalizeWhatsApp(fields.whatsapp))) {
       errors.whatsapp = "Please enter a valid South African mobile number, starting with 0 or +27.";
     }
+    if (isBadgeVisible("halal", fields.category) && fields.halal && !fields.halal_certificate) {
+      errors.halal_certificate = "Please select your Halal certificate type.";
+    }
 
     return errors;
   }
@@ -127,9 +155,26 @@ export default function EditListingForm({ token, business }) {
     setSubmitting(true);
     setResult(null);
 
+    // same last-line-of-defence clearing as SubmitForm.js's handleSubmit —
+    // a badge no longer visible for the currently selected category is
+    // cleared here before sending, not just visually.
+    const halalVisible    = isBadgeVisible("halal", fields.category);
+    const deliveryVisible = isBadgeVisible("delivery", fields.category);
+    const calloutsVisible = isBadgeVisible("callouts", fields.category);
+
+    const cleanedHalal            = halalVisible && fields.halal;
+    const cleanedHalalCertificate = cleanedHalal ? fields.halal_certificate : "";
+    const cleanedDelivery         = deliveryVisible && fields.delivery_available;
+    const cleanedCallouts         = calloutsVisible && fields.callouts_available;
+
     const formData = new FormData();
     for (const field of Object.keys(fields)) {
-      formData.append(field, fields[field]);
+      let value = fields[field];
+      if (field === "halal") value = cleanedHalal;
+      if (field === "halal_certificate") value = cleanedHalalCertificate;
+      if (field === "delivery_available") value = cleanedDelivery;
+      if (field === "callouts_available") value = cleanedCallouts;
+      formData.append(field, value);
     }
 
     const response = await submitEditRequest(token, formData);
@@ -228,6 +273,54 @@ export default function EditListingForm({ token, business }) {
             <input id="street_address" className="form-control" type="text" value={fields.street_address}
               onChange={set("street_address")} placeholder="e.g. 12 Main Street, Estcourt" />
             <span className="form-hint">This will be used to show your location on a map. Only enter if customers need to find you physically.</span>
+          </div>
+        )}
+
+        {(isBadgeVisible("halal", fields.category) ||
+          isBadgeVisible("delivery", fields.category) ||
+          isBadgeVisible("callouts", fields.category)) && (
+          <div className="form-group">
+            <label>Badges <span className="optional">(optional)</span></label>
+
+            {isBadgeVisible("halal", fields.category) && (
+              <>
+                <label className="badge-checkbox">
+                  <input type="checkbox" checked={fields.halal} onChange={handleHalalChange} />
+                  Halal
+                </label>
+                {fields.halal && (
+                  <div className="badge-cert-group">
+                    <select
+                      className="form-control"
+                      value={fields.halal_certificate}
+                      onChange={set("halal_certificate")}
+                    >
+                      <option value="" disabled>Select certificate type...</option>
+                      {HALAL_CERTIFICATES.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                    {fieldErrors.halal_certificate && (
+                      <span className="field-error">{fieldErrors.halal_certificate}</span>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {isBadgeVisible("delivery", fields.category) && (
+              <label className="badge-checkbox">
+                <input type="checkbox" checked={fields.delivery_available} onChange={toggleCheckbox("delivery_available")} />
+                We offer delivery
+              </label>
+            )}
+
+            {isBadgeVisible("callouts", fields.category) && (
+              <label className="badge-checkbox">
+                <input type="checkbox" checked={fields.callouts_available} onChange={toggleCheckbox("callouts_available")} />
+                We come to you (call-outs available)
+              </label>
+            )}
           </div>
         )}
 

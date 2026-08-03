@@ -9,6 +9,7 @@ import Image from "next/image";
 import supabase from "@/lib/supabase";
 import { CATEGORIES, SITE_URL } from "@/lib/constants";
 import SocialLink from "@/components/SocialLink";
+import BadgePills from "@/components/BadgePills";
 
 // rebuild this page at most once an hour.
 export const revalidate = 3600;
@@ -23,7 +24,7 @@ function slugToCategory(slug) {
 async function getBusinessesByCategory(categoryName) {
   const { data } = await supabase
     .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook, street_address")
+    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook, street_address, halal, delivery_available, callouts_available")
     .eq("status", "approved")
     .eq("category", categoryName)
     .order("name");
@@ -218,6 +219,7 @@ function BusinessCard({ biz }) {
           {biz.business_type && (
             <span className="business-type-badge">{biz.business_type}</span>
           )}
+          <BadgePills biz={biz} />
           {biz.description && (
             <p className="listing-card-desc">{biz.description}</p>
           )}

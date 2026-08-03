@@ -12,8 +12,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { CATEGORIES, PROVINCES } from "@/lib/constants";
 import SocialLink from "@/components/SocialLink";
+import BadgePills from "@/components/BadgePills";
+
+// the three badge filters shown in their own section of the filter panel —
+// same icons/colours as the pills themselves (see components/BadgePills.js
+// and the "badge-pill--*" / "dir-filter-badge-icon--*" classes in
+// globals.css), so a filter checkbox always visually matches the pill it's
+// filtering for.
+const BADGE_FILTER_OPTIONS = [
+  { key: "halal",     label: "Halal",                 icon: "fa-solid fa-moon" },
+  { key: "delivery",  label: "Delivery Available",     icon: "fa-solid fa-box" },
+  { key: "callouts",  label: "Call-Outs Available",    icon: "fa-solid fa-location-arrow" },
+];
+
+// the three query-string keys the badge filters sync to/from — kept as
+// their own list (rather than category/province/business-type) since
+// those don't have URL-param support yet; see the note on "readBadgesFromUrl"
+// below.
+const BADGE_PARAM_KEYS = ["halal", "delivery", "callouts"];
 
 // the options shown in the "Business Type" filter section — kept here
 // rather than in lib/constants.js since this exact list is also
@@ -66,12 +85,25 @@ function formatWhatsApp(raw) {
 }
 
 export default function DirectorySearch({ businesses }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // reads whichever badge filters are currently in the URL (e.g.
+  // "?halal=true&delivery=true") — used once, below, to restore a shared/
+  // refreshed link's filter state. category/province/business-type don't
+  // have URL params yet, so only these three are read here.
+  function readBadgesFromUrl() {
+    return BADGE_PARAM_KEYS.filter((key) => searchParams.get(key) === "true");
+  }
+
   const [query, setQuery] = useState(""); // whatever text is currently typed into the search box
 
   // the filters actually being applied to the results right now.
   const [appliedCategories, setAppliedCategories]         = useState([]);
   const [appliedProvinces, setAppliedProvinces]           = useState([]);
   const [appliedBusinessTypes, setAppliedBusinessTypes]   = useState([]);
+  const [appliedBadges, setAppliedBadges]                 = useState(readBadgesFromUrl);
 
   // the filters currently ticked inside the (possibly still open) filter
   // panel — kept separate from the "applied" versions above so that ticking
@@ -79,9 +111,25 @@ export default function DirectorySearch({ businesses }) {
   const [pendingCategories, setPendingCategories]         = useState([]);
   const [pendingProvinces, setPendingProvinces]           = useState([]);
   const [pendingBusinessTypes, setPendingBusinessTypes]   = useState([]);
+  const [pendingBadges, setPendingBadges]                 = useState(appliedBadges);
 
   const [filtersOpen, setFiltersOpen] = useState(false); // whether the filter panel is currently showing
-  const [openSections, setOpenSections] = useState({ category: true, province: true, businessType: true }); // which of the panel's three collapsible sections are expanded
+  const [openSections, setOpenSections] = useState({ category: true, province: true, businessType: true, badges: true }); // which of the panel's collapsible sections are expanded
+
+  // keeps the URL's badge query params in sync with whatever's currently
+  // applied, so a filtered view is shareable via link and restores
+  // correctly on page load/refresh. only the badge filters do this for
+  // now — category/province/business-type never touch the URL, so those
+  // are left completely alone here.
+  function syncBadgesToUrl(badges) {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const key of BADGE_PARAM_KEYS) {
+      if (badges.includes(key)) params.set(key, "true");
+      else params.delete(key);
+    }
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  }
 
   // which of the three layouts is currently selected. starts as "list"
   // (the default) so the very first server-rendered frame is predictable —
@@ -161,6 +209,7 @@ export default function DirectorySearch({ businesses }) {
         setPendingCategories(appliedCategories);
         setPendingProvinces(appliedProvinces);
         setPendingBusinessTypes(appliedBusinessTypes);
+        setPendingBadges(appliedBadges);
       }
       return !currentlyOpen;
     });
@@ -174,6 +223,8 @@ export default function DirectorySearch({ businesses }) {
     setAppliedCategories(pendingCategories);
     setAppliedProvinces(pendingProvinces);
     setAppliedBusinessTypes(pendingBusinessTypes);
+    setAppliedBadges(pendingBadges);
+    syncBadgesToUrl(pendingBadges);
     setFiltersOpen(false);
   }
 
@@ -184,13 +235,16 @@ export default function DirectorySearch({ businesses }) {
     setPendingCategories([]);
     setPendingProvinces([]);
     setPendingBusinessTypes([]);
+    setPendingBadges([]);
     setAppliedCategories([]);
     setAppliedProvinces([]);
     setAppliedBusinessTypes([]);
+    setAppliedBadges([]);
+    syncBadgesToUrl([]);
     setFiltersOpen(false);
   }
 
-  const activeFilterCount = appliedCategories.length + appliedProvinces.length + appliedBusinessTypes.length;
+  const activeFilterCount = appliedCategories.length + appliedProvinces.length + appliedBusinessTypes.length + appliedBadges.length;
 
   // recalculates the filtered list of businesses whenever the full list,
   // the search text, or any applied filter changes. "useMemo" just means
@@ -205,11 +259,21 @@ export default function DirectorySearch({ businesses }) {
       const matchesProvince       = appliedProvinces.length === 0 || appliedProvinces.includes(business.province);
       const matchesBusinessType   = appliedBusinessTypes.length === 0 || appliedBusinessTypes.includes(business.business_type);
 
+      // every checked badge filter must match (AND, not OR) — a business
+      // checked against "Halal" and "Delivery Available" together has to
+      // have both, not just one.
+      const matchesBadges = appliedBadges.every((key) => {
+        if (key === "halal") return !!business.halal;
+        if (key === "delivery") return !!business.delivery_available;
+        if (key === "callouts") return !!business.callouts_available;
+        return true;
+      });
+
       // a business only stays in the results if it satisfies every active
       // filter at once.
-      return matchesSearchText && matchesCategory && matchesProvince && matchesBusinessType;
+      return matchesSearchText && matchesCategory && matchesProvince && matchesBusinessType && matchesBadges;
     });
-  }, [businesses, query, appliedCategories, appliedProvinces, appliedBusinessTypes]);
+  }, [businesses, query, appliedCategories, appliedProvinces, appliedBusinessTypes, appliedBadges]);
 
   return (
     <div className="dir-search">
@@ -273,6 +337,12 @@ export default function DirectorySearch({ businesses }) {
                 options={BUSINESS_TYPES}
                 selected={pendingBusinessTypes}
                 onChange={setPendingBusinessTypes}
+              />
+              <BadgeFilterSection
+                isOpen={openSections.badges}
+                onToggle={() => toggleSection("badges")}
+                selected={pendingBadges}
+                onChange={setPendingBadges}
               />
 
               <div className="dir-filter-actions">
@@ -396,6 +466,54 @@ function FilterSection({ title, isOpen, onToggle, options, selected, onChange })
   );
 }
 
+// the "Badges" section of the filter panel — same collapsible shape as
+// FilterSection above, but each checkbox shows a coloured icon matching
+// the badge pill it filters for (see components/BadgePills.js), and
+// selecting more than one is an AND (a business must have every checked
+// badge), not an OR the way category/province/business-type work.
+function BadgeFilterSection({ isOpen, onToggle, selected, onChange }) {
+  function toggleOption(key) {
+    onChange(
+      selected.includes(key)
+        ? selected.filter((k) => k !== key)
+        : [...selected, key]
+    );
+  }
+
+  return (
+    <div className="dir-filter-section">
+      <button
+        type="button"
+        className="dir-filter-section-header"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+      >
+        <span>
+          Badges
+          {selected.length > 0 ? ` (${selected.length})` : ""}
+        </span>
+        <i className={`fa-solid ${isOpen ? "fa-chevron-up" : "fa-chevron-down"}`} aria-hidden="true" />
+      </button>
+
+      {isOpen && (
+        <div className="dir-filter-section-body">
+          {BADGE_FILTER_OPTIONS.map((badge) => (
+            <label key={badge.key} className="dir-filter-checkbox">
+              <input
+                type="checkbox"
+                checked={selected.includes(badge.key)}
+                onChange={() => toggleOption(badge.key)}
+              />
+              <i className={`${badge.icon} dir-filter-badge-icon dir-filter-badge-icon--${badge.key}`} aria-hidden="true" />
+              {badge.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // a single business shown as a card — used for both the 2-column grid and
 // the compact grid, which differ only in size (via the "compact" flag)
 // rather than in what information they show.
@@ -430,6 +548,8 @@ function DirectoryCard({ biz, compact }) {
           <span className="dir-card-cat-pill"><i className="fa-solid fa-tag" aria-hidden="true" /> {biz.category}</span>
           {biz.business_type && <span className="business-type-badge">{biz.business_type}</span>}
         </div>
+
+        <BadgePills biz={biz} />
 
         {biz.description && <p className="dir-card-desc">{biz.description}</p>}
       </Link>
@@ -469,6 +589,7 @@ function DirectoryRow({ biz }) {
           <p className="dir-row-location">
             <i className="fa-solid fa-location-dot" aria-hidden="true" /> {areaName}, {biz.province}
           </p>
+          <BadgePills biz={biz} />
         </div>
       </Link>
 

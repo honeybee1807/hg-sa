@@ -7,9 +7,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
-import { SITE_URL, CATEGORIES, PHYSICAL_BUSINESS_TYPE } from "@/lib/constants";
+import { SITE_URL, CATEGORIES, PHYSICAL_BUSINESS_TYPE, halalCertificateLabel } from "@/lib/constants";
 import SocialLink from "@/components/SocialLink";
 import BusinessMap from "@/components/BusinessMapLoader";
+import BadgePills from "@/components/BadgePills";
 
 // rebuild a business's page at most once an hour, so a recent admin change
 // (like approving it) shows up reasonably quickly without needing to
@@ -22,7 +23,7 @@ export const revalidate = 3600; // 3600 seconds = 1 hour
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
-    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, instagram, facebook, street_address, owner_name, business_detail")
+    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, instagram, facebook, street_address, owner_name, business_detail, halal, halal_certificate, delivery_available, callouts_available")
     .eq("status", "approved")
     .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();
@@ -194,6 +195,18 @@ export default async function BusinessPage({ params }) {
               </div>
               {biz.business_type && (
                 <span className="business-type-badge">{biz.business_type}</span>
+              )}
+
+              {(biz.halal || biz.delivery_available || biz.callouts_available) && (
+                <>
+                  <h3 className="biz-badges-heading">About This Business</h3>
+                  <BadgePills biz={biz} size="lg" />
+                  {biz.halal && biz.halal_certificate && (
+                    <p className="biz-halal-cert">
+                      Certified by: {halalCertificateLabel(biz.halal_certificate)}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>

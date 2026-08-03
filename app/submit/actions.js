@@ -6,7 +6,7 @@
 // to the database with a "pending" status, ready for an admin to review.
 
 import supabase from "@/lib/supabase";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, BADGE_CATEGORY_VISIBILITY } from "@/lib/constants";
 import { normalizeInstagramInput } from "@/lib/social";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 
@@ -44,6 +44,11 @@ export async function submitBusiness(formData) {
   const owner_email    = formData.get("owner_email")?.toString().trim();
   const referralSource = formData.get("referral_source")?.toString().trim();
   const logo_url        = formData.get("logo_url")?.toString().trim();
+
+  const halal              = formData.get("halal")?.toString() === "true";
+  const halalCertificate   = formData.get("halal_certificate")?.toString().trim();
+  const deliveryAvailable  = formData.get("delivery_available")?.toString() === "true";
+  const calloutsAvailable  = formData.get("callouts_available")?.toString() === "true";
 
   // whether the person submitting this form is the business's actual
   // owner, or someone listing it on the owner's behalf (e.g. a family
@@ -115,6 +120,20 @@ export async function submitBusiness(formData) {
     return { success: false, error: "Please enter a valid South African mobile number, starting with 0 or +27." };
   }
 
+  // re-checks each badge against the now-validated category — this is the
+  // backstop half of the same clearing logic the form itself already runs
+  // client-side in SubmitForm.js's handleSubmit, in case a badge was
+  // somehow still marked true for a category that doesn't offer it (e.g.
+  // JavaScript was unavailable or bypassed).
+  const finalHalal            = BADGE_CATEGORY_VISIBILITY.halal.includes(category) && halal;
+  const finalHalalCertificate = finalHalal ? (halalCertificate || null) : null;
+  const finalDelivery         = BADGE_CATEGORY_VISIBILITY.delivery.includes(category) && deliveryAvailable;
+  const finalCallouts         = BADGE_CATEGORY_VISIBILITY.callouts.includes(category) && calloutsAvailable;
+
+  if (finalHalal && !finalHalalCertificate) {
+    return { success: false, error: "Please select your Halal certificate type." };
+  }
+
   // everything checked out — save the new business with a "pending"
   // status, so it shows up in the admin panel's "Pending" tab waiting for
   // approval. it won't appear anywhere on the public site until then. the
@@ -141,6 +160,10 @@ export async function submitBusiness(formData) {
     is_own_business:      isOwnBusiness,
     on_behalf_of_name:    isOwnBusiness ? null : onBehalfOfName,
     on_behalf_of_reason:  isOwnBusiness ? null : onBehalfOfReason,
+    halal:                finalHalal,
+    halal_certificate:    finalHalalCertificate,
+    delivery_available:   finalDelivery,
+    callouts_available:   finalCallouts,
   });
 
   if (error) {

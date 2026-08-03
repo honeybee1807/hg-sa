@@ -26,6 +26,7 @@ import {
 } from "./actions";
 import { SITE_URL, OLIDEEN_URL } from "@/lib/constants";
 import { instagramUrl, facebookUrl } from "@/lib/social";
+import BadgePills from "@/components/BadgePills";
 
 // the five tabs above the business list. "edit-requests" is handled
 // separately from the other four everywhere below (it lists rows from
@@ -811,6 +812,11 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
                         <i className="fa-solid fa-earth-africa" /> {biz.province}
                       </p>
                       {biz.description && <p className="admin-biz-desc">{biz.description}</p>}
+
+                      {/* read-only — lets the admin see at a glance what
+                          badges the business owner selected before
+                          approving. renders nothing if none are set. */}
+                      <BadgePills biz={biz} />
 
                       {/* the area is editable right up until approval, since
                           it's free text typed by whoever submitted the
