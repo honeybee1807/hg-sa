@@ -6,6 +6,7 @@
 // applies everywhere.
 
 import { Playfair_Display, Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -121,6 +122,22 @@ export default function RootLayout({ children }) {
           href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"
           crossOrigin="anonymous"
         />
+
+        {/* Google Analytics (gtag.js) — "afterInteractive" loads it once the
+            page has become interactive, rather than blocking the initial
+            render like a plain <script> tag placed here would. */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-GR2Q5QZRRJ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-GR2Q5QZRRJ');
+          `}
+        </Script>
       </head>
       <body>
         <Navbar />
