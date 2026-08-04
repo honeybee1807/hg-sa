@@ -85,6 +85,10 @@ export const metadata = {
     "geo.placename": "KwaZulu-Natal, South Africa",
     "geo.position":  "-28.7282;30.3577",
     "ICBM":          "-28.7282, 30.3577",
+    // Bing Webmaster Tools site-ownership verification — must stay in place
+    // even after verification succeeds, or Bing will consider the site
+    // unverified again.
+    "msvalidate.01": "17AF8ABDB6A08331DD9759B6181136F5",
   },
 };
 
