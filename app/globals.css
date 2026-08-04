@@ -1612,6 +1612,61 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .admin-empty i { font-size: 2rem; display: block; margin-bottom: 0.75rem; }
 
+/* ─── admin: blog tab ──────────────────────────────────────────────── */
+.admin-blog-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.25rem;
+}
+
+.admin-blog-card {
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-blog-card-main {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.admin-blog-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.admin-blog-card-meta { font-size: 0.8rem; color: #6b7280; }
+
+.admin-blog-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-blog-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* ─── public blog pages ────────────────────────────────────────────── */
+.blog-post-body p {
+  margin-bottom: 1.1rem;
+  line-height: 1.75;
+  color: #374151;
+}
+
 /* ─── submit form ──────────────────────────────────────────────────── */
 .submit-page-header {
   margin-bottom: 2rem;

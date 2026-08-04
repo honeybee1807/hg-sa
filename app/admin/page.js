@@ -84,6 +84,20 @@ async function getEditRequests() {
   return (data ?? []).filter((request) => Object.keys(request.proposed_changes ?? {}).length > 0);
 }
 
+// fetches every blog post — published and draft alike — for the admin
+// panel's "Blog" tab. unlike the public blog pages (app/blog/page.js,
+// app/blog/[slug]/page.js), which only ever ask for published posts, the
+// admin needs to see and edit drafts too, so this uses the admin client
+// with no "published" filter.
+async function getBlogPosts() {
+  const db = getAdminClient();
+  const { data } = await db
+    .from("blog_posts")
+    .select("id, title, slug, excerpt, content, category, area, published, created_at, updated_at")
+    .order("updated_at", { ascending: false });
+  return data ?? [];
+}
+
 export default async function AdminPage() {
   // the most important line in this whole file: if this comes back false,
   // stop here and show only the login form. nothing below this point ever
@@ -93,11 +107,12 @@ export default async function AdminPage() {
 
   // fetch everything at once, rather than one after the other, so the page
   // loads a little faster.
-  const [businesses, currentFeatured, featuredHistory, editRequests] = await Promise.all([
+  const [businesses, currentFeatured, featuredHistory, editRequests, blogPosts] = await Promise.all([
     getAllBusinesses(),
     getCurrentFeatured(),
     getFeaturedHistory(),
     getEditRequests(),
+    getBlogPosts(),
   ]);
 
   return (
@@ -106,6 +121,7 @@ export default async function AdminPage() {
       currentFeatured={currentFeatured}
       featuredHistory={featuredHistory}
       editRequests={editRequests}
+      blogPosts={blogPosts}
     />
   );
 }

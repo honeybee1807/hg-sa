@@ -463,3 +463,141 @@ export async function autoSelectFeaturedGem() {
 export async function autoSelectFeaturedGemForCron() {
   return autoSelectFeaturedGemInternal();
 }
+
+// re-cleans whatever slug the browser sent — the admin panel's blog editor
+// already generates this live as the admin types the title (or lets them
+// override it by hand), this is just the server-side backstop for it, same
+// two-layer approach app/submit/actions.js uses for its own fields. same
+// cleanup rules as generateSlug() above, minus the "combine name + area"
+// step, since a blog post's slug comes from its title alone.
+function cleanBlogSlug(raw) {
+  let cleaned = (raw ?? "").toLowerCase().trim();
+  cleaned = cleaned.normalize("NFD");
+  cleaned = cleaned.replace(/[̀-ͯ]/g, "");
+  cleaned = cleaned.replace(/[^a-z0-9\s-]/g, "");
+  cleaned = cleaned.replace(/\s+/g, "-");
+  cleaned = cleaned.replace(/-+/g, "-");
+  cleaned = cleaned.replace(/^-|-$/g, "");
+  return cleaned;
+}
+
+// re-runs the same required-field checks the editor form itself already
+// ran (title, content, a usable slug) — a backstop in case that client-side
+// logic is ever bypassed.
+function validateBlogPost(title, content, slug) {
+  if (!title?.trim()) return "Title is required.";
+  if (!content?.trim()) return "Content is required.";
+  if (!slug) return "Couldn't generate a web address from this title — please set the slug manually.";
+  return null;
+}
+
+// creates a new blog post. slug uniqueness is checked here rather than
+// trusted from the browser — the editor's own check only knows about
+// whichever posts were loaded when the admin panel last refreshed, so two
+// posts saved close together could otherwise race past it.
+export async function createBlogPost(payload) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+
+  const slug = cleanBlogSlug(payload.slug || payload.title);
+  const validationError = validateBlogPost(payload.title, payload.content, slug);
+  if (validationError) return { success: false, error: validationError };
+
+  const db = getAdminClient();
+
+  const { data: existing } = await db
+    .from("blog_posts")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (existing) return { success: false, error: "This slug is already used by another post." };
+
+  const { error } = await db.from("blog_posts").insert({
+    title: payload.title.trim(),
+    slug,
+    excerpt: payload.excerpt?.trim() || null,
+    content: payload.content.trim(),
+    category: payload.category || null,
+    area: payload.area?.trim() || null,
+    published: !!payload.published,
+  });
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/blog");
+  if (payload.published) revalidatePath(`/blog/${slug}`);
+  return { success: true };
+}
+
+// updates an existing blog post. the editor's "Published" checkbox is just
+// another field on this same form, so publishing/unpublishing a post is
+// simply saving it with that box checked or unchecked — there's no
+// separate toggle action.
+export async function updateBlogPost(id, payload) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+
+  const slug = cleanBlogSlug(payload.slug || payload.title);
+  const validationError = validateBlogPost(payload.title, payload.content, slug);
+  if (validationError) return { success: false, error: validationError };
+
+  const db = getAdminClient();
+
+  const { data: clashingPost } = await db
+    .from("blog_posts")
+    .select("id")
+    .eq("slug", slug)
+    .neq("id", id)
+    .maybeSingle();
+  if (clashingPost) return { success: false, error: "This slug is already used by another post." };
+
+  // fetch the post's current slug before updating — if it's changing, the
+  // old address needs its cached page thrown away below too, not just the
+  // new one.
+  const { data: previousPost } = await db
+    .from("blog_posts")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await db
+    .from("blog_posts")
+    .update({
+      title: payload.title.trim(),
+      slug,
+      excerpt: payload.excerpt?.trim() || null,
+      content: payload.content.trim(),
+      category: payload.category || null,
+      area: payload.area?.trim() || null,
+      published: !!payload.published,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/blog");
+  revalidatePath(`/blog/${slug}`);
+  if (previousPost?.slug && previousPost.slug !== slug) revalidatePath(`/blog/${previousPost.slug}`);
+  return { success: true };
+}
+
+// permanently deletes a blog post.
+export async function deleteBlogPost(id) {
+  if (!(await isAdminAuthed())) return { success: false, error: "Unauthorized." };
+
+  const db = getAdminClient();
+
+  // fetched before deleting, purely so the revalidation call below can
+  // still target the exact page this post used to live at — once the row
+  // is gone there's no way to look this up again.
+  const { data: post } = await db.from("blog_posts").select("slug").eq("id", id).maybeSingle();
+
+  const { error } = await db.from("blog_posts").delete().eq("id", id);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/admin");
+  revalidatePath("/blog");
+  if (post?.slug) revalidatePath(`/blog/${post.slug}`);
+  return { success: true };
+}

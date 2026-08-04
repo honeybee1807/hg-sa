@@ -20,6 +20,13 @@ export default async function sitemap() {
     .eq("status", "approved")
     .not("slug", "is", null);
 
+  // every published blog post's web address, e.g. .../blog/some-post —
+  // draft posts are deliberately left out of the query itself.
+  const { data: blogPosts } = await supabase
+    .from("blog_posts")
+    .select("slug, updated_at")
+    .eq("published", true);
+
   const today = new Date();
 
   // the handful of pages that always exist, regardless of what's in the
@@ -70,7 +77,18 @@ export default async function sitemap() {
     };
   });
 
+  // one sitemap entry per published blog post, e.g. .../blog/some-post
+  const blogPages = (blogPosts ?? []).map((post) => {
+    const lastModifiedDate = post.updated_at ? new Date(post.updated_at) : today;
+    return {
+      url: `${SITE_URL}/blog/${post.slug}`,
+      lastModified: lastModifiedDate,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    };
+  });
+
   // combine everything into one single list — this is what actually becomes
   // the sitemap.xml file.
-  return [...staticPages, ...townPages, ...categoryPages, ...businessPages];
+  return [...staticPages, ...townPages, ...categoryPages, ...businessPages, ...blogPages];
 }

@@ -23,22 +23,26 @@ import {
   searchBusinesses,
   approveEditRequest,
   rejectEditRequest,
+  createBlogPost,
+  updateBlogPost,
+  deleteBlogPost,
 } from "./actions";
-import { SITE_URL, OLIDEEN_URL } from "@/lib/constants";
+import { SITE_URL, OLIDEEN_URL, CATEGORIES } from "@/lib/constants";
 import { instagramUrl, facebookUrl } from "@/lib/social";
 import BadgePills from "@/components/BadgePills";
 
-// the five tabs above the business list. "edit-requests" is handled
-// separately from the other four everywhere below (it lists rows from
-// business_edit_requests, not businesses), so it carries its own label
-// here rather than being auto-capitalised from its id the way the others
-// are.
+// the six tabs above the business list. "edit-requests" and "blog" are
+// each handled separately from the other four everywhere below (they list
+// rows from a different table entirely — business_edit_requests and
+// blog_posts, not businesses), so they carry their own label here rather
+// than being auto-capitalised from their id the way the status tabs are.
 const TABS = [
   { id: "pending",       label: "Pending" },
   { id: "approved",      label: "Approved" },
   { id: "rejected",      label: "Rejected" },
   { id: "all",           label: "All" },
   { id: "edit-requests", label: "Edit Requests" },
+  { id: "blog",          label: "Blog" },
 ];
 
 // how each proposed-change field name (a raw businesses column name) should
@@ -139,7 +143,234 @@ function DeleteControls({ isConfirming, isFeaturedActive, deleting, onRequestDel
   );
 }
 
-export default function AdminPanel({ businesses, currentFeatured, featuredHistory, editRequests }) {
+// the same inline "are you sure?" delete UX as DeleteControls above (same
+// CSS classes, same no-window.confirm() approach) but with its own wording
+// ("Post" rather than "Listing") — DeleteControls' copy is hardcoded to
+// businesses, not generic, so this is a separate small component rather
+// than a shared one, to avoid changing what DeleteControls itself says.
+function BlogDeleteControls({ isConfirming, deleting, onRequestDelete, onCancel, onConfirmDelete }) {
+  if (!isConfirming) {
+    return (
+      <div className="admin-delete-zone">
+        <button type="button" className="admin-delete-btn" onClick={onRequestDelete}>
+          <i className="fa-solid fa-trash" /> Delete Post
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-delete-confirm">
+      <p className="admin-delete-warning">
+        <i className="fa-solid fa-triangle-exclamation" /> This will permanently delete this post and cannot be undone. Are you sure?
+      </p>
+      <div className="admin-delete-confirm-btns">
+        <button type="button" className="btn-secondary" onClick={onCancel} disabled={deleting}>
+          Cancel
+        </button>
+        <button type="button" className="admin-delete-confirm-btn" onClick={onConfirmDelete} disabled={deleting}>
+          <i className="fa-solid fa-trash" /> {deleting ? "Deleting..." : "Yes, Delete Permanently"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// turns a blog post title into its web-address-friendly slug, live as the
+// admin types — the same cleanup rules as generateSlug() in
+// app/admin/actions.js (minus the "combine with area" step, since a blog
+// post's slug comes from its title alone). the server re-applies its own
+// version of this before saving (cleanBlogSlug() in actions.js), so this
+// copy is just for the live preview in the field below.
+function slugifyTitle(title) {
+  let cleaned = title.toLowerCase();
+  cleaned = cleaned.normalize("NFD");
+  cleaned = cleaned.replace(/[̀-ͯ]/g, "");
+  cleaned = cleaned.replace(/[^a-z0-9\s-]/g, "");
+  cleaned = cleaned.replace(/\s+/g, "-");
+  cleaned = cleaned.replace(/-+/g, "-");
+  cleaned = cleaned.replace(/^-|-$/g, "");
+  return cleaned;
+}
+
+// the "Blog" tab's post editor — its own component (like DeleteControls
+// above) since it owns a good amount of local form state that has no
+// reason to live on AdminPanel itself. handles both creating a new post
+// (post is null) and editing an existing one.
+function BlogEditorForm({ post, existingSlugs, onSaved, onCancel }) {
+  const [title, setTitle]     = useState(post?.title ?? "");
+  const [slug, setSlug]       = useState(post?.slug ?? "");
+  // once editing an already-saved post, typing in the title should never
+  // silently rewrite its slug out from under it — only a brand new post
+  // (or manually clearing/retyping the slug field) does that.
+  const [slugTouched, setSlugTouched] = useState(!!post);
+  const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
+  const [content, setContent] = useState(post?.content ?? "");
+  const [category, setCategory] = useState(post?.category ?? "");
+  const [area, setArea]       = useState(post?.area ?? "");
+  const [published, setPublished] = useState(post?.published ?? false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [saving, setSaving]   = useState(false);
+
+  function handleTitleChange(e) {
+    const value = e.target.value;
+    setTitle(value);
+    if (!slugTouched) setSlug(slugifyTitle(value));
+  }
+
+  function handleSlugChange(e) {
+    setSlugTouched(true);
+    setSlug(e.target.value);
+  }
+
+  function validate() {
+    const errors = {};
+    if (!title.trim()) errors.title = "Title is required.";
+    if (!content.trim()) errors.content = "Content is required.";
+
+    const cleanSlug = slugifyTitle(slug);
+    if (!cleanSlug) {
+      errors.slug = "Slug is required.";
+    } else if (existingSlugs.some((existing) => existing.slug === cleanSlug && existing.id !== post?.id)) {
+      errors.slug = "This slug is already used by another post.";
+    }
+    return errors;
+  }
+
+  async function handleSave() {
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setSaving(true);
+    const payload = {
+      title,
+      slug: slugifyTitle(slug),
+      excerpt,
+      content,
+      category: category || null,
+      area,
+      published,
+    };
+    const result = post
+      ? await updateBlogPost(post.id, payload)
+      : await createBlogPost(payload);
+    setSaving(false);
+
+    if (result.success) {
+      onSaved();
+    } else {
+      setFieldErrors((prev) => ({ ...prev, save: result.error }));
+    }
+  }
+
+  return (
+    <div className="admin-blog-editor">
+      <div className="form-group">
+        <label htmlFor="blog-title">Title <span className="required">*</span></label>
+        <input
+          id="blog-title"
+          className="form-control"
+          type="text"
+          value={title}
+          onChange={handleTitleChange}
+        />
+        {fieldErrors.title && <span className="field-error">{fieldErrors.title}</span>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="blog-slug">Slug <span className="required">*</span></label>
+        <input
+          id="blog-slug"
+          className="form-control"
+          type="text"
+          value={slug}
+          onChange={handleSlugChange}
+        />
+        {fieldErrors.slug && <span className="field-error">{fieldErrors.slug}</span>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="blog-excerpt">Excerpt <span className="optional">(optional)</span></label>
+        <textarea
+          id="blog-excerpt"
+          className="form-control"
+          rows={2}
+          value={excerpt}
+          onChange={(e) => setExcerpt(e.target.value)}
+        />
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="blog-content">Content <span className="required">*</span></label>
+        <textarea
+          id="blog-content"
+          className="form-control"
+          rows={12}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Separate paragraphs with a blank line — they'll each render as their own paragraph."
+        />
+        {fieldErrors.content && <span className="field-error">{fieldErrors.content}</span>}
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="blog-category">Category <span className="optional">(optional)</span></label>
+          <select
+            id="blog-category"
+            className="form-control"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">None</option>
+            {CATEGORIES.map((c) => (
+              <option key={c.slug} value={c.name}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="blog-area">Area <span className="optional">(optional)</span></label>
+          <input
+            id="blog-area"
+            className="form-control"
+            type="text"
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+            placeholder="e.g. Ladysmith"
+          />
+        </div>
+      </div>
+
+      <label className="badge-checkbox">
+        <input
+          type="checkbox"
+          checked={published}
+          onChange={(e) => setPublished(e.target.checked)}
+        />
+        Published (visible on the public site)
+      </label>
+
+      {fieldErrors.save && (
+        <div className="submit-error">
+          <i className="fa-solid fa-triangle-exclamation" /> {fieldErrors.save}
+        </div>
+      )}
+
+      <div className="admin-blog-editor-actions">
+        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+        <button type="button" className="btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Post"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminPanel({ businesses, currentFeatured, featuredHistory, editRequests, blogPosts }) {
   const router  = useRouter();
   // "isPending" here just means "we're waiting for the page to refresh
   // itself after a change" — nothing to do with a business's "pending"
@@ -170,17 +401,28 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
   // request itself.
   const [deletingBizId, setDeletingBizId] = useState(null);
   const [deleting, setDeleting]           = useState(false); // true only while a delete is actually in flight, so the buttons can't be double-clicked
+  // the "Blog" tab: whether the editor is currently open (vs. showing the
+  // post list), and which post it's editing — null means creating a brand
+  // new post rather than editing an existing one.
+  const [blogEditorOpen, setBlogEditorOpen]   = useState(false);
+  const [blogEditingPost, setBlogEditingPost] = useState(null);
+  // kept separate from deletingBizId above — a blog post id and a business
+  // id are rows in two different tables and could otherwise collide, same
+  // reasoning as rejectingEditId being kept separate from rejectingId.
+  const [deletingBlogId, setDeletingBlogId] = useState(null);
+  const [deletingBlog, setDeletingBlog]     = useState(false);
 
   // only show businesses matching the currently selected tab (or
   // everything, if the "all" tab is selected) — irrelevant for the
-  // "edit-requests" tab, which lists rows from a different table entirely
-  // (see the "Edit Requests" section further down).
+  // "edit-requests" and "blog" tabs, which list rows from different tables
+  // entirely (see those sections further down).
   const filtered = businesses.filter((b) => tab === "all" || b.status === tab);
 
   // the number shown in each tab's little count badge.
   function tabCount(tabId) {
     if (tabId === "all") return businesses.length;
     if (tabId === "edit-requests") return editRequests.length;
+    if (tabId === "blog") return blogPosts.length;
     return businesses.filter((b) => b.status === tabId).length;
   }
 
@@ -260,6 +502,21 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
     if (result.success) {
       setDeletingBizId(null);
       flash("Listing deleted successfully.");
+      refresh();
+    } else {
+      flash(result.error, true);
+    }
+  }
+
+  // called when "Yes, Delete Permanently" is clicked on a blog post's
+  // confirmation. same shape as handleDeleteConfirm() above.
+  async function handleDeleteBlogConfirm(id) {
+    setDeletingBlog(true);
+    const result = await deleteBlogPost(id);
+    setDeletingBlog(false);
+    if (result.success) {
+      setDeletingBlogId(null);
+      flash("Post deleted.");
       refresh();
     } else {
       flash(result.error, true);
@@ -921,8 +1178,80 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
             )
           )}
 
+          {/* Blog tab */}
+          {tab === "blog" && (
+            blogEditorOpen ? (
+              <BlogEditorForm
+                post={blogEditingPost}
+                existingSlugs={blogPosts.map((p) => ({ id: p.id, slug: p.slug }))}
+                onCancel={() => setBlogEditorOpen(false)}
+                onSaved={() => {
+                  const wasEditing = !!blogEditingPost;
+                  setBlogEditorOpen(false);
+                  flash(wasEditing ? "Post updated." : "Post created.");
+                  refresh();
+                }}
+              />
+            ) : (
+              <>
+                <div className="admin-blog-toolbar">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => { setBlogEditingPost(null); setBlogEditorOpen(true); }}
+                  >
+                    <i className="fa-solid fa-plus" /> New Post
+                  </button>
+                </div>
+
+                {blogPosts.length === 0 ? (
+                  <div className="admin-empty">
+                    <i className="fa-solid fa-newspaper" />
+                    <p>No blog posts yet.</p>
+                  </div>
+                ) : (
+                  <div className="admin-biz-list">
+                    {blogPosts.map((post) => (
+                      <div key={post.id} className="admin-blog-card">
+                        <button
+                          type="button"
+                          className="admin-blog-card-main"
+                          onClick={() => { setBlogEditingPost(post); setBlogEditorOpen(true); }}
+                        >
+                          <div className="admin-blog-card-title-row">
+                            <strong>{post.title}</strong>
+                            <span className={`badge ${post.published ? "badge-approved" : "badge-pending"}`}>
+                              {post.published ? "Published" : "Draft"}
+                            </span>
+                          </div>
+                          <p className="admin-blog-card-meta">
+                            /blog/{post.slug} · Updated {new Date(post.updated_at).toLocaleDateString("en-ZA")}
+                          </p>
+                        </button>
+
+                        {deletingBlogId === post.id ? (
+                          <BlogDeleteControls
+                            isConfirming
+                            deleting={deletingBlog}
+                            onCancel={() => setDeletingBlogId(null)}
+                            onConfirmDelete={() => handleDeleteBlogConfirm(post.id)}
+                          />
+                        ) : (
+                          <BlogDeleteControls
+                            isConfirming={false}
+                            onRequestDelete={() => setDeletingBlogId(post.id)}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )
+          )}
+
           {/* Business list */}
-          {tab !== "edit-requests" && (filtered.length === 0 ? (
+          {tab !== "edit-requests" && tab !== "blog" && (filtered.length === 0 ? (
             <div className="admin-empty">
               <i className="fa-solid fa-inbox" />
               <p>No {tab === "all" ? "" : tab} listings.</p>
