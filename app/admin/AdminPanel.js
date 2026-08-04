@@ -488,6 +488,143 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
     }
   }
 
+  // loads one image and resolves once it's ready, or resolves to null if
+  // there was nothing to load or it failed — lets downloadShareGraphic()
+  // below load the (always-present) site logo and the (optional)
+  // business logo side by side instead of one after another.
+  function loadImage(src) {
+    if (!src) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload  = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  // builds the "you're approved" square graphic an owner can post to their
+  // own Facebook/Instagram once their listing goes live — separate from
+  // downloadGraphic() above (the weekly Featured Gem announcement), with
+  // its own layout and copy, but the same Canvas approach and 1080x1080
+  // size.
+  //
+  // canvas text can't use the site's actual Playfair Display/Inter web
+  // fonts — next/font hosts them locally under generated, unpredictable
+  // font-family names (see the comment in app/layout.js), not literally
+  // "Playfair Display"/"Inter" — so, like downloadGraphic() above,
+  // headings use Georgia as a serif stand-in and body text uses Arial as
+  // a sans-serif stand-in.
+  function downloadShareGraphic(biz) {
+    const canvas  = document.createElement("canvas");
+    canvas.width  = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext("2d");
+
+    Promise.all([loadImage("/HG_Logo.png"), loadImage(biz.logo_url)]).then(([hgLogo, bizLogo]) => {
+      // background: a diagonal Sapphire-to-Amethyst gradient, the same
+      // corner-to-corner direction downloadGraphic() uses above
+      const backgroundGradient = ctx.createLinearGradient(0, 0, 1080, 1080);
+      backgroundGradient.addColorStop(0, "#0F52BA");
+      backgroundGradient.addColorStop(1, "#9966CC");
+      ctx.fillStyle = backgroundGradient;
+      ctx.fillRect(0, 0, 1080, 1080);
+
+      // the Hidden Gems SA logo mark, centered near the top, kept at its
+      // real aspect ratio rather than stretched to a fixed box
+      if (hgLogo) {
+        const logoHeight = 110;
+        const logoWidth  = logoHeight * (hgLogo.naturalWidth / hgLogo.naturalHeight);
+        ctx.drawImage(hgLogo, 540 - logoWidth / 2, 30, logoWidth, logoHeight);
+      }
+
+      // "You're Listed!" headline
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 72px Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.fillText("You're Listed!", 540, 250);
+
+      // "CONGRATS, {business name}!" subheadline
+      ctx.font = "600 40px Arial, sans-serif";
+      ctx.fillText(`CONGRATS, ${biz.name}!`, 540, 310);
+
+      // the center card: a rounded white card holding the business's own
+      // identity (its logo/monogram, name, and category), set apart from
+      // the site-branded elements around it
+      const cardX = 140, cardY = 380, cardWidth = 800, cardHeight = 380, cardRadius = 24;
+      ctx.save();
+      ctx.shadowColor   = "rgba(0,0,0,0.18)";
+      ctx.shadowBlur    = 30;
+      ctx.shadowOffsetY = 12;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.roundRect(cardX, cardY, cardWidth, cardHeight, cardRadius);
+      ctx.fill();
+      ctx.restore(); // drop the shadow before drawing anything else, so it doesn't bleed onto what's drawn next
+
+      // the round logo (or monogram letter) inside the card — same
+      // sapphire-pale circle / sapphire letter fallback as
+      // downloadGraphic() above
+      const logoCenterY = cardY + 140, logoRadius = 90;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(540, logoCenterY, logoRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "#E7EFFA";
+      ctx.fill();
+
+      if (bizLogo) {
+        ctx.clip();
+        ctx.drawImage(bizLogo, 540 - logoRadius, logoCenterY - logoRadius, logoRadius * 2, logoRadius * 2);
+      } else {
+        ctx.clip();
+        ctx.fillStyle = "#0F52BA";
+        ctx.font = "italic bold 84px Georgia, serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(biz.name[0].toUpperCase(), 540, logoCenterY);
+      }
+      ctx.restore();
+      ctx.textBaseline = "alphabetic";
+
+      // the business name, inside the card, below the logo/monogram
+      ctx.fillStyle = "#082B66";
+      ctx.font = "bold 44px Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.fillText(biz.name, 540, cardY + 290);
+
+      // the category, inside the card, below the name
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "26px Arial, sans-serif";
+      ctx.fillText(biz.category, 540, cardY + 330);
+
+      // site credit, along the bottom
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "28px Arial, sans-serif";
+      ctx.fillText("Find us on Hidden Gems SA", 540, 1000);
+      ctx.font = "24px Arial, sans-serif";
+      ctx.fillText(SITE_URL.replace("https://", ""), 540, 1035);
+
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `hidden-gems-sa-${biz.slug}-listed.png`;
+      downloadLink.href = canvas.toDataURL("image/png");
+      downloadLink.click();
+    });
+  }
+
+  // builds the "Notify Owner" link + pre-written message shown on an
+  // approved business's card, once the admin is ready to tell the owner
+  // their listing is live. unlike buildWaMessage() above (left as-is for
+  // the Featured Gem section), this one runs the number through
+  // formatWa() first, same as buildContactUrl() above.
+  function buildNotifyOwnerUrl(biz) {
+    const whatsappNumber = formatWa(biz.whatsapp);
+    if (!whatsappNumber) return null;
+
+    const message = `🎉 You're live on Hidden Gems SA!\n\nHi ${biz.owner_name ?? "there"}, great news — ${biz.name} has been approved and is now visible to customers searching in ${biz.area}, ${biz.province}.\n\nYour listing: ${SITE_URL}/business/${biz.slug}\n\nHelp more customers find you — share your listing on your Facebook or Instagram page! We've attached a graphic you can post directly.\n\nHidden Gems SA Team\n🌐 ${SITE_URL}\n💻 Built by Olideen Technologies — ${OLIDEEN_URL}`;
+
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+  }
+
   const featBiz = currentFeatured?.businesses ?? null;
   const featuredStatus = getFeaturedStatus(currentFeatured);
 
@@ -895,6 +1032,32 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
                       </a>
                     )}
                   </div>
+
+                  {/* manual, admin-triggered actions for a listing that's
+                      already live — nothing here runs automatically on
+                      approval, both are click-to-use so they can be tried
+                      out before relying on them. */}
+                  {biz.status === "approved" && (
+                    <div className="admin-approved-actions">
+                      <button
+                        type="button"
+                        className="admin-share-graphic-btn"
+                        onClick={() => downloadShareGraphic(biz)}
+                      >
+                        <i className="fa-solid fa-image" /> Share Graphic
+                      </button>
+                      {formatWa(biz.whatsapp) && (
+                        <a
+                          href={buildNotifyOwnerUrl(biz)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="admin-wa-contact-btn"
+                        >
+                          <i className="fa-brands fa-whatsapp" /> Notify Owner
+                        </a>
+                      )}
+                    </div>
+                  )}
 
                   {/* flags whether the submitter told us this is their own
                       business or someone else's — worth checking before
