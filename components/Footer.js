@@ -28,6 +28,7 @@ export default function Footer() {
           <Link href="/">Home</Link>
           <Link href="/towns">Browse by Area</Link>
           <Link href="/categories">Browse by Category</Link>
+          <Link href="/blog">Blog</Link>
           <Link href="/submit">Submit a Business</Link>
         </nav>
 

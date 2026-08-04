@@ -31,6 +31,7 @@ export default function Navbar() {
           <Link href="/" onClick={closeMenu}>Home</Link>
           <Link href="/towns" onClick={closeMenu}>Areas</Link>
           <Link href="/categories" onClick={closeMenu}>Categories</Link>
+          <Link href="/blog" onClick={closeMenu}>Blog</Link>
           <Link href="/submit" className="btn-primary navbar-cta" onClick={closeMenu}>
             <i className="fa-solid fa-plus" />
             List Your Business
