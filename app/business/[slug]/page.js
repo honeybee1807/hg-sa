@@ -299,6 +299,14 @@ export default async function BusinessPage({ params }) {
               , {biz.province}
             </p>
           </div>
+
+          {/* Owner edit prompt */}
+          <div className="card biz-owner biz-edit-prompt">
+            <p className="biz-edit-prompt-text">Is this your business?</p>
+            <Link href="/edit" className="btn-secondary biz-edit-prompt-btn">
+              <i className="fa-solid fa-pen" /> Edit This Listing
+            </Link>
+          </div>
         </aside>
       </div>
 

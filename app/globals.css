@@ -2185,6 +2185,15 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .biz-town-link { color: var(--sapphire); font-weight: 600; }
 .biz-town-link:hover { text-decoration: underline; }
 
+.biz-edit-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+.biz-edit-prompt-text { font-weight: 600; color: #4b5563; }
+.biz-edit-prompt-btn { width: 100%; justify-content: center; }
+
 /* ─── business detail page: map ("Find Us") ──────────────────────── */
 .biz-map {
   height: 300px;
