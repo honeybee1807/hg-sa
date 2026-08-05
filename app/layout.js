@@ -138,6 +138,18 @@ export default function RootLayout({ children }) {
             gtag('config', 'G-GR2Q5QZRRJ');
           `}
         </Script>
+
+        {/* Microsoft Clarity — same "afterInteractive" loading approach as
+            Google Analytics above. */}
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "xx7lu0aqhf");
+          `}
+        </Script>
       </head>
       <body>
         <Navbar />
