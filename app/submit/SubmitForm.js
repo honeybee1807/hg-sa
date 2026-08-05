@@ -23,6 +23,7 @@
 // it to at that point.
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { submitBusiness } from "./actions";
 import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
@@ -63,6 +64,7 @@ const INITIAL = {
   halal: false, halal_certificate: "",
   delivery_available: false,
   callouts_available: false,
+  consent: false,
 };
 
 export default function SubmitForm() {
@@ -312,6 +314,9 @@ export default function SubmitForm() {
     }
     if (isBadgeVisible("halal", fields.category) && fields.halal && !fields.halal_certificate) {
       errors.halal_certificate = "Please select your Halal certificate type.";
+    }
+    if (!fields.consent) {
+      errors.consent = "Please confirm you agree to the Disclaimer & Terms of Use before submitting.";
     }
 
     return errors;
@@ -748,11 +753,22 @@ export default function SubmitForm() {
       </div>
 
       {/* ── Submit ── */}
+      <div className="form-group">
+        <label className="badge-checkbox">
+          <input type="checkbox" checked={fields.consent} onChange={toggleCheckbox("consent")} />
+          I have read and agree to the Hidden Gems SA{" "}
+          <Link href="/disclaimer" target="_blank" rel="noopener noreferrer">
+            Disclaimer &amp; Terms of Use
+          </Link>
+        </label>
+        {fieldErrors.consent && <span className="field-error">{fieldErrors.consent}</span>}
+      </div>
+
       <div className="submit-form-footer">
         <p className="submit-disclaimer">
           <i className="fa-solid fa-shield-halved" /> Free listing. Reviewed before going live. No spam, no payment.
         </p>
-        <button type="submit" className="btn-primary submit-btn" disabled={submitting}>
+        <button type="submit" className="btn-primary submit-btn" disabled={submitting || !fields.consent}>
           {submitting
             ? <><i className="fa-solid fa-spinner fa-spin" /> Submitting...</>
             : <><i className="fa-solid fa-paper-plane" /> Submit My Business</>}

@@ -41,6 +41,7 @@ export default function EditListingForm({ token, business }) {
     halal_certificate: business.halal_certificate ?? "",
     delivery_available: business.delivery_available ?? false,
     callouts_available: business.callouts_available ?? false,
+    consent: false,
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting]   = useState(false);
@@ -137,6 +138,9 @@ export default function EditListingForm({ token, business }) {
     }
     if (isBadgeVisible("halal", fields.category) && fields.halal && !fields.halal_certificate) {
       errors.halal_certificate = "Please select your Halal certificate type.";
+    }
+    if (!fields.consent) {
+      errors.consent = "Please confirm you agree to the Disclaimer & Terms of Use before submitting.";
     }
 
     return errors;
@@ -383,11 +387,22 @@ export default function EditListingForm({ token, business }) {
         </div>
       </div>
 
+      <div className="form-group">
+        <label className="badge-checkbox">
+          <input type="checkbox" checked={fields.consent} onChange={toggleCheckbox("consent")} />
+          I have read and agree to the Hidden Gems SA{" "}
+          <Link href="/disclaimer" target="_blank" rel="noopener noreferrer">
+            Disclaimer &amp; Terms of Use
+          </Link>
+        </label>
+        {fieldErrors.consent && <span className="field-error">{fieldErrors.consent}</span>}
+      </div>
+
       <div className="submit-form-footer">
         <p className="submit-disclaimer">
           <i className="fa-solid fa-shield-halved" /> Changes are reviewed before going live — your current listing stays exactly as it is until then.
         </p>
-        <button type="submit" className="btn-primary submit-btn" disabled={submitting}>
+        <button type="submit" className="btn-primary submit-btn" disabled={submitting || !fields.consent}>
           {submitting
             ? <><i className="fa-solid fa-spinner fa-spin" /> Submitting...</>
             : <><i className="fa-solid fa-paper-plane" /> Submit Changes for Review</>}

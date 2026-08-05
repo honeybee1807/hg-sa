@@ -30,6 +30,7 @@ export default function Footer() {
           <Link href="/categories">Browse by Category</Link>
           <Link href="/blog">Blog</Link>
           <Link href="/submit">Submit a Business</Link>
+          <Link href="/disclaimer">Disclaimer &amp; Terms</Link>
         </nav>
 
         {/* olideen credit */}

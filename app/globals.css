@@ -1675,6 +1675,18 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .submit-page-header h1 { margin-bottom: 0.5rem; }
 .submit-page-header p  { color: #374151; line-height: 1.6; }
 
+/* ─── legal / static content pages (e.g. app/disclaimer/page.js) ──── */
+.legal-content h2 {
+  font-size: 1.15rem;
+  margin: 2rem 0 0.75rem;
+}
+.legal-content h2:first-child { margin-top: 0; }
+.legal-content p {
+  color: #374151;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
 .submit-form { display: flex; flex-direction: column; gap: 0; }
 
 .form-section {
@@ -2272,6 +2284,14 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 .biz-edit-prompt-text { font-weight: 600; color: #4b5563; }
 .biz-edit-prompt-btn { width: 100%; justify-content: center; }
+
+.biz-disclaimer-note {
+  margin-top: 1.25rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.biz-disclaimer-note a { color: #6b7280; text-decoration: underline; }
+.biz-disclaimer-note a:hover { color: var(--sapphire); }
 
 /* ─── business detail page: map ("Find Us") ──────────────────────── */
 .biz-map {

@@ -315,6 +315,11 @@ export default async function BusinessPage({ params }) {
           <i className="fa-solid fa-arrow-left" />
           Back to {biz.category}
         </Link>
+
+        <p className="biz-disclaimer-note">
+          Hidden Gems SA does not verify or endorse listed businesses. Please read our full{" "}
+          <Link href="/disclaimer">Disclaimer &amp; Terms of Use</Link> before engaging.
+        </p>
       </div>
     </>
   );
