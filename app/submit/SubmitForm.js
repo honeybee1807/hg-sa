@@ -462,6 +462,7 @@ export default function SubmitForm() {
                 <option key={c.slug} value={c.name}>{c.name}</option>
               ))}
             </select>
+            <span className="form-hint">Choose the category that best describes your business. Use Halal, Delivery, and Call-Outs below to show what you also offer.</span>
             {fieldErrors.category && <span className="field-error">{fieldErrors.category}</span>}
           </div>
 
