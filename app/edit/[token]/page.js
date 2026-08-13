@@ -56,7 +56,7 @@ export default async function EditTokenPage({ params }) {
     return (
       <div className="container" style={{ maxWidth: 480, paddingTop: "2rem", paddingBottom: "4rem" }}>
         <div className="submit-error">
-          <i className="fa-solid fa-triangle-exclamation" /> This edit link is invalid or has expired. Please request a new one.
+          <i className="fa-solid fa-triangle-exclamation" /> This edit link is invalid or expired — request a new one.
         </div>
         <Link href="/edit" className="btn-secondary mt-3">
           <i className="fa-solid fa-arrow-left" /> Request a New Link
@@ -69,7 +69,7 @@ export default async function EditTokenPage({ params }) {
     <div className="container" style={{ maxWidth: 720, paddingTop: "2rem", paddingBottom: "4rem" }}>
       <div className="submit-page-header">
         <h1>Edit Your Listing</h1>
-        <p>Update any details below, then submit — your changes will go live once our team reviews them.</p>
+        <p>Update your details and submit — changes go live once we review them.</p>
       </div>
       <EditListingForm token={token} business={business} />
     </div>

@@ -276,7 +276,7 @@ export default function EditListingForm({ token, business }) {
             <label htmlFor="street_address">Street Address <span className="optional">(optional)</span></label>
             <input id="street_address" className="form-control" type="text" value={fields.street_address}
               onChange={set("street_address")} placeholder="e.g. 12 Main Street, Estcourt" />
-            <span className="form-hint">This will be used to show your location on a map. Only enter if customers need to find you physically.</span>
+            <span className="form-hint">Shown on a map for customers to find you — only needed for a physical location.</span>
           </div>
         )}
 
@@ -400,7 +400,7 @@ export default function EditListingForm({ token, business }) {
 
       <div className="submit-form-footer">
         <p className="submit-disclaimer">
-          <i className="fa-solid fa-shield-halved" /> Changes are reviewed before going live — your current listing stays exactly as it is until then.
+          <i className="fa-solid fa-shield-halved" /> Changes are reviewed before going live — your current listing stays as-is until then.
         </p>
         <button type="submit" className="btn-primary submit-btn" disabled={submitting || !fields.consent}>
           {submitting

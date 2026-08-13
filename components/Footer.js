@@ -20,7 +20,7 @@ export default function Footer() {
             <Image src="/HG_Logo.png" alt="Hidden Gems SA" width={92} height={40} style={{ height: 40, width: "auto" }} />
             <span className="footer-title">Hidden Gems SA</span>
           </div>
-          <p>Free local business directory for South African businesses.</p>
+          <p>Free local business directory for South Africa.</p>
         </div>
 
         {/* nav links */}

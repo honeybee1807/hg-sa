@@ -42,8 +42,8 @@ export async function generateMetadata({ params }) {
   const cat = slugToCategory(slug);
   if (!cat) return { title: "Category Not Found" };
   return {
-    title: `${cat.name} — South African Local Businesses`,
-    description: `Browse local ${cat.name.toLowerCase()} businesses across South Africa. Free directory by Hidden Gems SA.`,
+    title: `${cat.name} — Local Businesses`,
+    description: `Find local ${cat.name.toLowerCase()} businesses in South Africa — browse free, no account needed.`,
     alternates: { canonical: `${SITE_URL}/category/${slug}` },
   };
 }
@@ -72,18 +72,18 @@ export default async function CategoryPage({ params }) {
       question: `Where can I find ${catLower} businesses in South Africa?`,
       answer:
         areas.length > 0
-          ? `Hidden Gems SA currently lists ${businesses.length} approved ${catLower} ${businesses.length === 1 ? "business" : "businesses"} in ${areas.join(", ")}. Browse the full list above, or visit the Areas page to search by area.`
-          : `Hidden Gems SA is currently building its ${catLower} directory. Check back soon, or list your own ${catLower} business for free.`,
+          ? `We currently list ${businesses.length} approved ${catLower} ${businesses.length === 1 ? "business" : "businesses"} in ${areas.join(", ")}. Browse the list above, or search by area.`
+          : `We're still building our ${catLower} directory — check back soon, or list your own ${catLower} business for free.`,
     },
     {
       question: `Is it free to list a ${catLower} business on Hidden Gems SA?`,
       answer:
-        "Yes — completely free. There's no cost to list your business and no account required. Submissions are reviewed and approved within 24–48 hours.",
+        "Yes — completely free, no account required. We review and approve submissions within 24–48 hours.",
     },
     {
       question: `How do I contact a ${catLower} business listed here?`,
       answer:
-        "Every approved listing includes a WhatsApp button so you can message the business directly. Some listings also include a website link.",
+        "Every approved listing has a WhatsApp button so you can message them directly. Some also include a website link.",
     },
   ];
 
@@ -122,7 +122,7 @@ export default async function CategoryPage({ params }) {
         "@type": "WebPage",
         "@id": `${SITE_URL}/category/${slug}#webpage`,
         url: `${SITE_URL}/category/${slug}`,
-        name: `${cat.name} — South African Local Businesses`,
+        name: `${cat.name} — Local Businesses`,
         speakable: {
           "@type": "SpeakableSpecification",
           cssSelector: [".page-faq-question", ".page-faq-answer"],

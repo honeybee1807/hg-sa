@@ -109,19 +109,19 @@ export default function Hero({ featuredGem, areaCount }) {
         <div className="hero-left">
           <span className="h-eyebrow">
             <span className="h-eyebrow-dot" />
-            South African Business Directory
+            KwaZulu-Natal Business Directory
           </span>
 
           <h1 className="hero-h1">
-            <span className="h-line-1">Find South Africa&apos;s</span>
+            <span className="h-line-1">Find KwaZulu-Natal&apos;s</span>
             <span className="h-line-2">
               <span className="hero-shimmer-text">Hidden Gems</span>
             </span>
           </h1>
 
           <p className="h-sub">
-            Connect with South Africa&apos;s finest home bakers, tutors, transport operators,
-            hairstylists and more — all completely free.
+            KwaZulu-Natal&apos;s finest home bakers, tutors, transport operators,
+            hairstylists and more — completely free.
           </p>
 
           <div className="h-ctas">

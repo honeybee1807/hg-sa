@@ -601,7 +601,7 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
   // builds the "Notify Owner" link + pre-written congratulations message
   // shown for whoever is this week's featured business.
   function buildWaMessage(biz) {
-    const message = `Congratulations ${biz.owner_name ?? ""}! 🎉\n\nYour business *${biz.name}* has been selected as Hidden Gems SA's *Featured Gem of the Week*!\n\nYour listing is live at:\n${SITE_URL}/business/${biz.slug}\n\n— Lubnah\nHidden Gems SA Team\n🌐 ${SITE_URL}\n💻 Built by Olideen Technologies — ${OLIDEEN_URL}`;
+    const message = `Congratulations ${biz.owner_name ?? ""}! 🎉\n\nYour business *${biz.name}* has been selected as Hidden Gems SA's *Featured Gem of the Week*!\n\nYour listing is live at:\n${SITE_URL}/business/${biz.slug}\n\n— Hidden Gems SA Team\n🌐 ${SITE_URL}\n💻 Built by Olideen Technologies — ${OLIDEEN_URL}`;
     return `https://wa.me/${biz.whatsapp}?text=${encodeURIComponent(message)}`;
   }
 

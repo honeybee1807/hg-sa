@@ -27,14 +27,14 @@ export const dynamic = "force-dynamic";
 // the title/description search engines show for the homepage specifically
 // (this overrides the sitewide default set in app/layout.js).
 export const metadata = {
-  title: "Hidden Gems SA – Free KZN Business Directory | KwaZulu-Natal Local Businesses",
+  title: "Hidden Gems SA – Free KwaZulu-Natal Business Directory",
   description:
-    "Discover trusted KwaZulu-Natal businesses for free. Home bakers, tutors, transport, beauty services & trades across Ladysmith, Pietermaritzburg, Dundee and 9 more KZN towns. No account needed.",
+    "Discover trusted local businesses in KwaZulu-Natal — home bakers, tutors, transport, beauty and trades. Free to browse, no account needed.",
   alternates: { canonical: SITE_URL },
   openGraph: {
-    title: "Hidden Gems SA – Free KZN Business Directory",
+    title: "Hidden Gems SA – Free KwaZulu-Natal Business Directory",
     description:
-      "Find local KwaZulu-Natal businesses for free. Browse by category or town across 12 KZN communities.",
+      "Find local KwaZulu-Natal businesses for free — browse by category or area.",
     url: SITE_URL,
     siteName: "Hidden Gems SA",
     locale: "en_ZA",
@@ -103,37 +103,37 @@ const faqItems = [
   {
     question: "Is Hidden Gems SA free to use?",
     answer:
-      "Yes — completely free. Businesses list at no cost, and customers browse with no account, no subscription, and no hidden fees.",
+      "Yes — Hidden Gems SA is completely free for both businesses and customers. No account, no subscription, no hidden fees.",
   },
   {
     question: "Which areas does Hidden Gems SA cover?",
     answer:
-      "Hidden Gems SA covers all of South Africa — businesses can list from any area, suburb, or town in any province. Browse by Area to see exactly which areas currently have approved listings.",
+      "We're focused on KwaZulu-Natal and surrounding areas, though any South African province can list. Browse by Area to see what's currently listed.",
   },
   {
     question: "How do I get my business listed on Hidden Gems SA?",
     answer:
-      "Click 'List Your Business', fill in the short form with your business details, optionally upload a logo, and submit. Our team reviews listings within 24–48 hours and notifies you on WhatsApp once approved.",
+      "Click 'List Your Business,' fill in your details, and submit. We review listings within 24–48 hours and notify you on WhatsApp once approved.",
   },
   {
-    question: "What types of businesses are listed?",
+    question: "What types of businesses can I find on Hidden Gems SA?",
     answer:
-      "Any legitimate local business in South Africa — home bakers, tutors, transport operators, hairstylists, plumbers, electricians, cleaning services, photographers, event planners, tailors, IT support and more.",
+      "Any legitimate local business — home bakers, tutors, transport, hairstylists, tradespeople, cleaners, photographers and more.",
   },
   {
     question: "How do I contact a business listed on Hidden Gems SA?",
     answer:
-      "Every approved listing shows a WhatsApp button. Tap it to open a direct WhatsApp conversation with the business owner. Some listings also include a website link.",
+      "Every approved listing has a WhatsApp button — tap it to message the owner directly. Some listings also include a website link.",
   },
   {
     question: "Where can I find local businesses in Ladysmith or Pietermaritzburg?",
     answer:
-      "Visit the Areas section, select your area (e.g. Ladysmith or Pietermaritzburg), and browse all approved local businesses there. You can also filter by province or category.",
+      "Visit the Areas page, select your town, and browse approved local businesses there — or filter by province or category.",
   },
   {
     question: "Who runs Hidden Gems SA?",
     answer:
-      "Hidden Gems SA is built and maintained by Olideen Technologies, a digital agency based in Estcourt, KwaZulu-Natal. Our mission is to put invisible local businesses on the digital map.",
+      "Hidden Gems SA is built and maintained by Olideen Technologies, a digital agency based in KwaZulu-Natal. Our mission: put overlooked local businesses on the map.",
   },
 ];
 
@@ -162,7 +162,6 @@ const jsonLd = {
         "url": OLIDEEN_URL,
         "address": {
           "@type": "PostalAddress",
-          "addressLocality": "Estcourt",
           "addressRegion": "KwaZulu-Natal",
           "addressCountry": "ZA",
         },
@@ -275,7 +274,7 @@ export default async function HomePage() {
           <AnimatedSection>
             <div className="section-header home-section-header">
               <h2>Search the Directory</h2>
-              <p>Find exactly what you&apos;re looking for, instantly</p>
+              <p>Find exactly what you need, instantly</p>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={0.1}>
@@ -295,7 +294,7 @@ export default async function HomePage() {
           <AnimatedSection>
             <div className="section-header home-section-header">
               <h2>Browse by Category</h2>
-              <p>Find the type of business you&apos;re looking for across South Africa</p>
+              <p>Find the business you need, by category</p>
             </div>
           </AnimatedSection>
           <AnimatedSection stagger className="grid-4 cat-grid">
@@ -328,7 +327,7 @@ export default async function HomePage() {
             <AnimatedSection>
               <div className="section-header home-section-header">
                 <h2>Browse by Area</h2>
-                <p>Discover local businesses across South Africa</p>
+                <p>Find local businesses near you</p>
               </div>
             </AnimatedSection>
             <AnimatedSection stagger className="towns-grid">

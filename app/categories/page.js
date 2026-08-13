@@ -8,7 +8,7 @@ import supabase from "@/lib/supabase";
 
 export const metadata = {
   title: "Browse by Category — KwaZulu-Natal Local Businesses",
-  description: "Find bakers, tutors, transport, beauty, trades and more local KZN businesses by category.",
+  description: "Find local KwaZulu-Natal businesses by category — bakers, tutors, transport, trades and more.",
   alternates: { canonical: `${SITE_URL}/categories` },
 };
 
@@ -58,7 +58,7 @@ export default async function CategoriesPage() {
         <div className="container">
           <div className="section-header">
             <h1>Browse by Category</h1>
-            <p>Find exactly the local business you need.</p>
+            <p>Find the local business you need.</p>
           </div>
 
           <div className="hub-grid">

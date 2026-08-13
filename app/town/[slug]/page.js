@@ -82,7 +82,7 @@ export async function generateMetadata({ params }) {
   if (!found) return { title: "Area Not Found" };
   return {
     title: `Local Businesses in ${found.area}, ${found.province}`,
-    description: `Browse approved local businesses in ${found.area}, ${found.province} — bakers, tutors, transport, beauty and more.`,
+    description: `Browse local businesses in ${found.area}, ${found.province} — bakers, tutors, transport, beauty and more.`,
     alternates: { canonical: `${SITE_URL}/town/${slug}` },
   };
 }
@@ -108,18 +108,18 @@ export default async function TownPage({ params }) {
       question: `Where can I find local businesses in ${area}?`,
       answer:
         categories.length > 0
-          ? `Hidden Gems SA currently lists ${businesses.length} approved local ${businesses.length === 1 ? "business" : "businesses"} in ${area}, ${province}, covering ${categories.join(", ")}. Browse the full list above, or visit the Categories page to search by type.`
-          : `Hidden Gems SA doesn't have any approved listings in ${area} yet. Be the first — list your business for free.`,
+          ? `We currently list ${businesses.length} local ${businesses.length === 1 ? "business" : "businesses"} in ${area}, ${province}, covering ${categories.join(", ")}. Browse the list above, or search by category.`
+          : `We don't have any listings in ${area} yet — be the first. List your business for free.`,
     },
     {
       question: `Is Hidden Gems SA free for businesses in ${area}?`,
       answer:
-        "Yes — completely free to list, with no account required. We review and approve new listings within 24–48 hours.",
+        "Yes — completely free, no account required. We review and approve new listings within 24–48 hours.",
     },
     {
       question: `How do I contact a business in ${area}?`,
       answer:
-        "Every approved listing includes a WhatsApp button so you can message the business directly. Some listings also include a website link.",
+        "Every approved listing has a WhatsApp button so you can message them directly. Some also include a website link.",
     },
   ];
 

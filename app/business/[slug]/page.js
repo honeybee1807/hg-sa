@@ -52,7 +52,7 @@ export async function generateMetadata({ params }) {
 
   return {
     title: `${biz.name} — ${biz.category} in ${biz.area}, ${biz.province} | Hidden Gems SA`,
-    description: biz.description ?? `${biz.name} is a local business in ${biz.area}, ${biz.province}.`,
+    description: biz.description ?? `${biz.name} is a ${biz.category} business in ${biz.area}, ${biz.province}. Contact them directly on Hidden Gems SA.`,
     alternates: { canonical: `${SITE_URL}/business/${biz.slug}` },
     openGraph: {
       title: biz.name,
@@ -317,7 +317,7 @@ export default async function BusinessPage({ params }) {
         </Link>
 
         <p className="biz-disclaimer-note">
-          Hidden Gems SA does not verify or endorse listed businesses. Please read our full{" "}
+          Hidden Gems SA doesn&apos;t verify or endorse listed businesses — read our full{" "}
           <Link href="/disclaimer">Disclaimer &amp; Terms of Use</Link> before engaging.
         </p>
       </div>

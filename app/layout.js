@@ -33,14 +33,14 @@ const inter = Inter({
 export const metadata = {
   title: {
     // shown when a page doesn't set its own title
-    default: "Hidden Gems SA – Free KZN Business Directory | KwaZulu-Natal",
+    default: "Hidden Gems SA – Free KwaZulu-Natal Business Directory",
     // when a page DOES set its own title, "%s" gets replaced with that title
     // and " | Hidden Gems SA" is added on the end automatically — so a page
     // titled "Ladysmith" becomes "Ladysmith | Hidden Gems SA".
     template: "%s | Hidden Gems SA",
   },
   description:
-    "Find trusted local businesses across KwaZulu-Natal for free. Home bakers, tutors, transport, beauty & more in Ladysmith, Pietermaritzburg, Dundee and 9 other KZN towns.",
+    "Free local business directory for KwaZulu-Natal. Home bakers, tutors, transport, beauty and more — no account needed.",
   metadataBase: new URL("https://www.hiddengemssa.co.za"),
   keywords: [
     "KwaZulu-Natal business directory",

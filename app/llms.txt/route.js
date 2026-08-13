@@ -32,16 +32,16 @@ export async function GET() {
 
   const body = `# Hidden Gems SA
 
-> Free local business directory for South Africa. Connects residents with home bakers, tutors, transport operators, hairstylists, tradespeople and more in any area, suburb, or town in any province — completely free, no account required.
+> Free local business directory for KwaZulu-Natal and surrounding areas. Connects residents with home bakers, tutors, transport operators, hairstylists, tradespeople and more — open to businesses from any South African province, no account required.
 
-Hidden Gems SA is built and maintained by Olideen Technologies (${OLIDEEN_URL}), a digital agency based in Estcourt, KwaZulu-Natal.
+Hidden Gems SA is built and maintained by Olideen Technologies (${OLIDEEN_URL}), a digital agency based in KwaZulu-Natal.
 
 ## Key facts
 
 - Currently covers ${areaCount} distinct ${areaCount === 1 ? "area" : "areas"} across South Africa, with new areas added as businesses from them are approved
 - ${CATEGORIES.length} business categories: ${categoryList}
 - Free to list a business — no account or payment required
-- Submissions are reviewed and approved within 24-48 hours
+- Submissions are reviewed and approved within 24–48 hours
 - Every approved listing includes a direct WhatsApp contact button
 - A different approved business is spotlighted as "Featured Gem of the Week" each Monday
 
@@ -54,7 +54,7 @@ Hidden Gems SA is built and maintained by Olideen Technologies (${OLIDEEN_URL}),
 
 ## About
 
-Hidden Gems SA exists to put overlooked local businesses in South Africa on the map. It is not a paid directory — listing is free, and the goal is to help residents discover trusted, verified local services close to home. Every business page includes the business's name, category, area, province, description, and a direct WhatsApp contact link.
+Hidden Gems SA exists to put overlooked local businesses in KwaZulu-Natal and surrounding areas on the map. Listing is free — the goal is helping residents discover trusted local services close to home. Every business page includes its name, category, area, province, description, and a direct WhatsApp contact link.
 `;
 
   return new Response(body, {

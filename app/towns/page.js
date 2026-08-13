@@ -11,7 +11,7 @@ import supabase from "@/lib/supabase";
 
 export const metadata = {
   title: "Browse by Area — South African Local Businesses",
-  description: "Find local South African businesses by area, suburb, or town.",
+  description: "Find local businesses near you — by area, suburb, or town.",
   alternates: { canonical: `${SITE_URL}/towns` },
 };
 
@@ -76,7 +76,7 @@ export default async function TownsPage() {
             <h1>Browse by Area</h1>
             <p>
               {areaSummaries.length > 0
-                ? "Discover local businesses across South Africa."
+                ? "Find local businesses across KwaZulu-Natal & surrounding areas."
                 : "No areas listed yet — be the first to list your business."}
             </p>
           </div>

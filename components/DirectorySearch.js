@@ -288,7 +288,7 @@ export default function DirectorySearch({ businesses }) {
             <input
               type="text"
               className="dir-search-pill-input"
-              placeholder="Search businesses by name, category or area..."
+              placeholder="Search by name, category or area..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               aria-label="Search the directory"
@@ -413,7 +413,7 @@ export default function DirectorySearch({ businesses }) {
           <p>
             {businesses.length === 0
               ? "No businesses listed yet."
-              : "No businesses match your search. Try a different name, category, or filter."}
+              : "No matches. Try a different name, category, or filter."}
           </p>
         </div>
       )}

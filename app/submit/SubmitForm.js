@@ -505,7 +505,7 @@ export default function SubmitForm() {
             <label htmlFor="street_address">Street Address <span className="optional">(optional)</span></label>
             <input id="street_address" className="form-control" type="text" value={fields.street_address}
               onChange={set("street_address")} placeholder="e.g. 12 Main Street, Estcourt" />
-            <span className="form-hint">This will be used to show your location on a map. Only enter if customers need to find you physically.</span>
+            <span className="form-hint">Shown on a map for customers to find you — only needed for a physical location.</span>
           </div>
         )}
 
@@ -626,8 +626,8 @@ export default function SubmitForm() {
           <i className="fa-solid fa-user" /> About You
         </h2>
         <p className="form-section-note">
-          <i className="fa-solid fa-lock" /> This information is private — only our team sees it.
-          We may reach out on WhatsApp or email if we need to verify your listing.
+          <i className="fa-solid fa-lock" /> Private — only our team sees this.
+          We may contact you on WhatsApp or email to verify your listing.
         </p>
 
         <div className="form-row">
@@ -655,8 +655,8 @@ export default function SubmitForm() {
           <i className="fa-solid fa-handshake" /> Whose Business Is This?
         </h2>
         <p className="form-section-note">
-          <i className="fa-solid fa-circle-info" /> This helps us confirm every listing has the
-          real owner&apos;s knowledge before it goes live.
+          <i className="fa-solid fa-circle-info" /> This confirms the real owner knows about
+          the listing before it goes live.
         </p>
 
         <div className="form-group">

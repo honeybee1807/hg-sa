@@ -9,7 +9,7 @@ import EditRequestForm from "./EditRequestForm";
 
 export const metadata = {
   title: "Edit Your Listing — Hidden Gems SA",
-  description: "Request a secure link to edit your existing Hidden Gems SA business listing.",
+  description: "Request a secure link to edit your Hidden Gems SA listing.",
   alternates: { canonical: `${SITE_URL}/edit` },
   robots: "noindex",
 };
