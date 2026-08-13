@@ -44,6 +44,7 @@ export async function submitBusiness(formData) {
   const owner_email    = formData.get("owner_email")?.toString().trim();
   const referralSource = formData.get("referral_source")?.toString().trim();
   const logo_url        = formData.get("logo_url")?.toString().trim();
+  const consent          = formData.get("consent")?.toString() === "true";
 
   const halal              = formData.get("halal")?.toString() === "true";
   const halalCertificate   = formData.get("halal_certificate")?.toString().trim();
@@ -66,6 +67,13 @@ export async function submitBusiness(formData) {
   const aRequiredFieldIsMissing = !name || !category || !province || !area || !description || !owner_name;
   if (aRequiredFieldIsMissing) {
     return { success: false, error: "Please fill in all required fields." };
+  }
+
+  // the consent checkbox already gates the submit button client-side, but
+  // that's only ever a UI convenience — this is the actual backstop, the
+  // same two-layer approach every other required field on this form gets.
+  if (!consent) {
+    return { success: false, error: "Please confirm you agree to the Disclaimer & Terms of Use before submitting." };
   }
 
   if (!owner_email) {

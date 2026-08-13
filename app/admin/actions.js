@@ -11,59 +11,144 @@
 // lib/supabase-admin.js) that can read and change anything.
 
 import { cookies } from "next/headers";
-import { createHmac } from "crypto";
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { getAdminClient } from "@/lib/supabase-admin";
 import { CATEGORIES } from "@/lib/constants";
+import { sendAdminLoginNotification, sendBusinessDeletedNotification } from "@/lib/email";
 
-// builds the secret value stored in the "you are logged in" cookie. it's a
-// scrambled (hashed) combination of the admin password and a fixed label —
-// so the actual password is never stored anywhere, only this scrambled
-// version, and it can only be recreated by someone who knows the real
-// password.
-function sessionToken() {
-  return createHmac("sha256", process.env.ADMIN_PASSWORD ?? "")
-    .update("hg_admin_v1")
-    .digest("hex");
+// how long a login stays valid for, both for the session row's own expiry
+// and for the cookie's maxAge — kept as one constant so the two can never
+// drift out of sync with each other.
+const SESSION_LIFETIME_MS = 60 * 60 * 24 * 7 * 1000; // 7 days
+
+// how many failed password attempts are allowed inside the lockout window
+// below, before loginAdmin() starts refusing to even check the password.
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+// a timestamp formatted the way both admin-notification emails show it —
+// kept as one small helper so a login notification and a delete
+// notification always read the same way.
+function nowFormatted() {
+  return new Date().toLocaleString("en-ZA", { timeZone: "Africa/Johannesburg", dateStyle: "medium", timeStyle: "medium" });
 }
 
-// checks the password typed into the login form. if it's correct, gives the
-// browser a cookie proving it's logged in (good for 7 days); if not,
-// returns an error message for the login form to show.
+// checks the password typed into the login form. rate-limited (5 failed
+// attempts per rolling 15-minute window, tracked in admin_login_attempts —
+// see the SQL this feature needs, given separately) and, on success,
+// starts a real server-side session (a random token stored in
+// admin_sessions, see isAdminAuthed() below) rather than a fixed value that
+// never changes between logins.
 export async function loginAdmin(formData) {
+  const db = getAdminClient();
+
+  // before ever looking at the password itself: how many failed attempts
+  // have happened in the last 15 minutes? if there have been too many,
+  // refuse outright — this response is identical whether the password
+  // about to be typed would have been right or wrong, so a locked-out
+  // visitor learns nothing about the real password from it.
+  const windowStart = new Date(Date.now() - LOCKOUT_WINDOW_MS).toISOString();
+  const { count: recentFailures } = await db
+    .from("admin_login_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("success", false)
+    .gte("attempted_at", windowStart);
+
+  if ((recentFailures ?? 0) >= MAX_FAILED_ATTEMPTS) {
+    return { success: false, error: "Too many attempts, try again later." };
+  }
+
   const enteredPassword = formData.get("password")?.toString() ?? "";
   const passwordIsCorrect = enteredPassword === process.env.ADMIN_PASSWORD;
+
+  // log this attempt regardless of outcome — this, plus the count above,
+  // is the entire rate-limiting mechanism. a locked-out rejection (above)
+  // is deliberately not logged again here — it was never a real check of
+  // the actual password, so it isn't counted as one more failure.
+  await db.from("admin_login_attempts").insert({ success: passwordIsCorrect });
 
   if (!passwordIsCorrect) {
     return { success: false, error: "Incorrect password." };
   }
 
+  // start a real session: a random, unguessable token — nothing about it
+  // is derived from the password, so it can't be recreated by anyone
+  // without going through this login. stored server-side so isAdminAuthed()
+  // can check it actually exists and hasn't expired, rather than just
+  // recomputing a fixed value and comparing.
+  const token = randomUUID();
+  const expiresAt = new Date(Date.now() + SESSION_LIFETIME_MS).toISOString();
+
+  const { error: sessionError } = await db
+    .from("admin_sessions")
+    .insert({ token, expires_at: expiresAt });
+
+  if (sessionError) {
+    return { success: false, error: "Could not start a session. Please try again." };
+  }
+
   const store = await cookies();
-  store.set("hg_admin_session", sessionToken(), {
+  store.set("hg_admin_session", token, {
     httpOnly: true,                              // JavaScript in the browser can't read this cookie (blocks a common type of attack)
     secure: process.env.NODE_ENV === "production", // only sent over a secure https connection, once live
     sameSite: "lax",                             // extra protection against other websites tricking the browser into sending it
     maxAge: 60 * 60 * 24 * 7,                    // stays logged in for 7 days (measured in seconds)
     path: "/",
   });
+
+  // security tripwire: let the real admin know a login just happened, in
+  // case it wasn't them. scheduled via next/server's after() rather than a
+  // plain un-awaited call — on Vercel's serverless runtime, a promise left
+  // running after the response is sent is not guaranteed to finish; after()
+  // keeps the function alive until this completes without making the
+  // visitor's actual login wait on it. a failed send is logged, not thrown
+  // — it must never turn a successful login into an error screen.
+  after(async () => {
+    try {
+      await sendAdminLoginNotification({ time: nowFormatted() });
+    } catch (err) {
+      console.error("sendAdminLoginNotification failed:", err);
+    }
+  });
+
   return { success: true };
 }
 
-// logs out by deleting the "you are logged in" cookie.
+// logs out by deleting the "you are logged in" cookie, and deleting the
+// matching session row so the same token can't be reused even if the
+// cookie somehow lingered.
 export async function logoutAdmin() {
   const store = await cookies();
+  const token = store.get("hg_admin_session")?.value;
+
+  if (token) {
+    const db = getAdminClient();
+    await db.from("admin_sessions").delete().eq("token", token);
+  }
+
   store.delete("hg_admin_session");
 }
 
 // checks whether whoever is making this request is actually logged in as
-// admin, by comparing their cookie against what a real logged-in cookie
-// should look like. every action below that touches the database calls
-// this first and refuses to continue if it comes back false.
+// admin — the cookie must hold a token that has a matching, still-valid
+// row in admin_sessions. every action below that touches the database
+// calls this first and refuses to continue if it comes back false.
 export async function isAdminAuthed() {
   const store = await cookies();
-  const cookieOnThisRequest = store.get("hg_admin_session")?.value;
-  const whatALoggedInCookieShouldBe = sessionToken();
-  return cookieOnThisRequest === whatALoggedInCookieShouldBe;
+  const token = store.get("hg_admin_session")?.value;
+  if (!token) return false;
+
+  const db = getAdminClient();
+  const { data: session } = await db
+    .from("admin_sessions")
+    .select("expires_at")
+    .eq("token", token)
+    .maybeSingle();
+
+  if (!session) return false;
+  return new Date(session.expires_at).getTime() > Date.now();
 }
 
 // turns a business name and area into the web-address-friendly text used
@@ -296,10 +381,11 @@ export async function deleteBusiness(id) {
 
   // fetch these before deleting, purely so the revalidation calls below can
   // still target the exact pages this business used to appear on — once the
-  // row is gone there's no way to look this up again.
+  // row is gone there's no way to look this up again. "name" is fetched
+  // too, for the deletion notification below.
   const { data: business } = await db
     .from("businesses")
-    .select("slug, area, category")
+    .select("name, slug, area, category")
     .eq("id", id)
     .maybeSingle();
 
@@ -323,6 +409,18 @@ export async function deleteBusiness(id) {
     const categorySlug = CATEGORIES.find((c) => c.name === business.category)?.slug;
     if (categorySlug) revalidatePath(`/category/${categorySlug}`);
   }
+
+  // security tripwire — same after()-scheduled, fire-and-forget approach as
+  // the login notification above, and for the same reason: a deletion
+  // shouldn't wait on an email, but shouldn't go unnoticed either.
+  const deletedName = business?.name ?? "Unknown business";
+  after(async () => {
+    try {
+      await sendBusinessDeletedNotification({ businessName: deletedName, time: nowFormatted() });
+    } catch (err) {
+      console.error("sendBusinessDeletedNotification failed:", err);
+    }
+  });
 
   return { success: true };
 }

@@ -221,6 +221,15 @@ export async function submitEditRequest(token, formData) {
     return { success: false, invalidToken: true, error: "This edit link is invalid or has expired. Please request a new one." };
   }
 
+  // the consent checkbox already gates the submit button client-side (see
+  // EditListingForm.js), but that's only ever a UI convenience — this is
+  // the actual backstop, mirroring the same check submitBusiness() runs in
+  // app/submit/actions.js.
+  const consent = formData.get("consent")?.toString() === "true";
+  if (!consent) {
+    return { success: false, error: "Please confirm you agree to the Disclaimer & Terms of Use before submitting." };
+  }
+
   const { values, error: validationError } = buildEditedValues(formData);
   if (validationError) {
     return { success: false, error: validationError };
