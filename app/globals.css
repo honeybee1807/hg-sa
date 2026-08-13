@@ -460,27 +460,21 @@ h1, h2, h3, h4, h5, h6 {
 .section-header p { color: #6b7280; margin-top: 0.5rem; }
 
 /* ─── featured gem card ────────────────────────────────────────────── */
-/* empty state matches the real card visually */
-.featured-gem-empty {
-  background: #fff;
+/* dark card — solid near-black navy with a subtle diagonal gradient,
+   rather than a flat fill. empty state uses the exact same background/
+   shape/badge treatment as the real card so the slot never visually
+   "jumps" once a gem is actually set. */
+.featured-gem-empty,
+.featured-gem-card {
+  background: linear-gradient(135deg, #0A0E1A 0%, #121B36 55%, #0A0E1A 100%);
   border-radius: var(--radius);
   max-width: 680px;
   margin: 0 auto;
-  overflow: hidden;
+  /* visible, not hidden — lets the corner badge below overlap the card's
+     own top edge instead of being clipped by it */
+  overflow: visible;
   position: relative;
-  /* animated gradient border */
-  border: 1.5px solid transparent;
-  background-clip: padding-box;
-  box-shadow:
-    0 8px 48px rgba(153,102,204,0.12),
-    0 2px 16px rgba(8,43,102,0.08),
-    0 0 0 1.5px transparent;
-  animation: emptyCardBorder 3s ease infinite;
-}
-
-@keyframes emptyCardBorder {
-  0%, 100% { box-shadow: 0 8px 48px rgba(153,102,204,0.12), 0 2px 16px rgba(8,43,102,0.08), 0 0 0 1.5px rgba(153,102,204,0.25); }
-  50%       { box-shadow: 0 8px 48px rgba(153,102,204,0.22), 0 2px 16px rgba(8,43,102,0.12), 0 0 0 1.5px rgba(153,102,204,0.65); }
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 4px 20px rgba(0,0,0,0.3);
 }
 
 /* icon placeholder replacing the logo */
@@ -507,38 +501,38 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .featured-gem-empty-heading {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   margin-bottom: 0.4rem;
-  color: var(--sapphire-deep);
+  color: #fff;
 }
 
-.featured-gem-card {
-  background: #fff;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-  max-width: 680px;
-  margin: 0 auto;
-}
-
+/* small pill badge, overlapping the card's top-right corner rather than a
+   full-width header bar */
 .featured-gem-badge {
-  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
+  position: absolute;
+  top: 0;
+  right: 24px;
+  transform: translateY(-50%);
+  z-index: 1;
+  background: linear-gradient(120deg, var(--sapphire), var(--amethyst));
   background-size: 200% 100%;
   color: #fff;
-  padding: 0.5rem 1.25rem;
-  font-size: 0.8rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  box-shadow: 0 6px 20px rgba(15,82,186,0.35);
 }
 
 .featured-gem-body {
   display: flex;
   gap: 1.5rem;
-  padding: 1.75rem;
+  padding: 2.25rem 1.75rem 1.75rem;
   align-items: flex-start;
 }
 
@@ -564,36 +558,67 @@ h1, h2, h3, h4, h5, h6 {
 
 .featured-gem-info h3 {
   font-size: 1.4rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
 }
 
-.featured-gem-meta {
+/* category + area, shown as small pill tags side by side rather than
+   separate icon+text lines */
+.featured-gem-tags {
   display: flex;
-  gap: 1rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin-bottom: 0.75rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  margin-bottom: 0.75rem;
 }
 
-.featured-gem-meta span { display: flex; align-items: center; gap: 0.3rem; }
+.featured-gem-tag {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+}
 
 .featured-gem-desc {
-  color: #374151;
+  color: rgba(255,255,255,0.62);
   font-size: 0.95rem;
   line-height: 1.55;
-  margin-bottom: 1rem;
+  margin-bottom: 1.1rem;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+.featured-gem-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.featured-gem-view-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: color 0.2s ease, gap 0.2s ease;
+}
+
+.featured-gem-view-link:hover {
+  color: var(--sapphire-light);
+  gap: 0.7rem;
+}
+
 .featured-gem-cta { font-size: 0.9rem; padding: 0.6rem 1.25rem; }
 
 @media (max-width: 560px) {
   .featured-gem-body { flex-direction: column; align-items: center; text-align: center; }
-  .featured-gem-meta { justify-content: center; }
+  .featured-gem-tags { justify-content: center; }
+  .featured-gem-badge { right: 50%; transform: translate(50%, -50%); }
 }
 
 /* ─── category cards ───────────────────────────────────────────────── */
@@ -2516,10 +2541,9 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   box-shadow: 0 6px 22px rgba(15,82,186,0.4);
 }
 
-/* ── featured gem card (light) ───────────────────────────────────── */
+/* ── featured gem card (dark) ────────────────────────────────────── */
 .home-wrap .featured-gem-card {
-  box-shadow: 0 8px 48px rgba(153,102,204,0.12), 0 2px 16px rgba(8,43,102,0.08);
-  border: 1px solid #E1E8F4;
+  border: 1px solid rgba(153,102,204,0.25);
 }
 
 /* ── faq (light) ─────────────────────────────────────────────────── */

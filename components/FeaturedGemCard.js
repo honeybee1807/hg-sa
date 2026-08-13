@@ -1,4 +1,4 @@
-// shows the current "Gem of the Week" — a single business the admin (or the
+// shows the current "Featured Gem" — a single business the admin (or the
 // automatic Monday draw, see app/admin/actions.js) has chosen to spotlight.
 // "gem" is the row from the featured_gem table, joined with the actual
 // business it points to (gem.businesses).
@@ -11,25 +11,22 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function FeaturedGemCard({ gem }) {
-  // no featured business set — show the "could this be you?" placeholder.
+  // no featured business set — show the "want to be featured?" placeholder.
   if (!gem?.businesses) {
     return (
       <div className="featured-gem-empty">
         <div className="featured-gem-badge">
-          <i className="fa-solid fa-gem" /> Gem of the Week
+          <i className="fa-solid fa-diamond" /> Featured Gem
         </div>
         <div className="featured-gem-body">
           <div className="featured-gem-logo">
             <div className="featured-gem-empty-icon-wrap">
-              <i className="fa-solid fa-gem featured-gem-empty-icon" />
+              <i className="fa-solid fa-diamond featured-gem-empty-icon" />
             </div>
           </div>
           <div className="featured-gem-info">
-            <h3 className="featured-gem-empty-heading">Could this be your business?</h3>
-            <p className="featured-gem-desc">
-              Every Monday we spotlight an outstanding South African business — completely free.
-              Submit your listing and you could be featured next.
-            </p>
+            <h3 className="featured-gem-empty-heading">Want your business to be the next Featured Gem?</h3>
+            <p className="featured-gem-desc">List your business today!</p>
             <Link href="/submit" className="btn-primary featured-gem-cta">
               <i className="fa-solid fa-plus" /> List Your Business Free
             </Link>
@@ -41,11 +38,16 @@ export default function FeaturedGemCard({ gem }) {
 
   const biz = gem.businesses;
   const initial = biz.name?.[0]?.toUpperCase() ?? "?";
+  // some older records may store the area with extra text after it (like
+  // "Estcourt, KwaZulu-Natal" instead of just "Estcourt") — only the part
+  // before the first comma is the actual area name. same normalization
+  // already used on the business detail page and directory cards.
+  const areaName = biz.area?.split(",")[0]?.trim();
 
   return (
     <article className="featured-gem-card">
       <div className="featured-gem-badge">
-        <i className="fa-solid fa-gem" /> Gem of the Week
+        <i className="fa-solid fa-diamond" /> Featured Gem
       </div>
 
       <div className="featured-gem-body">
@@ -65,19 +67,18 @@ export default function FeaturedGemCard({ gem }) {
 
         <div className="featured-gem-info">
           <h3>{biz.name}</h3>
-          <p className="featured-gem-meta">
-            <span><i className="fa-solid fa-tag" /> {biz.category}</span>
-            <span><i className="fa-solid fa-location-dot" /> {biz.area}, {biz.province}</span>
+          <p className="featured-gem-tags">
+            <span className="featured-gem-tag">{biz.category}</span>
+            {areaName && <span className="featured-gem-tag">{areaName}</span>}
           </p>
-          {biz.business_type && (
-            <span className="business-type-badge">{biz.business_type}</span>
-          )}
           {biz.description && (
             <p className="featured-gem-desc">{biz.description}</p>
           )}
-          <Link href={`/business/${biz.slug}`} className="btn-primary featured-gem-cta">
-            <i className="fa-solid fa-store" /> View Profile
-          </Link>
+          <div className="featured-gem-actions">
+            <Link href={`/business/${biz.slug}`} className="featured-gem-view-link">
+              View Profile <i className="fa-solid fa-arrow-right" />
+            </Link>
+          </div>
         </div>
       </div>
     </article>
