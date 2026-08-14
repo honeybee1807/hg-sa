@@ -13,7 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { CATEGORIES, PROVINCES } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES } from "@/lib/constants";
 import SocialLink from "@/components/SocialLink";
 import BadgePills from "@/components/BadgePills";
 
@@ -34,20 +34,6 @@ const BADGE_FILTER_OPTIONS = [
 // below.
 const BADGE_PARAM_KEYS = ["halal", "delivery", "callouts"];
 
-// the options shown in the "Business Type" filter section — kept here
-// rather than in lib/constants.js since this exact list is also
-// hand-written directly into app/submit/SubmitForm.js (the only other place
-// it's needed), rather than being a shared master list like categories or
-// provinces.
-const BUSINESS_TYPES = [
-  "Shop", 
-  "Office",
-  "Home-based",
-  "On-site service",
-  "Online",
-  "Remote"
-
-];
 
 // the three ways results can be displayed, and the localStorage key that
 // remembers whichever one someone last picked, so it's still selected next

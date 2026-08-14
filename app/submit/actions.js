@@ -6,7 +6,7 @@
 // to the database with a "pending" status, ready for an admin to review.
 
 import supabase from "@/lib/supabase";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, BADGE_CATEGORY_VISIBILITY } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPES, BADGE_CATEGORY_VISIBILITY } from "@/lib/constants";
 import { normalizeInstagramInput } from "@/lib/social";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 
@@ -153,7 +153,7 @@ export async function submitBusiness(formData) {
     custom_category:      category === "Other" ? customCategory : null,
     business_type:         businessType,
     area,
-    street_address:       businessType === PHYSICAL_BUSINESS_TYPE ? (streetAddress || null) : null,
+    street_address:       PHYSICAL_BUSINESS_TYPES.includes(businessType) ? (streetAddress || null) : null,
     province,
     whatsapp:    normalizedWhatsapp,
     website:     website || null,

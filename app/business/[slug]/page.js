@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
-import { SITE_URL, CATEGORIES, PHYSICAL_BUSINESS_TYPE, halalCertificateLabel } from "@/lib/constants";
+import { SITE_URL, CATEGORIES, PHYSICAL_BUSINESS_TYPES, halalCertificateLabel } from "@/lib/constants";
 import SocialLink from "@/components/SocialLink";
 import BusinessMap from "@/components/BusinessMapLoader";
 import BadgePills from "@/components/BadgePills";
@@ -231,10 +231,10 @@ export default async function BusinessPage({ params }) {
             </div>
           )}
 
-          {/* Map — only for a physical location that's actually given a
-              street address; a home-based, mobile, or online-only business
-              has no fixed address to show a map of. */}
-          {biz.business_type === PHYSICAL_BUSINESS_TYPE && biz.street_address && (
+          {/* Map — only for a Shop or Office / On-site service that's
+              actually given a street address; a home-based, delivery-only,
+              or remote business has no fixed address to show a map of. */}
+          {PHYSICAL_BUSINESS_TYPES.includes(biz.business_type) && biz.street_address && (
             <BusinessMap streetAddress={biz.street_address} area={areaName} province={biz.province} />
           )}
         </article>

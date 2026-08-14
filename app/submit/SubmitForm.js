@@ -25,7 +25,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { submitBusiness } from "./actions";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPES, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 
 // where uploaded logos get sent, and which "upload preset" (a pre-configured
@@ -170,7 +170,7 @@ export default function SubmitForm() {
     setFields((previousFields) => ({
       ...previousFields,
       business_type: newBusinessType,
-      street_address: newBusinessType === PHYSICAL_BUSINESS_TYPE ? previousFields.street_address : "",
+      street_address: PHYSICAL_BUSINESS_TYPES.includes(newBusinessType) ? previousFields.street_address : "",
     }));
     clearFieldError("business_type");
   }
@@ -255,10 +255,10 @@ export default function SubmitForm() {
             URL.revokeObjectURL(cropSrc);
             setCropSrc("");
           } else {
-            alert("Upload failed — please try again.");
+            alert("Upload failed. Please try again.");
           }
         } catch {
-          alert("Upload error — please check your connection and try again.");
+          alert("Upload error. Please check your connection and try again.");
         } finally {
           setUploading(false);
         }
@@ -498,15 +498,16 @@ export default function SubmitForm() {
           {fieldErrors.business_type && <span className="field-error">{fieldErrors.business_type}</span>}
         </div>
 
-        {/* only shown for a physical location — a home-based, mobile, or
-            online-only business has no street address for customers to be
-            shown a map of. */}
-        {fields.business_type === PHYSICAL_BUSINESS_TYPE && (
+        {/* only shown for a Shop or Office or an On-site service — a
+            home-based, delivery-only, or remote business has no public
+            street address for customers to be shown a map of (and asking a
+            home-based business for its home address is a privacy risk). */}
+        {PHYSICAL_BUSINESS_TYPES.includes(fields.business_type) && (
           <div className="form-group">
             <label htmlFor="street_address">Street Address <span className="optional">(optional)</span></label>
             <input id="street_address" className="form-control" type="text" value={fields.street_address}
               onChange={set("street_address")} placeholder="e.g. 12 Main Street, Estcourt" />
-            <span className="form-hint">Shown on a map for customers to find you — only needed for a physical location.</span>
+            <span className="form-hint">Shown publically on a map for customers to find you, only needed for a physical location.</span>
           </div>
         )}
 

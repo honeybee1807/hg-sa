@@ -17,7 +17,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { submitEditRequest } from "../actions";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPES, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 
 export default function EditListingForm({ token, business }) {
@@ -80,7 +80,7 @@ export default function EditListingForm({ token, business }) {
     setFields((previous) => ({
       ...previous,
       business_type: newBusinessType,
-      street_address: newBusinessType === PHYSICAL_BUSINESS_TYPE ? previous.street_address : "",
+      street_address: PHYSICAL_BUSINESS_TYPES.includes(newBusinessType) ? previous.street_address : "",
     }));
     clearFieldError("business_type");
   }
@@ -272,7 +272,7 @@ export default function EditListingForm({ token, business }) {
           {fieldErrors.business_type && <span className="field-error">{fieldErrors.business_type}</span>}
         </div>
 
-        {fields.business_type === PHYSICAL_BUSINESS_TYPE && (
+        {PHYSICAL_BUSINESS_TYPES.includes(fields.business_type) && (
           <div className="form-group">
             <label htmlFor="street_address">Street Address <span className="optional">(optional)</span></label>
             <input id="street_address" className="form-control" type="text" value={fields.street_address}

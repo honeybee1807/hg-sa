@@ -21,7 +21,7 @@
 
 import { randomUUID } from "crypto";
 import { getAdminClient } from "@/lib/supabase-admin";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPE, SITE_URL, BADGE_CATEGORY_VISIBILITY } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPES, SITE_URL, BADGE_CATEGORY_VISIBILITY } from "@/lib/constants";
 import { normalizeInstagramInput } from "@/lib/social";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
 import { sendEditLinkEmail } from "@/lib/email";
@@ -178,7 +178,7 @@ function buildEditedValues(formData) {
       business_type: businessType,
       province,
       area,
-      street_address: businessType === PHYSICAL_BUSINESS_TYPE ? (streetAddress || null) : null,
+      street_address: PHYSICAL_BUSINESS_TYPES.includes(businessType) ? (streetAddress || null) : null,
       whatsapp: normalizedWhatsapp,
       website: website || null,
       instagram: normalizeInstagramInput(instagram),
