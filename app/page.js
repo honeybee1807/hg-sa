@@ -153,7 +153,7 @@ const jsonLd = {
       "url": SITE_URL,
       "name": "Hidden Gems SA",
       "description":
-        "Free local business directory for South Africa — find home bakers, tutors, transport, beauty services, trades and more in any area, suburb, or town in any province.",
+        "Free local business directory for South Africa: Find home bakers, tutors, transport, beauty services, trades and more in any area, suburb, or town in any province.",
       "inLanguage": "en-ZA",
       "publisher": {
         "@type": "Organization",
@@ -414,7 +414,7 @@ export default async function HomePage() {
             <p className="home-cta-pre">Ready to grow?</p>
             <h2 className="home-cta-h2">Is Your Business a Hidden Gem?</h2>
             <p className="home-cta-sub mt-1">
-              Free listing, no account required — reviewed and live within 48 hours.
+              Free listing, no account required. List your business. Have it reviewed and live online within 48 hours.
             </p>
             <Link href="/submit" className="hero-cta-primary mt-3">
               <i className="fa-solid fa-plus" /> List Your Business Free

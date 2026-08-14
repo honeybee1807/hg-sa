@@ -121,7 +121,7 @@ export default function Hero({ featuredGem, areaCount }) {
 
           <p className="h-sub">
             KwaZulu-Natal&apos;s finest home bakers, tutors, transport operators,
-            hairstylists and more — completely free.
+            hairstylists and more, completely free for a limited time. List your business today!
           </p>
 
           <div className="h-ctas">

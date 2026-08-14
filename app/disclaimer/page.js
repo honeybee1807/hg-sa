@@ -26,7 +26,7 @@ export default function DisclaimerPage() {
         <p>
           Hidden Gems SA is a free, community-focused local business directory operated by
           Olideen Technologies. It is not a registered separate business entity, and does not
-          itself provide the goods or services listed — it simply connects users with local
+          itself provide the goods or services listed. It simply connects users with local
           businesses across KwaZulu-Natal and beyond.
         </p>
 
@@ -78,8 +78,8 @@ export default function DisclaimerPage() {
         <h2>8. User Responsibility</h2>
         <p>
           Users engage with listed businesses entirely at their own risk. Users are responsible
-          for conducting their own due diligence — including verifying credentials,
-          certifications (such as Halal certification status), pricing, and legitimacy — before
+          for conducting their own due diligence, including verifying credentials,
+          certifications (such as Halal certification status), pricing, and legitimacy before
           engaging with any listed business.
         </p>
 
@@ -93,8 +93,8 @@ export default function DisclaimerPage() {
 
         <h2>10. Indemnification</h2>
         <p>
-          By using Hidden Gems SA — whether as a business owner submitting a listing or a user
-          browsing listings — you agree to indemnify and hold harmless Olideen Technologies, its
+          By using Hidden Gems SA, whether as a business owner submitting a listing or a user
+          browsing listings, you agree to indemnify and hold harmless Olideen Technologies, its
           founder, and affiliates against any claim, loss, or damage arising from your use of
           the platform or your reliance on information found on it.
         </p>

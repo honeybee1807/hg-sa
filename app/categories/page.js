@@ -7,8 +7,8 @@ import { CATEGORIES, SITE_URL } from "@/lib/constants";
 import supabase from "@/lib/supabase";
 
 export const metadata = {
-  title: "Browse by Category — KwaZulu-Natal Local Businesses",
-  description: "Find local KwaZulu-Natal businesses by category — bakers, tutors, transport, trades and more.",
+  title: "Browse by Category: KwaZulu-Natal Local Businesses",
+  description: "Find local KwaZulu-Natal businesses by category: bakers, tutors, transport, trades and more.",
   alternates: { canonical: `${SITE_URL}/categories` },
 };
 

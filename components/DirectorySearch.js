@@ -40,10 +40,13 @@ const BADGE_PARAM_KEYS = ["halal", "delivery", "callouts"];
 // it's needed), rather than being a shared master list like categories or
 // provinces.
 const BUSINESS_TYPES = [
-  "Physical location — customers visit us",
-  "Home-based — we operate from home",
-  "Mobile — we come to the customer",
-  "Online only — no physical location",
+  "Shop", 
+  "Office",
+  "Home-based",
+  "On-site service",
+  "Online",
+  "Remote"
+
 ];
 
 // the three ways results can be displayed, and the localStorage key that

@@ -77,8 +77,8 @@ export default function OlideenPromo() {
           Connecting South Africa,<br />One Business at a Time
         </h2>
         <p className="promo-animate promo-sub promo-full-only">
-          We build digital tools that put overlooked local businesses across
-          KwaZulu-Natal on the map.
+          We build digital tools that put local businesses 
+          across KwaZulu-Natal, on the map.
         </p>
         <a
           href={OLIDEEN_URL}

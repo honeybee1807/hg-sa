@@ -317,7 +317,7 @@ export default async function BusinessPage({ params }) {
         </Link>
 
         <p className="biz-disclaimer-note">
-          Hidden Gems SA doesn&apos;t verify or endorse listed businesses — read our full{" "}
+          Hidden Gems SA doesn&apos;t verify or endorse listed businesses. Read our full{" "}
           <Link href="/disclaimer">Disclaimer &amp; Terms of Use</Link> before engaging.
         </p>
       </div>

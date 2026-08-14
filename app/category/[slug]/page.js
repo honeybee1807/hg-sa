@@ -73,17 +73,17 @@ export default async function CategoryPage({ params }) {
       answer:
         areas.length > 0
           ? `We currently list ${businesses.length} approved ${catLower} ${businesses.length === 1 ? "business" : "businesses"} in ${areas.join(", ")}. Browse the list above, or search by area.`
-          : `We're still building our ${catLower} directory — check back soon, or list your own ${catLower} business for free.`,
+          : `We're still building our ${catLower} directory. Ccheck back soon, or list your own ${catLower} business for free.`,
     },
     {
       question: `Is it free to list a ${catLower} business on Hidden Gems SA?`,
       answer:
-        "Yes — completely free, no account required. We review and approve submissions within 24–48 hours.",
+        "Yes, completely free, no account required. We review and approve submissions within 24–48 hours. However, time is limited as we may introduce paid premium features in the future, so get your free listing whilst it is free.",
     },
     {
       question: `How do I contact a ${catLower} business listed here?`,
       answer:
-        "Every approved listing has a WhatsApp button so you can message them directly. Some also include a website link.",
+        "Approved listings often have a WhatsApp button so that you can message them directly. Some also include a website link.",
     },
   ];
 
