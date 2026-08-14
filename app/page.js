@@ -29,12 +29,12 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Hidden Gems SA – Free KwaZulu-Natal Business Directory",
   description:
-    "Discover trusted local businesses in KwaZulu-Natal — home bakers, tutors, transport, beauty and trades. Free to browse, no account needed.",
+    "Discover trusted local businesses in KwaZulu-Natal: home bakers, tutors, transport, beauty and trades. Free to browse, no account needed.",
   alternates: { canonical: SITE_URL },
   openGraph: {
     title: "Hidden Gems SA – Free KwaZulu-Natal Business Directory",
     description:
-      "Find local KwaZulu-Natal businesses for free — browse by category or area.",
+      "Find local businesses in KwaZulu-Natal for free, browse by category or area.",
     url: SITE_URL,
     siteName: "Hidden Gems SA",
     locale: "en_ZA",
@@ -103,12 +103,12 @@ const faqItems = [
   {
     question: "Is Hidden Gems SA free to use?",
     answer:
-      "Yes — Hidden Gems SA is completely free for both businesses and customers. No account, no subscription, no hidden fees.",
+      "Yes, Hidden Gems SA is completely free for both businesses and customers. No account, no subscription, no hidden fees. However, time is limited: we may introduce paid premium features in the future, so get your free listing now while it's still free.",
   },
   {
     question: "Which areas does Hidden Gems SA cover?",
     answer:
-      "We're focused on KwaZulu-Natal and surrounding areas, though any South African province can list. Browse by Area to see what's currently listed.",
+      "We're focused on KwaZulu-Natal and surrounding areas, although any business can list in any South African province. Browse by Area to see what's currently listed or be the first to list your business in your area.",
   },
   {
     question: "How do I get my business listed on Hidden Gems SA?",
@@ -118,22 +118,22 @@ const faqItems = [
   {
     question: "What types of businesses can I find on Hidden Gems SA?",
     answer:
-      "Any legitimate local business — home bakers, tutors, transport, hairstylists, tradespeople, cleaners, photographers and more.",
+      "Any legitimate local business i.e. home bakers, tutors, transport, hairstylists, tradespeople, cleaners, photographers and more.",
   },
   {
     question: "How do I contact a business listed on Hidden Gems SA?",
     answer:
-      "Every approved listing has a WhatsApp button — tap it to message the owner directly. Some listings also include a website link.",
+      "Approved listings usually have a WhatsApp button, tap it to message the owner directly. Some listings also include a website link.",
   },
   {
-    question: "Where can I find local businesses in Ladysmith or Pietermaritzburg?",
+    question: "Where can I find local businesses in perhaps Ladysmith, Pietermaritzburg or Other Areas?",
     answer:
-      "Visit the Areas page, select your town, and browse approved local businesses there — or filter by province or category.",
+      "Visit the Areas page, select your town, and browse approved local businesses there or you may filter by province or category.",
   },
   {
     question: "Who runs Hidden Gems SA?",
     answer:
-      "Hidden Gems SA is built and maintained by Olideen Technologies, a digital agency based in KwaZulu-Natal. Our mission: put overlooked local businesses on the map.",
+      "Hidden Gems SA is built and maintained by Olideen Technologies, a digital agency based in KwaZulu-Natal. Our mission: Help our local businesses thrive in our community.",
   },
 ];
 
@@ -313,6 +313,38 @@ export default async function HomePage() {
               <Link href="/categories" className="btn-rose-outline">
                 <i className="fa-solid fa-grid-2" /> View All Categories
               </Link>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
+      {/* mission statement banner — sits between category and area browsing */}
+      <section className="home-section">
+        <div className="container">
+          <AnimatedSection>
+            <div className="mission-banner">
+              <div className="mission-glow" aria-hidden="true" />
+              <div className="mission-content">
+                <span className="mission-tag">
+                  <i className="fa-solid fa-heart" /> Our Mission
+                </span>
+                <p className="mission-lead">
+                  Every community has businesses worth discovering.
+                </p>
+                <p className="mission-text">
+                  Hidden Gems SA exists to shine a light on the local and independent
+                  businesses that make our communities special.
+                </p>
+                <p className="mission-text">
+                  From home bakers and tutors to mechanics, transport operators,
+                  creatives and family-run businesses, we&apos;re making it easier for
+                  people to discover what&apos;s already around them and support local.
+                </p>
+                <p className="mission-text mission-text--emphasis">
+                  Because sometimes, the best businesses aren&apos;t the biggest ones.
+                  They&apos;re the hidden gems right next door.
+                </p>
+              </div>
             </div>
           </AnimatedSection>
         </div>
