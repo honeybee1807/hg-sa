@@ -7,9 +7,9 @@ import { SITE_URL } from "@/lib/constants";
 import SubmitForm from "./SubmitForm";
 
 export const metadata = {
-  title: "List Your Business Free — Hidden Gems SA",
+  title: "List Your Business Free on Hidden Gems SA",
   description:
-    "List your KwaZulu-Natal business on Hidden Gems SA for free — approved within 48 hours. Home bakers, tutors, transport, beauty and more welcome.",
+    "List your KwaZulu-Natal business on Hidden Gems SA for free. Approved within 48 hours. Home bakers, tutors, transport, beauty and more welcome.",
   alternates: { canonical: `${SITE_URL}/submit` },
 };
 
@@ -19,7 +19,7 @@ export default function SubmitPage() {
       <div className="submit-page-header">
         <h1>List Your Business for Free</h1>
         <p>
-          Fill in the form below. We review and approve listings within 24–48 hours — no
+          Fill in the form below. We review and approve listings within 24–48 hours, no
           payment, no account required.
         </p>
       </div>
