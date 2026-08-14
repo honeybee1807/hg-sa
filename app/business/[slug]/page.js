@@ -23,7 +23,7 @@ export const revalidate = 3600; // 3600 seconds = 1 hour
 async function getBusiness(slug) {
   const { data } = await supabase
     .from("businesses")
-    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, instagram, facebook, street_address, owner_name, business_detail, halal, halal_certificate, delivery_available, callouts_available")
+    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, instagram, facebook, street_address, business_detail, halal, halal_certificate, delivery_available, callouts_available")
     .eq("status", "approved")
     .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
     .maybeSingle();
@@ -254,7 +254,7 @@ export default async function BusinessPage({ params }) {
                 rel="noopener noreferrer"
                 className="btn-primary biz-wa-btn"
               >
-                <i className="fa-brands fa-whatsapp" /> WhatsApp {biz.owner_name ?? "Owner"}
+                <i className="fa-brands fa-whatsapp" /> WhatsApp {biz.name}
               </a>
             )}
 
@@ -276,16 +276,6 @@ export default async function BusinessPage({ params }) {
               <p className="biz-no-contact">This business hasn&apos;t added contact details yet.</p>
             )}
           </div>
-
-          {/* Owner */}
-          {biz.owner_name && (
-            <div className="card biz-owner">
-              <h2 className="biz-section-title">
-                <i className="fa-solid fa-user" /> Owner
-              </h2>
-              <p>{biz.owner_name}</p>
-            </div>
-          )}
 
           {/* Location */}
           <div className="card biz-owner">

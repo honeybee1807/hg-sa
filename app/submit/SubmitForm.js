@@ -628,8 +628,8 @@ export default function SubmitForm() {
           <i className="fa-solid fa-user" /> About You
         </h2>
         <p className="form-section-note">
-          <i className="fa-solid fa-lock" /> Private — only our team sees this.
-          We may contact you on WhatsApp or email to verify your listing.
+          <i className="fa-solid fa-lock" /> Your name and email are private — only our team sees them.
+          Your WhatsApp number will be shown publicly on your listing so customers can contact you.
         </p>
 
         <div className="form-row">
