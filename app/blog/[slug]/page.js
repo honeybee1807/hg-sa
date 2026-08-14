@@ -26,7 +26,7 @@ export const revalidate = 3600;
 async function getBlogPost(slug) {
   const { data } = await supabase
     .from("blog_posts")
-    .select("id, title, slug, excerpt, content, category, area, published, created_at, updated_at")
+    .select("id, title, slug, excerpt, content, category, area, published, featured_image_url, created_at, updated_at")
     .eq("slug", slug)
     .maybeSingle();
   return data;
@@ -132,6 +132,18 @@ export default async function BlogPostPage({ params }) {
 
       <section className="section" style={{ paddingTop: "1rem" }}>
         <div className="container" style={{ maxWidth: 760 }}>
+          {post.featured_image_url && (
+            <div className="blog-post-featured-image">
+              <Image
+                src={post.featured_image_url}
+                alt=""
+                fill
+                sizes="(max-width: 760px) 100vw, 760px"
+                className="blog-post-featured-img"
+                priority
+              />
+            </div>
+          )}
           <h1>{post.title}</h1>
           <div className="blog-post-body">
             {paragraphs.map((paragraph, i) => <p key={i}>{paragraph}</p>)}

@@ -4,6 +4,7 @@
 // /admin (see the "Blog" tab in app/admin/AdminPanel.js).
 
 import Link from "next/link";
+import Image from "next/image";
 import supabase from "@/lib/supabase";
 import { SITE_URL } from "@/lib/constants";
 
@@ -23,7 +24,7 @@ export const metadata = {
 async function getPublishedPosts() {
   const { data } = await supabase
     .from("blog_posts")
-    .select("id, title, slug, excerpt, created_at")
+    .select("id, title, slug, excerpt, featured_image_url, created_at")
     .eq("published", true)
     .order("created_at", { ascending: false });
   return data ?? [];
@@ -73,14 +74,25 @@ export default async function BlogIndexPage() {
 
 function BlogCard({ post }) {
   return (
-    <div className="listing-card">
-      <Link href={`/blog/${post.slug}`} className="listing-card-link">
+    <div className="listing-card blog-card">
+      <Link href={`/blog/${post.slug}`} className="listing-card-link blog-card-link">
+        {post.featured_image_url && (
+          <div className="blog-card-image">
+            <Image
+              src={post.featured_image_url}
+              alt=""
+              fill
+              sizes="(max-width: 640px) 100vw, 400px"
+              className="blog-card-img"
+            />
+          </div>
+        )}
         <div className="listing-card-body">
           <h3 className="listing-card-name">{post.title}</h3>
           {post.excerpt && <p className="listing-card-desc">{post.excerpt}</p>}
         </div>
       </Link>
-      <div className="listing-card-actions">
+      <div className="listing-card-actions blog-card-actions">
         <span className="admin-view-link">Read more</span>
         <i className="fa-solid fa-chevron-right listing-card-arrow" />
       </div>

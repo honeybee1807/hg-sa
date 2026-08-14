@@ -93,7 +93,7 @@ async function getBlogPosts() {
   const db = getAdminClient();
   const { data } = await db
     .from("blog_posts")
-    .select("id, title, slug, excerpt, content, category, area, published, created_at, updated_at")
+    .select("id, title, slug, excerpt, content, category, area, published, featured_image_url, created_at, updated_at")
     .order("updated_at", { ascending: false });
   return data ?? [];
 }

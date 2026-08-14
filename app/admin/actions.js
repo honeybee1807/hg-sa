@@ -617,6 +617,7 @@ export async function createBlogPost(payload) {
     category: payload.category || null,
     area: payload.area?.trim() || null,
     published: !!payload.published,
+    featured_image_url: payload.featured_image_url || null,
   });
 
   if (error) return { success: false, error: error.message };
@@ -667,6 +668,7 @@ export async function updateBlogPost(id, payload) {
       category: payload.category || null,
       area: payload.area?.trim() || null,
       published: !!payload.published,
+      featured_image_url: payload.featured_image_url || null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);

@@ -10,7 +10,7 @@
 // component ever ran) — this file is only responsible for displaying that
 // data and reacting to clicks, not for the initial page load itself.
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -193,6 +193,12 @@ function slugifyTitle(title) {
   return cleaned;
 }
 
+// where an uploaded featured image gets sent — same Cloudinary account as
+// the business-logo upload in app/submit/SubmitForm.js, but its own preset
+// (blog images are cropped to a wide 16:9 banner, not a square logo).
+const BLOG_CLOUDINARY_URL    = "https://api.cloudinary.com/v1_1/dfxhlv8jc/image/upload";
+const BLOG_CLOUDINARY_PRESET = "hidden_gems_sa_blog";
+
 // the "Blog" tab's post editor — its own component (like DeleteControls
 // above) since it owns a good amount of local form state that has no
 // reason to live on AdminPanel itself. handles both creating a new post
@@ -211,6 +217,93 @@ function BlogEditorForm({ post, existingSlugs, onSaved, onCancel }) {
   const [published, setPublished] = useState(post?.published ?? false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving]   = useState(false);
+
+  // the optional featured image — same upload-then-crop flow as the logo
+  // field in app/submit/SubmitForm.js (see that file's top-of-file note
+  // for why Cropper.js is lazy-loaded rather than imported up front).
+  const [featuredImageUrl, setFeaturedImageUrl] = useState(post?.featured_image_url ?? "");
+  const [cropSrc, setCropSrc]     = useState("");
+  const [cropOpen, setCropOpen]   = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const imgRef     = useRef(null);
+  const cropperRef = useRef(null);
+  const fileRef    = useRef(null);
+
+  useEffect(() => {
+    if (!cropOpen || !imgRef.current) return;
+
+    let destroyed = false;
+
+    import("cropperjs").then(({ default: Cropper }) => {
+      if (destroyed || !imgRef.current) return;
+      cropperRef.current = new Cropper(imgRef.current, {
+        aspectRatio: 16 / 9,  // featured images are wide banners, not square logos
+        viewMode: 1,
+        autoCropArea: 0.8,
+        responsive: true,
+      });
+    });
+
+    return () => {
+      destroyed = true;
+      cropperRef.current?.destroy();
+      cropperRef.current = null;
+    };
+  }, [cropOpen]);
+
+  function handleFeaturedImageFileChange(e) {
+    const chosenFile = e.target.files?.[0];
+    if (!chosenFile) return;
+
+    setCropSrc(URL.createObjectURL(chosenFile));
+    setCropOpen(true);
+    e.target.value = "";
+  }
+
+  function cancelFeaturedImageCrop() {
+    setCropOpen(false);
+    URL.revokeObjectURL(cropSrc);
+    setCropSrc("");
+  }
+
+  async function confirmFeaturedImageCrop() {
+    if (!cropperRef.current) return;
+    setUploading(true);
+
+    cropperRef.current
+      .getCroppedCanvas({ width: 1280, height: 720 })
+      .toBlob(async (croppedImageBlob) => {
+        try {
+          const uploadData = new FormData();
+          uploadData.append("file", croppedImageBlob, "featured.jpg");
+          uploadData.append("upload_preset", BLOG_CLOUDINARY_PRESET);
+
+          const uploadResponse = await fetch(BLOG_CLOUDINARY_URL, { method: "POST", body: uploadData });
+          const uploadResult   = await uploadResponse.json();
+
+          if (uploadResult.secure_url) {
+            setFeaturedImageUrl(uploadResult.secure_url);
+            setCropOpen(false);
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc("");
+          } else {
+            alert("Upload failed — please try again.");
+          }
+        } catch {
+          alert("Upload error — please check your connection and try again.");
+        } finally {
+          setUploading(false);
+        }
+      }, "image/jpeg", 0.9);
+  }
+
+  function handleChangeFeaturedImageClick() {
+    setFeaturedImageUrl("");
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+  }
 
   function handleTitleChange(e) {
     const value = e.target.value;
@@ -251,6 +344,7 @@ function BlogEditorForm({ post, existingSlugs, onSaved, onCancel }) {
       category: category || null,
       area,
       published,
+      featured_image_url: featuredImageUrl || null,
     };
     const result = post
       ? await updateBlogPost(post.id, payload)
@@ -343,6 +437,29 @@ function BlogEditorForm({ post, existingSlugs, onSaved, onCancel }) {
         </div>
       </div>
 
+      <div className="form-group">
+        <label>Featured Image <span className="optional">(optional)</span></label>
+        {featuredImageUrl ? (
+          <div className="logo-preview">
+            <img src={featuredImageUrl} alt="Featured image" className="logo-preview-img logo-preview-img--wide" />
+            <div className="logo-preview-info">
+              <p><i className="fa-solid fa-circle-check" /> Image uploaded successfully</p>
+              <button type="button" className="btn-secondary" onClick={handleChangeFeaturedImageClick}>
+                <i className="fa-solid fa-rotate" /> Change Image
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label className="logo-dropzone">
+            <i className="fa-solid fa-cloud-arrow-up" />
+            <span className="logo-dropzone-label">Click to upload a featured image</span>
+            <span className="logo-dropzone-hint">PNG, JPG or WebP — you&apos;ll crop it to a 16:9 banner before it uploads.</span>
+            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp"
+              onChange={handleFeaturedImageFileChange} className="logo-file-input" />
+          </label>
+        )}
+      </div>
+
       <label className="badge-checkbox">
         <input
           type="checkbox"
@@ -366,6 +483,31 @@ function BlogEditorForm({ post, existingSlugs, onSaved, onCancel }) {
           {saving ? "Saving..." : "Save Post"}
         </button>
       </div>
+
+      {/* ── Crop Modal (featured image) ── */}
+      {cropOpen && (
+        <div className="crop-overlay" role="dialog" aria-modal="true" aria-label="Crop your featured image">
+          <div className="crop-modal">
+            <div className="crop-modal-header">
+              <h3>Crop Your Featured Image</h3>
+              <p>Drag to reposition — scroll or pinch to zoom</p>
+            </div>
+            <div className="crop-img-wrap">
+              <img ref={imgRef} src={cropSrc} alt="Featured image to crop" />
+            </div>
+            <div className="crop-modal-footer">
+              <button type="button" className="btn-secondary" onClick={cancelFeaturedImageCrop} disabled={uploading}>
+                Cancel
+              </button>
+              <button type="button" className="btn-primary" onClick={confirmFeaturedImageCrop} disabled={uploading}>
+                {uploading
+                  ? <><i className="fa-solid fa-spinner fa-spin" /> Uploading...</>
+                  : <><i className="fa-solid fa-check" /> Confirm &amp; Upload</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
