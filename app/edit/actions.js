@@ -126,6 +126,7 @@ function buildEditedValues(formData) {
   const instagram         = formData.get("instagram")?.toString().trim();
   const facebook           = formData.get("facebook")?.toString().trim();
   const description       = formData.get("description")?.toString().trim();
+  const logoUrl             = formData.get("logo_url")?.toString().trim();
 
   const halal              = formData.get("halal")?.toString() === "true";
   const halalCertificate   = formData.get("halal_certificate")?.toString().trim();
@@ -184,6 +185,7 @@ function buildEditedValues(formData) {
       instagram: normalizeInstagramInput(instagram),
       facebook: facebook || null,
       description,
+      logo_url: logoUrl || null,
       halal: finalHalal,
       halal_certificate: finalHalalCertificate,
       delivery_available: finalDelivery,
@@ -237,7 +239,7 @@ export async function submitEditRequest(token, formData) {
 
   const { data: currentBusiness } = await db
     .from("businesses")
-    .select("name, category, custom_category, business_type, province, area, street_address, whatsapp, website, instagram, facebook, description, halal, halal_certificate, delivery_available, callouts_available")
+    .select("name, category, custom_category, business_type, province, area, street_address, whatsapp, website, instagram, facebook, description, logo_url, halal, halal_certificate, delivery_available, callouts_available")
     .eq("id", editRequest.business_id)
     .maybeSingle();
 

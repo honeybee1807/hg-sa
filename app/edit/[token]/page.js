@@ -14,7 +14,7 @@ export const metadata = { title: "Edit Your Listing — Hidden Gems SA", robots:
 // business's edit spec: the same fields as the original submission form,
 // minus the private/admin-only ones (business_detail, owner_name,
 // owner_email, referral_source).
-const EDITABLE_FIELDS = "id, name, category, custom_category, business_type, province, area, street_address, whatsapp, website, instagram, facebook, description, halal, halal_certificate, delivery_available, callouts_available";
+const EDITABLE_FIELDS = "id, name, category, custom_category, business_type, province, area, street_address, whatsapp, website, instagram, facebook, description, logo_url, halal, halal_certificate, delivery_available, callouts_available";
 
 // true only while a business_edit_requests row is still usable: it
 // exists, hasn't already been resolved by an admin (status is still

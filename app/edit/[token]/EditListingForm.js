@@ -3,22 +3,30 @@
 // the pre-filled form shown once a business owner's magic link has been
 // validated (see the Server Component in page.js, which does that
 // validation and passes down the current "business" record). mirrors
-// app/submit/SubmitForm.js closely — same fields, same validation — minus
-// the private/admin-only fields that don't belong on a self-service edit
-// (business_detail, owner_name, owner_email, referral_source) and without
-// the logo uploader or "whose business is this" section, since neither is
-// something an existing approved listing needs to redo.
+// app/submit/SubmitForm.js closely — same fields, same validation, same
+// logo upload/crop flow — minus the private/admin-only fields that don't
+// belong on a self-service edit (business_detail, owner_name, owner_email,
+// referral_source) and the "whose business is this" section, since neither
+// is something an existing approved listing needs to redo.
 //
 // submitting here never changes the live listing — it only proposes
 // changes for an admin to review (see submitEditRequest in
 // app/edit/actions.js), which is why the button says "Submit Changes for
 // Review" rather than something that implies an immediate update.
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { submitEditRequest } from "../actions";
 import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPES, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
+
+// where uploaded logos get sent, and which "upload preset" (a pre-configured
+// set of rules on the Cloudinary side — image size limits, allowed formats,
+// etc.) to use. these are not secret; Cloudinary's unsigned-upload presets
+// are designed to be called directly from a browser. mirrors
+// app/submit/SubmitForm.js exactly — same Cloudinary account and preset.
+const CLOUDINARY_URL    = "https://api.cloudinary.com/v1_1/dfxhlv8jc/image/upload";
+const CLOUDINARY_PRESET = "hidden_gems_sa_logos";
 
 export default function EditListingForm({ token, business }) {
   // pre-filled from the business's current values — "?? \"\"" turns any
@@ -47,6 +55,44 @@ export default function EditListingForm({ token, business }) {
   const [submitting, setSubmitting]   = useState(false);
   const [result, setResult]           = useState(null);
   const [charCount, setCharCount]     = useState((business.description ?? "").length);
+
+  // logo state — mirrors SubmitForm.js exactly, except logoUrl starts out
+  // as whatever the business already has (possibly empty), rather than
+  // always starting empty, so an existing logo shows as already-uploaded.
+  const [logoUrl, setLogoUrl]     = useState(business.logo_url ?? "");
+  const [cropSrc, setCropSrc]     = useState("");
+  const [cropOpen, setCropOpen]   = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const imgRef     = useRef(null);  // points at the <img> element that Cropper.js attaches itself to
+  const cropperRef = useRef(null);  // holds the live Cropper.js instance, so it can be cleaned up later
+  const fileRef    = useRef(null);  // points at the hidden file-picker <input>, so it can be reset when the person removes a logo
+
+  // this runs every time the crop popup opens or closes. Cropper.js is a
+  // fairly heavy library, so instead of loading it up front for every
+  // visitor, it's only fetched ("import(...)") the moment someone actually
+  // opens the crop popup. mirrors SubmitForm.js exactly.
+  useEffect(() => {
+    if (!cropOpen || !imgRef.current) return;
+
+    let destroyed = false;
+
+    import("cropperjs").then(({ default: Cropper }) => {
+      if (destroyed || !imgRef.current) return;
+      cropperRef.current = new Cropper(imgRef.current, {
+        aspectRatio: 1,      // logos are always cropped into a perfect square
+        viewMode: 1,          // don't let the crop box be dragged outside the photo
+        autoCropArea: 0.8,    // start the crop box covering 80% of the photo
+        responsive: true,
+      });
+    });
+
+    return () => {
+      destroyed = true;
+      cropperRef.current?.destroy();
+      cropperRef.current = null;
+    };
+  }, [cropOpen]);
 
   function clearFieldError(field) {
     setFieldErrors((previous) => {
@@ -109,6 +155,76 @@ export default function EditListingForm({ token, business }) {
     }));
     clearFieldError("halal");
     clearFieldError("halal_certificate");
+  }
+
+  // runs the moment someone picks a photo from their device. it doesn't
+  // upload anything yet — it just creates a temporary, browser-only link to
+  // the chosen file so the crop popup can display it, then opens that
+  // popup. mirrors SubmitForm.js exactly.
+  function handleFileChange(event) {
+    const chosenFile = event.target.files?.[0];
+    if (!chosenFile) return;
+
+    setCropSrc(URL.createObjectURL(chosenFile));
+    setCropOpen(true);
+
+    // clear the file input's own value so that picking the exact same file
+    // again later (e.g. after cancelling) still fires this change handler.
+    event.target.value = "";
+  }
+
+  // closes the crop popup without uploading anything, and frees up the
+  // temporary browser link created in handleFileChange so it doesn't sit
+  // around in memory forever.
+  function cancelCrop() {
+    setCropOpen(false);
+    URL.revokeObjectURL(cropSrc);
+    setCropSrc("");
+  }
+
+  // runs when the person confirms their crop. this takes the cropped
+  // square, turns it into an actual image file, and uploads that file
+  // straight to Cloudinary from the browser. mirrors SubmitForm.js exactly.
+  async function confirmCrop() {
+    if (!cropperRef.current) return;
+    setUploading(true);
+
+    cropperRef.current
+      .getCroppedCanvas({ width: 400, height: 400 })
+      .toBlob(async (croppedImageBlob) => {
+        try {
+          const uploadData = new FormData();
+          uploadData.append("file", croppedImageBlob, "logo.jpg");
+          uploadData.append("upload_preset", CLOUDINARY_PRESET);
+
+          const uploadResponse = await fetch(CLOUDINARY_URL, { method: "POST", body: uploadData });
+          const uploadResult   = await uploadResponse.json();
+
+          if (uploadResult.secure_url) {
+            setLogoUrl(uploadResult.secure_url);
+            setCropOpen(false);
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc("");
+          } else {
+            alert("Upload failed. Please try again.");
+          }
+        } catch {
+          alert("Upload error. Please check your connection and try again.");
+        } finally {
+          setUploading(false);
+        }
+      }, "image/jpeg", 0.9); // save the crop as a jpeg at 90% quality
+  }
+
+  // clears the uploaded logo so the person can pick a different one (or
+  // remove an existing one). also resets the hidden file-picker input, if
+  // it exists, so choosing the same file again would still register as a
+  // change.
+  function handleChangeLogoClick() {
+    setLogoUrl("");
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
   }
 
   function validateForm() {
@@ -180,6 +296,7 @@ export default function EditListingForm({ token, business }) {
       if (field === "callouts_available") value = cleanedCallouts;
       formData.append(field, value);
     }
+    formData.append("logo_url", logoUrl);
 
     const response = await submitEditRequest(token, formData);
     setResult(response);
@@ -388,6 +505,37 @@ export default function EditListingForm({ token, business }) {
         </div>
       </div>
 
+      {/* ── Logo ── mirrors SubmitForm.js exactly, except logoUrl can start
+          out already set (see the useState above), so an existing logo
+          shows the "Change Logo" state on load rather than an empty
+          dropzone. */}
+      <div className="form-section">
+        <h2 className="form-section-title">
+          <i className="fa-solid fa-image" /> Logo{" "}
+          <span className="optional">(optional)</span>
+        </h2>
+
+        {logoUrl ? (
+          <div className="logo-preview">
+            <img src={logoUrl} alt="Your uploaded logo" className="logo-preview-img" />
+            <div className="logo-preview-info">
+              <p><i className="fa-solid fa-circle-check" /> Logo uploaded successfully</p>
+              <button type="button" className="btn-secondary" onClick={handleChangeLogoClick}>
+                <i className="fa-solid fa-rotate" /> Change Logo
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label className="logo-dropzone">
+            <i className="fa-solid fa-cloud-arrow-up" />
+            <span className="logo-dropzone-label">Click to upload a logo</span>
+            <span className="logo-dropzone-hint">PNG, JPG or WebP — you&apos;ll crop it to size before it uploads.</span>
+            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp"
+              onChange={handleFileChange} className="logo-file-input" />
+          </label>
+        )}
+      </div>
+
       <div className="form-group">
         <label className="badge-checkbox">
           <input type="checkbox" checked={fields.consent} onChange={toggleCheckbox("consent")} />
@@ -409,6 +557,31 @@ export default function EditListingForm({ token, business }) {
             : <><i className="fa-solid fa-paper-plane" /> Submit Changes for Review</>}
         </button>
       </div>
+
+      {/* ── Crop Modal ── mirrors SubmitForm.js exactly. */}
+      {cropOpen && (
+        <div className="crop-overlay" role="dialog" aria-modal="true" aria-label="Crop your logo">
+          <div className="crop-modal">
+            <div className="crop-modal-header">
+              <h3>Crop Your Logo</h3>
+              <p>Drag to reposition — scroll or pinch to zoom</p>
+            </div>
+            <div className="crop-img-wrap">
+              <img ref={imgRef} src={cropSrc} alt="Logo to crop" />
+            </div>
+            <div className="crop-modal-footer">
+              <button type="button" className="btn-secondary" onClick={cancelCrop} disabled={uploading}>
+                Cancel
+              </button>
+              <button type="button" className="btn-primary" onClick={confirmCrop} disabled={uploading}>
+                {uploading
+                  ? <><i className="fa-solid fa-spinner fa-spin" /> Uploading...</>
+                  : <><i className="fa-solid fa-check" /> Confirm &amp; Upload</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
