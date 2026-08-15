@@ -902,6 +902,51 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
     });
   }
 
+  // hands a finished canvas off to the user as a saved/shared image. tries
+  // the Web Share API first — the reliable way to get a save prompt on iOS
+  // Safari and most mobile browsers, via the device's native share sheet
+  // (Save to Photos, AirDrop, etc.), since those browsers don't
+  // consistently honor a simulated <a download> click. falls back to that
+  // classic download-link click for desktop browsers, where it does work.
+  // as an absolute last resort (neither is available), opens the image in
+  // a new tab so it can still be saved by hand.
+  async function shareOrDownloadCanvas(canvas, filename, shareTitle, shareText) {
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) return; // canvas produced nothing to share/download — nothing more we can do
+
+    const file = new File([blob], filename, { type: "image/png" });
+    const canWebShareFile =
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [file] });
+
+    if (canWebShareFile) {
+      try {
+        await navigator.share({ files: [file], title: shareTitle, text: shareText });
+        return;
+      } catch (err) {
+        if (err?.name === "AbortError") return; // user backed out of the share sheet — leave it at that
+        // any other failure (rare) falls through to the methods below
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+
+    if ("download" in document.createElement("a")) {
+      const downloadLink = document.createElement("a");
+      downloadLink.download = filename;
+      downloadLink.href = url;
+      downloadLink.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return;
+    }
+
+    // neither Web Share nor a working download link is available — open the
+    // image directly so it can still be saved manually
+    window.open(url, "_blank");
+    alert("Long-press the image to save it.");
+  }
+
   // builds the "you're approved" square graphic an owner can post to their
   // own Facebook/Instagram once their listing goes live — separate from
   // downloadGraphic() above (the weekly Featured Gem announcement), with
@@ -1097,10 +1142,12 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
       ctx.font = "22px Arial, sans-serif";
       ctx.fillText(SITE_URL.replace("https://", ""), 540, footerTop + 78);
 
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `hidden-gems-sa-${biz.slug}-listed.png`;
-      downloadLink.href = canvas.toDataURL("image/png");
-      downloadLink.click();
+      shareOrDownloadCanvas(
+        canvas,
+        `hidden-gems-sa-${biz.slug}-listed.png`,
+        "Hidden Gems SA",
+        `${biz.name} is now listed on Hidden Gems SA!`
+      );
     });
   }
 
