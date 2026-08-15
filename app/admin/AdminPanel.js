@@ -1160,7 +1160,7 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
     const whatsappNumber = formatWa(biz.whatsapp);
     if (!whatsappNumber) return null;
 
-    const message = `🎉 You're live on Hidden Gems SA!\n\nHi ${biz.owner_name ?? "there"}, great news — ${biz.name} has been approved and is now visible to customers searching in ${biz.area}, ${biz.province}.\n\nYour listing: ${SITE_URL}/business/${biz.slug}\n\nHelp more customers find you — share your listing on your Facebook or Instagram page! We've attached a graphic you can post directly.\n\nHidden Gems SA Team\n🌐 ${SITE_URL}\n💻 Built by Olideen Technologies — ${OLIDEEN_URL}`;
+    const message = `🎉 You're live on Hidden Gems SA!\n\nHi ${biz.owner_name ?? "there"}, great news *${biz.name}* has been approved and is now visible to customers searching in ${biz.area}, ${biz.province}.\n\nYour listing: ${SITE_URL}/business/${biz.slug}\n\nHelp more customers find you by sharing your listing on your WhatsApp Status, Facebook or Instagram page! We've attached a graphic you can post directly.\n\nHidden Gems SA Team\n🌐 ${SITE_URL}\n💻 Built by Olideen Technologies ${OLIDEEN_URL}`;
 
     return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
   }
