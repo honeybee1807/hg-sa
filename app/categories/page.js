@@ -1,10 +1,16 @@
 // this is the page at hiddengemssa.co.za/categories — the "browse by
-// category" hub, showing all 14 categories as clickable cards with a
+// category" hub, showing all categories as clickable cards with a
 // live count of how many approved businesses are in each one.
 
 import Link from "next/link";
-import { CATEGORIES, SITE_URL } from "@/lib/constants";
+import { CATEGORIES, SITE_URL, SITE_WHATSAPP } from "@/lib/constants";
 import supabase from "@/lib/supabase";
+
+// pre-filled WhatsApp link for someone who can't find their category in the
+// grid below — sends a ready-to-go request straight to Hidden Gems SA.
+const requestCategoryUrl = `https://wa.me/${SITE_WHATSAPP}?text=${encodeURIComponent(
+  "Hi! I'd like to request a new category for Hidden Gems SA: "
+)}`;
 
 export const metadata = {
   title: "Browse by Category: KwaZulu-Natal Local Businesses",
@@ -79,6 +85,22 @@ export default async function CategoriesPage() {
                 </Link>
               );
             })}
+
+            <a
+              href={requestCategoryUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hub-card hub-card--request"
+            >
+              <div className="hub-card-icon hub-card-icon--request">
+                <i className="fa-brands fa-whatsapp" />
+              </div>
+              <div className="hub-card-body">
+                <span className="hub-card-name">Don&apos;t see your category?</span>
+                <span className="hub-card-count">Message us on WhatsApp and we&apos;ll add it.</span>
+              </div>
+              <i className="fa-solid fa-chevron-right hub-card-arrow" />
+            </a>
           </div>
         </div>
       </section>

@@ -2023,6 +2023,27 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .hub-card-arrow { color: #d1d5db; font-size: 0.8rem; }
 .hub-card:hover .hub-card-arrow { color: var(--sapphire); }
 
+/* "Don't see your category?" WhatsApp request card — same shape as a
+   hub-card, but dashed/muted so it reads as an add-on, not a real category. */
+.hub-card--request {
+  background: transparent;
+  border: 2px dashed #d1d5db;
+  box-shadow: none;
+  color: #4b5563;
+}
+
+.hub-card--request:hover {
+  border-color: #25D366;
+  box-shadow: var(--shadow);
+}
+
+.hub-card-icon--request {
+  background: #e9fbf1;
+  color: #25D366;
+}
+
+.hub-card--request:hover .hub-card-arrow { color: #25D366; }
+
 /* ─── listing grid (town / category detail pages) ──────────────────── */
 .listing-grid {
   display: flex;
