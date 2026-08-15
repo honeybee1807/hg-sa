@@ -920,88 +920,182 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
     canvas.height = 1080;
     const ctx = canvas.getContext("2d");
 
+    // display-only casing fix — submitted names sometimes come through
+    // inconsistently capitalized ("varachia F timeshare holiday
+    // accommodation"). title-cases the name just for this graphic; the
+    // stored biz.name (and the database) is never touched.
+    const displayName = biz.name.replace(
+      /\S+/g,
+      (word) => word[0].toUpperCase() + word.slice(1).toLowerCase()
+    );
+
+    // shrinks text to fit within maxWidth (down to minSize) before ever
+    // wrapping — this is what stops a long business name from running off
+    // the edges of the canvas, guaranteeing at least a 60px margin on both
+    // sides no matter how long the name is. if it's still too wide even at
+    // the smallest allowed size, it wraps onto two lines as a last resort
+    // rather than overflowing.
+    function fitLines(text, maxWidth, { maxSize, minSize, weight = "", family }) {
+      const font = (size) => `${weight}${size}px ${family}`;
+      let size = maxSize;
+      ctx.font = font(size);
+      while (ctx.measureText(text).width > maxWidth && size > minSize) {
+        size -= 1;
+        ctx.font = font(size);
+      }
+      if (ctx.measureText(text).width <= maxWidth) return { lines: [text], size };
+
+      const words = text.split(" ");
+      const mid = Math.ceil(words.length / 2);
+      const lines = [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+      while (
+        size > 14 &&
+        (ctx.measureText(lines[0]).width > maxWidth || ctx.measureText(lines[1]).width > maxWidth)
+      ) {
+        size -= 1;
+        ctx.font = font(size);
+      }
+      return { lines, size };
+    }
+
+    // draws text centered on centerX, top-aligned at `top`, fit/wrapped
+    // per fitLines() above — returns the total height it used, so
+    // whatever comes next can be positioned relative to however many
+    // lines this ended up taking instead of a fixed, overflow-prone offset.
+    function drawFitted(text, centerX, top, maxWidth, opts) {
+      const { lines, size } = fitLines(text, maxWidth, opts);
+      ctx.font = `${opts.weight || ""}${size}px ${opts.family}`;
+      ctx.fillStyle = opts.color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      const lineHeight = size * 1.25;
+      lines.forEach((line, i) => ctx.fillText(line, centerX, top + lineHeight * (i + 0.8)));
+      return lineHeight * lines.length;
+    }
+
     Promise.all([loadImage("/HG_Logo.png"), loadImage(biz.logo_url)]).then(([hgLogo, bizLogo]) => {
-      // background: a diagonal Sapphire-to-Amethyst gradient, the same
-      // corner-to-corner direction downloadGraphic() uses above
+      // background: the same diagonal Sapphire-to-Amethyst gradient as
+      // before, with a soft radial highlight layered over the top so it
+      // reads as having some depth instead of a single flat fill
       const backgroundGradient = ctx.createLinearGradient(0, 0, 1080, 1080);
       backgroundGradient.addColorStop(0, "#0F52BA");
       backgroundGradient.addColorStop(1, "#9966CC");
       ctx.fillStyle = backgroundGradient;
       ctx.fillRect(0, 0, 1080, 1080);
 
-      // the Hidden Gems SA logo mark, centered near the top, kept at its
-      // real aspect ratio rather than stretched to a fixed box
+      const glow = ctx.createRadialGradient(540, 260, 40, 540, 260, 620);
+      glow.addColorStop(0, "rgba(255,255,255,0.16)");
+      glow.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, 1080, 1080);
+
+      // the Hidden Gems SA logo mark — kept small and understated at the
+      // top so it doesn't compete with the headline below it, at its real
+      // aspect ratio rather than stretched to a fixed box
+      const logoTop = 60, logoHeight = 72;
       if (hgLogo) {
-        const logoHeight = 110;
-        const logoWidth  = logoHeight * (hgLogo.naturalWidth / hgLogo.naturalHeight);
-        ctx.drawImage(hgLogo, 540 - logoWidth / 2, 30, logoWidth, logoHeight);
+        const logoWidth = logoHeight * (hgLogo.naturalWidth / hgLogo.naturalHeight);
+        ctx.drawImage(hgLogo, 540 - logoWidth / 2, logoTop, logoWidth, logoHeight);
       }
 
-      // "You're Listed!" headline
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 72px Georgia, serif";
-      ctx.textAlign = "center";
-      ctx.fillText("You're Listed!", 540, 250);
+      // "You're Listed!" — the biggest, boldest element on the graphic,
+      // the emotional hook the rest of the layout supports
+      const headlineTop = logoTop + logoHeight + 54;
+      const headlineHeight = drawFitted("You're Listed!", 540, headlineTop, 960, {
+        maxSize: 76, minSize: 56, weight: "bold ", family: "Georgia, serif", color: "#ffffff",
+      });
 
-      // "CONGRATS, {business name}!" subheadline
-      ctx.font = "600 40px Arial, sans-serif";
-      ctx.fillText(`CONGRATS, ${biz.name}!`, 540, 310);
+      // "CONGRATS, {name}!" — a clear step down from the headline, never
+      // competing with it. this is the line that used to run off-canvas on
+      // long names; it now shrinks-to-fit (and wraps as a last resort),
+      // always keeping a 60px margin on both sides.
+      const subheadTop = headlineTop + headlineHeight + 30;
+      const subheadHeight = drawFitted(`CONGRATS, ${displayName}!`, 540, subheadTop, 960, {
+        maxSize: 38, minSize: 24, weight: "600 ", family: "Arial, sans-serif", color: "rgba(255,255,255,0.92)",
+      });
 
       // the center card: a rounded white card holding the business's own
       // identity (its logo/monogram, name, and category), set apart from
-      // the site-branded elements around it
-      const cardX = 140, cardY = 380, cardWidth = 800, cardHeight = 380, cardRadius = 24;
+      // the site-branded elements around it — generous internal padding
+      // and a soft drop shadow so it lifts off the gradient rather than
+      // sitting flush against it. its height adapts to however many lines
+      // the business name needs (measured below, before anything is drawn)
+      // so the same overflow guarantee applies inside the card too.
+      const cardX = 140, cardWidth = 800, cardRadius = 28;
+      const cardPaddingTop = 56, cardPaddingBottom = 56, cardInnerWidth = cardWidth - 128;
+      const cardTop = subheadTop + subheadHeight + 70;
+
+      const circleRadius = 86;
+      const relNameTop = cardPaddingTop + circleRadius * 2 + 36;
+      const { lines: nameLines, size: nameSize } = fitLines(displayName, cardInnerWidth, {
+        maxSize: 42, minSize: 24, weight: "bold ", family: "Georgia, serif",
+      });
+      const nameLineHeight = nameSize * 1.25;
+      const relCategoryTop = relNameTop + nameLineHeight * nameLines.length + 18;
+      const categoryLineHeight = 26 * 1.25;
+      const cardHeight = relCategoryTop + categoryLineHeight + cardPaddingBottom;
+
       ctx.save();
-      ctx.shadowColor   = "rgba(0,0,0,0.18)";
-      ctx.shadowBlur    = 30;
-      ctx.shadowOffsetY = 12;
+      ctx.shadowColor   = "rgba(0,0,0,0.22)";
+      ctx.shadowBlur    = 38;
+      ctx.shadowOffsetY = 18;
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.roundRect(cardX, cardY, cardWidth, cardHeight, cardRadius);
+      ctx.roundRect(cardX, cardTop, cardWidth, cardHeight, cardRadius);
       ctx.fill();
       ctx.restore(); // drop the shadow before drawing anything else, so it doesn't bleed onto what's drawn next
 
-      // the round logo (or monogram letter) inside the card — same
-      // sapphire-pale circle / sapphire letter fallback as
-      // downloadGraphic() above
-      const logoCenterY = cardY + 140, logoRadius = 90;
+      // the round logo (or monogram letter) inside the card
+      const circleCenterY = cardTop + cardPaddingTop + circleRadius;
       ctx.save();
       ctx.beginPath();
-      ctx.arc(540, logoCenterY, logoRadius, 0, Math.PI * 2);
+      ctx.arc(540, circleCenterY, circleRadius, 0, Math.PI * 2);
       ctx.fillStyle = "#E7EFFA";
       ctx.fill();
-
+      ctx.clip();
       if (bizLogo) {
-        ctx.clip();
-        ctx.drawImage(bizLogo, 540 - logoRadius, logoCenterY - logoRadius, logoRadius * 2, logoRadius * 2);
+        ctx.drawImage(bizLogo, 540 - circleRadius, circleCenterY - circleRadius, circleRadius * 2, circleRadius * 2);
       } else {
-        ctx.clip();
         ctx.fillStyle = "#0F52BA";
-        ctx.font = "italic bold 84px Georgia, serif";
+        ctx.font = "italic bold 78px Georgia, serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(biz.name[0].toUpperCase(), 540, logoCenterY);
+        ctx.fillText(displayName[0].toUpperCase(), 540, circleCenterY);
       }
       ctx.restore();
       ctx.textBaseline = "alphabetic";
 
-      // the business name, inside the card, below the logo/monogram
+      // the business name — noticeably smaller than the headline above,
+      // shrunk (and wrapped, if truly necessary) to always fit inside the
+      // card with room to spare on either side
       ctx.fillStyle = "#082B66";
-      ctx.font = "bold 44px Georgia, serif";
+      ctx.font = `bold ${nameSize}px Georgia, serif`;
       ctx.textAlign = "center";
-      ctx.fillText(biz.name, 540, cardY + 290);
+      nameLines.forEach((line, i) =>
+        ctx.fillText(line, 540, cardTop + relNameTop + nameLineHeight * (i + 0.8))
+      );
 
-      // the category, inside the card, below the name
+      // the category — the smallest, clearly secondary text on the graphic
       ctx.fillStyle = "#6b7280";
       ctx.font = "26px Arial, sans-serif";
-      ctx.fillText(biz.category, 540, cardY + 330);
+      ctx.fillText(biz.category, 540, cardTop + relCategoryTop + 22);
 
-      // site credit, along the bottom
+      // a thin divider separating the card from the site credit below it,
+      // which now reads as a deliberate footer rather than an afterthought
+      const footerTop = cardTop + cardHeight + 70;
+      ctx.strokeStyle = "rgba(255,255,255,0.28)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(300, footerTop);
+      ctx.lineTo(780, footerTop);
+      ctx.stroke();
+
       ctx.fillStyle = "#ffffff";
-      ctx.font = "28px Arial, sans-serif";
-      ctx.fillText("Find us on Hidden Gems SA", 540, 1000);
-      ctx.font = "24px Arial, sans-serif";
-      ctx.fillText(SITE_URL.replace("https://", ""), 540, 1035);
+      ctx.font = "600 30px Arial, sans-serif";
+      ctx.fillText("Find us on Hidden Gems SA", 540, footerTop + 44);
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "22px Arial, sans-serif";
+      ctx.fillText(SITE_URL.replace("https://", ""), 540, footerTop + 78);
 
       const downloadLink = document.createElement("a");
       downloadLink.download = `hidden-gems-sa-${biz.slug}-listed.png`;
