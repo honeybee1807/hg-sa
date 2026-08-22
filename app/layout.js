@@ -10,6 +10,7 @@ import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import DeferredStylesheet from "@/components/DeferredStylesheet";
 
 // the two fonts used across the site: Playfair Display for headings, Inter
 // for body text. next/font downloads and hosts these ourselves (instead of
@@ -107,13 +108,24 @@ export default function RootLayout({ children }) {
 
         {/* Font Awesome (FA) is the icon set used everywhere on the site
             (the little symbols next to text, like the location pin or the
-            WhatsApp logo). it's loaded here so every page has access to it. */}
-        <link
-          rel="stylesheet"
+            WhatsApp logo). it's loaded here so every page has access to
+            it — but deferred until after first paint, since the full kit
+            is a 280KB+ download that would otherwise block the page from
+            rendering at all. non-JS visitors and crawlers still get it
+            via the plain <link> in the <noscript> fallback below. */}
+        <DeferredStylesheet
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
+          />
+        </noscript>
         {/* styling for the logo-cropping tool on the "submit a business" page.
             it's small enough that loading it on every page (rather than just
             that one) doesn't meaningfully slow anything down. */}
