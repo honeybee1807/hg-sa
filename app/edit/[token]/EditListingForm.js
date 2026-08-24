@@ -19,6 +19,7 @@ import Link from "next/link";
 import { submitEditRequest } from "../actions";
 import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPES, HALAL_CERTIFICATES, isBadgeVisible } from "@/lib/constants";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
+import { normalizeWebsiteUrl, isValidWebsiteUrl } from "@/lib/url";
 
 // where uploaded logos get sent, and which "upload preset" (a pre-configured
 // set of rules on the Cloudinary side — image size limits, allowed formats,
@@ -251,6 +252,9 @@ export default function EditListingForm({ token, business }) {
       errors.whatsapp = "A WhatsApp number is required. We use this to contact you directly regarding your listing.";
     } else if (!isValidSouthAfricanMobile(normalizeWhatsApp(fields.whatsapp))) {
       errors.whatsapp = "Please enter a valid South African mobile number, starting with 0 or +27.";
+    }
+    if (!isValidWebsiteUrl(normalizeWebsiteUrl(fields.website))) {
+      errors.website = "Please enter a valid website URL, e.g. https://example.com — not an email address, and only one link.";
     }
     if (isBadgeVisible("halal", fields.category) && fields.halal && !fields.halal_certificate) {
       errors.halal_certificate = "Please select your Halal certificate type.";
@@ -485,6 +489,7 @@ export default function EditListingForm({ token, business }) {
             <label htmlFor="website">Website <span className="optional">(optional)</span></label>
             <input id="website" className="form-control" type="url" value={fields.website}
               onChange={set("website")} placeholder="https://..." />
+            {fieldErrors.website && <span className="field-error">{fieldErrors.website}</span>}
           </div>
         </div>
 

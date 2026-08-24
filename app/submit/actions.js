@@ -9,6 +9,7 @@ import supabase from "@/lib/supabase";
 import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPES, BADGE_CATEGORY_VISIBILITY } from "@/lib/constants";
 import { normalizeInstagramInput } from "@/lib/social";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
+import { normalizeWebsiteUrl, isValidWebsiteUrl } from "@/lib/url";
 
 // a quick-to-check list of every valid category name — used below to catch
 // someone submitting a category that isn't one of the real options (which
@@ -128,6 +129,11 @@ export async function submitBusiness(formData) {
     return { success: false, error: "Please enter a valid South African mobile number, starting with 0 or +27." };
   }
 
+  const normalizedWebsite = normalizeWebsiteUrl(website);
+  if (!isValidWebsiteUrl(normalizedWebsite)) {
+    return { success: false, error: "Please enter a valid website URL, e.g. https://example.com — not an email address, and only one link." };
+  }
+
   // re-checks each badge against the now-validated category — this is the
   // backstop half of the same clearing logic the form itself already runs
   // client-side in SubmitForm.js's handleSubmit, in case a badge was
@@ -156,7 +162,7 @@ export async function submitBusiness(formData) {
     street_address:       PHYSICAL_BUSINESS_TYPES.includes(businessType) ? (streetAddress || null) : null,
     province,
     whatsapp:    normalizedWhatsapp,
-    website:     website || null,
+    website:     normalizedWebsite,
     instagram:   normalizeInstagramInput(instagram),
     facebook:    facebook || null,
     description,

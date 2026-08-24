@@ -24,6 +24,7 @@ import { getAdminClient } from "@/lib/supabase-admin";
 import { CATEGORIES, PROVINCES, BUSINESS_TYPES, PHYSICAL_BUSINESS_TYPES, SITE_URL, BADGE_CATEGORY_VISIBILITY } from "@/lib/constants";
 import { normalizeInstagramInput } from "@/lib/social";
 import { normalizeWhatsApp, isValidSouthAfricanMobile } from "@/lib/phone";
+import { normalizeWebsiteUrl, isValidWebsiteUrl } from "@/lib/url";
 import { sendEditLinkEmail } from "@/lib/email";
 
 const VALID_CATEGORIES = new Set(CATEGORIES.map((c) => c.name));
@@ -159,6 +160,11 @@ function buildEditedValues(formData) {
     return { error: "Please enter a valid South African mobile number, starting with 0 or +27." };
   }
 
+  const normalizedWebsite = normalizeWebsiteUrl(website);
+  if (!isValidWebsiteUrl(normalizedWebsite)) {
+    return { error: "Please enter a valid website URL, e.g. https://example.com — not an email address, and only one link." };
+  }
+
   // same backstop as submitBusiness() in app/submit/actions.js: re-check
   // each badge against the now-validated category, in case one was still
   // marked true for a category that doesn't offer it.
@@ -181,7 +187,7 @@ function buildEditedValues(formData) {
       area,
       street_address: PHYSICAL_BUSINESS_TYPES.includes(businessType) ? (streetAddress || null) : null,
       whatsapp: normalizedWhatsapp,
-      website: website || null,
+      website: normalizedWebsite,
       instagram: normalizeInstagramInput(instagram),
       facebook: facebook || null,
       description,
