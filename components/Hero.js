@@ -22,7 +22,7 @@ export default function Hero({ featuredGem, areaCount }) {
   useEffect(() => {
     const animationContext = gsap.context(() => {
       // the entrance sequence: each piece of the hero fades and slides in
-      // one after another, in this order — eyebrow tag, first headline
+      // one after another, in this order — first headline
       // line, second headline line, subheading paragraph, the two buttons,
       // the featured gem card, then the three stat numbers. the negative
       // "-=0.x" timings make each step start slightly before the previous
@@ -31,12 +31,9 @@ export default function Hero({ featuredGem, areaCount }) {
       const entranceTimeline = gsap.timeline({ delay: 0.1 });
 
       entranceTimeline
-        .fromTo(".h-eyebrow",
-          { y: 18, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" })
         .fromTo(".h-line-1",
           { y: 64, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.2")
+          { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
         .fromTo(".h-line-2",
           { y: 64, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.52")
@@ -107,11 +104,6 @@ export default function Hero({ featuredGem, areaCount }) {
       <div className="container hero-inner">
         {/* ── left: copy ── */}
         <div className="hero-left">
-          <span className="h-eyebrow">
-            <span className="h-eyebrow-dot" />
-            KwaZulu-Natal Business Directory
-          </span>
-
           <h1 className="hero-h1">
             <span className="h-line-1">Find KwaZulu-Natal&apos;s</span>
             <span className="h-line-2">

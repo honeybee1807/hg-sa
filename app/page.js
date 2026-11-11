@@ -325,9 +325,6 @@ export default async function HomePage() {
             <div className="mission-banner">
               <div className="mission-glow" aria-hidden="true" />
               <div className="mission-content">
-                <span className="mission-tag">
-                  <i className="fa-solid fa-heart" /> Our Mission
-                </span>
                 <p className="mission-lead">
                   Every community has businesses worth discovering.
                 </p>
@@ -411,7 +408,6 @@ export default async function HomePage() {
         <div className="home-cta-glow" aria-hidden="true" />
         <div className="container text-center" style={{ position: "relative", zIndex: 1 }}>
           <AnimatedSection>
-            <p className="home-cta-pre">Ready to grow?</p>
             <h2 className="home-cta-h2">Is Your Business a Hidden Gem?</h2>
             <p className="home-cta-sub mt-1">
               Free listing, no account required. List your business. Have it reviewed and live online within 48 hours.
