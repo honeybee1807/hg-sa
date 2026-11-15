@@ -20,6 +20,18 @@ export default function Hero({ featuredGem, areaCount }) {
   const ref = useRef(null); // points at the outer <section>, used to scope all of the animations below to just this component
 
   useEffect(() => {
+    // for visitors whose device asks for reduced motion, skip the entrance
+    // sequence and just show the final counter values straight away.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const root = ref.current;
+      if (root) {
+        root.querySelector(".hc-towns").textContent = String(areaCount);
+        root.querySelector(".hc-cats").textContent = String(CATEGORIES.length);
+        root.querySelector(".hc-free").textContent = "100%";
+      }
+      return;
+    }
+
     const animationContext = gsap.context(() => {
       // the entrance sequence: each piece of the hero fades and slides in
       // one after another, in this order — first headline
@@ -43,9 +55,12 @@ export default function Hero({ featuredGem, areaCount }) {
         .fromTo(".h-ctas",
           { y: 16, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, "-=0.35")
+        // no scale here: scaling the card makes the browser re-rasterise
+        // its text and logo every frame. a slide plus fade looks almost the
+        // same and runs entirely on the GPU.
         .fromTo(".hero-featured-slot",
-          { x: 56, opacity: 0, scale: 0.93 },
-          { x: 0, opacity: 1, scale: 1, duration: 1.1, ease: "expo.out" }, "-=0.7")
+          { x: 56, opacity: 0 },
+          { x: 0, opacity: 1, duration: 1.1, ease: "expo.out", force3D: true, clearProps: "transform" }, "-=0.7")
         .fromTo(".h-stat",
           { y: 12, opacity: 0 },
           { y: 0, opacity: 1, stagger: 0.09, duration: 0.45, ease: "power3.out" }, "-=0.4");

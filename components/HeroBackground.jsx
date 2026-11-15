@@ -34,14 +34,23 @@ const IMAGE_PATHS = [
 const CYCLE_MS = 8000; // how long each image stays on screen before the next one crossfades in
 
 export default function HeroBackground() {
-  const [activeIndex, setActiveIndex] = useState(0);
+  // "active" is the photo currently showing; "leaving" is the one fading
+  // out behind it (null before the first swap). the leaving photo keeps
+  // zooming during its fade so it doesn't visibly freeze. every other
+  // hidden photo has its zoom paused (see .hero-photo-bg-image in
+  // globals.css), so at most two full-screen photos animate at once
+  // instead of all four.
+  const [{ activeIndex, leavingIndex }, setSlides] = useState({ activeIndex: 0, leavingIndex: null });
   const [failedIndexes, setFailedIndexes] = useState(() => new Set());
 
   // advance to the next image every CYCLE_MS, looping back to the first
   // once the last one has shown.
   useEffect(() => {
     const intervalId = setInterval(() => {
-      setActiveIndex((current) => (current + 1) % IMAGE_PATHS.length);
+      setSlides(({ activeIndex: current }) => ({
+        activeIndex: (current + 1) % IMAGE_PATHS.length,
+        leavingIndex: current,
+      }));
     }, CYCLE_MS);
     return () => clearInterval(intervalId);
   }, []);
@@ -63,7 +72,7 @@ export default function HeroBackground() {
           priority={index === 0}
           fetchPriority={index === 0 ? "high" : undefined}
           loading={index === 0 ? undefined : "lazy"}
-          className={`hero-photo-bg-image${index === activeIndex ? " is-active" : ""}`}
+          className={`hero-photo-bg-image${index === activeIndex ? " is-active" : ""}${index === leavingIndex ? " is-leaving" : ""}`}
           onError={() =>
             setFailedIndexes((current) => new Set(current).add(index))
           }

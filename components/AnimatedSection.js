@@ -33,37 +33,51 @@ export default function AnimatedSection({ children, className = "", stagger = fa
     const sectionElement = ref.current;
     if (!sectionElement) return;
 
-    // skip the animation on mobile-sized screens — see the note above.
+    // skip the animation on mobile-sized screens (see the note above), and
+    // for anyone whose device asks for reduced motion.
     const isMobileScreen = window.matchMedia("(max-width: 767px)").matches;
-    if (isMobileScreen) return;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (isMobileScreen || prefersReducedMotion) return;
 
-    // decide what exactly gets animated: either every direct child of this
-    // wrapper one at a time (a "staggered" reveal), or the wrapper itself
-    // as one single block.
-    const thingsToAnimate = stagger
-      ? Array.from(sectionElement.querySelectorAll(":scope > *"))
-      : [sectionElement];
-    if (thingsToAnimate.length === 0) return;
+    // gsap.context() records every tween and ScrollTrigger created inside
+    // it, so the cleanup below can kill them all when this component
+    // unmounts. without it, every page visit left its ScrollTriggers
+    // behind, and they piled up, re-measuring the page on every scroll and
+    // resize, which is what made scrolling get laggier the longer the site
+    // was open.
+    const animationContext = gsap.context(() => {
+      // decide what exactly gets animated: either every direct child of
+      // this wrapper one at a time (a "staggered" reveal), or the wrapper
+      // itself as one single block.
+      const thingsToAnimate = stagger
+        ? Array.from(sectionElement.querySelectorAll(":scope > *"))
+        : [sectionElement];
+      if (thingsToAnimate.length === 0) return;
 
-    // animate from a slightly lower, faded-out, slightly-shrunk starting
-    // position up to its normal resting state, triggered the moment the
-    // section scrolls to 88% of the way up the screen. "once: true" means
-    // this only ever plays the first time — scrolling back up and down
-    // again won't replay it.
-    gsap.fromTo(
-      thingsToAnimate,
-      { y: 32, opacity: 0, scale: 0.97 },
-      {
-        y: 0,
-        opacity: 1,
-        scale: 1,
-        duration: 0.7,
-        delay,
-        stagger: stagger ? 0.08 : 0,
-        ease: "power3.out",
-        scrollTrigger: { trigger: sectionElement, start: "top 88%", once: true },
-      }
-    );
+      // fade and slide up into place once the section scrolls 88% of the
+      // way up the screen. only transform (y) and opacity are animated,
+      // since the GPU can do both without repainting. "once: true" means
+      // it plays the first time only. "clearProps" removes the leftover
+      // inline transform once it's done, so finished sections (like the
+      // big directory search) don't stay stuck as their own GPU layer.
+      gsap.fromTo(
+        thingsToAnimate,
+        { y: 32, autoAlpha: 0 },
+        {
+          y: 0,
+          autoAlpha: 1,
+          duration: 0.7,
+          delay,
+          stagger: stagger ? 0.08 : 0,
+          ease: "power3.out",
+          force3D: true,
+          clearProps: "transform,opacity,visibility",
+          scrollTrigger: { trigger: sectionElement, start: "top 88%", once: true },
+        }
+      );
+    }, sectionElement);
+
+    return () => animationContext.revert();
   }, [stagger, delay]);
 
   return (

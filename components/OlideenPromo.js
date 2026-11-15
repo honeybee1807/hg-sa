@@ -27,6 +27,8 @@ export default function OlideenPromo() {
   const ref = useRef(null); // points at the outer <section> below, used both as the scroll-trigger target and to scope the animation to just this component
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
     // gsap.context() groups every animation created inside it so they can
     // all be cleaned up together (via ctx.revert()) when this component is
     // removed from the page — without it, an animation on ".promo-animate"
@@ -45,6 +47,8 @@ export default function OlideenPromo() {
           duration: 0.85,
           stagger: 0.18,
           ease: "power3.out",
+          force3D: true,
+          clearProps: "transform",
           scrollTrigger: { trigger: ref.current, start: "top 82%", once: true },
         }
       );
