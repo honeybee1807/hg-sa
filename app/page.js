@@ -282,7 +282,34 @@ export default async function HomePage() {
                 params via useSearchParams() (see Part F), which requires a
                 Suspense boundary around it. */}
             <Suspense fallback={null}>
-              <DirectorySearch businesses={allBusinesses} />
+              <DirectorySearch
+                businesses={allBusinesses}
+                belowSearchBar={
+                  // mission statement banner, sitting directly under the
+                  // search bar, above the search results.
+                  <div className="mission-banner">
+                    <div className="mission-glow" aria-hidden="true" />
+                    <div className="mission-content">
+                      <p className="mission-lead">
+                        Every community has businesses worth discovering.
+                      </p>
+                      <p className="mission-text">
+                        Hidden Gems SA exists to shine a light on the local and independent
+                        businesses that make our communities special.
+                      </p>
+                      <p className="mission-text">
+                        From home bakers and tutors to mechanics, transport operators,
+                        creatives and family-run businesses, we&apos;re making it easier for
+                        people to discover what&apos;s already around them and support local.
+                      </p>
+                      <p className="mission-text mission-text--emphasis">
+                        Because sometimes, the best businesses aren&apos;t the biggest ones.
+                        They&apos;re the hidden gems right next door.
+                      </p>
+                    </div>
+                  </div>
+                }
+              />
             </Suspense>
           </AnimatedSection>
         </div>
@@ -313,35 +340,6 @@ export default async function HomePage() {
               <Link href="/categories" className="btn-rose-outline">
                 <i className="fa-solid fa-grid-2" /> View All Categories
               </Link>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* mission statement banner — sits between category and area browsing */}
-      <section className="home-section">
-        <div className="container">
-          <AnimatedSection>
-            <div className="mission-banner">
-              <div className="mission-glow" aria-hidden="true" />
-              <div className="mission-content">
-                <p className="mission-lead">
-                  Every community has businesses worth discovering.
-                </p>
-                <p className="mission-text">
-                  Hidden Gems SA exists to shine a light on the local and independent
-                  businesses that make our communities special.
-                </p>
-                <p className="mission-text">
-                  From home bakers and tutors to mechanics, transport operators,
-                  creatives and family-run businesses, we&apos;re making it easier for
-                  people to discover what&apos;s already around them and support local.
-                </p>
-                <p className="mission-text mission-text--emphasis">
-                  Because sometimes, the best businesses aren&apos;t the biggest ones.
-                  They&apos;re the hidden gems right next door.
-                </p>
-              </div>
             </div>
           </AnimatedSection>
         </div>

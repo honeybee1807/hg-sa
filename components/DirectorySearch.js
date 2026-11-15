@@ -73,7 +73,10 @@ function formatWhatsApp(raw) {
   return "27" + digitsOnly;
 }
 
-export default function DirectorySearch({ businesses }) {
+// "belowSearchBar" is optional content rendered directly under the search
+// bar and filter button, above the result count and results (the homepage
+// uses it for the mission statement banner).
+export default function DirectorySearch({ businesses, belowSearchBar = null }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -346,6 +349,8 @@ export default function DirectorySearch({ businesses }) {
           )}
         </div>
       </div>
+
+      {belowSearchBar && <div className="dir-below-search">{belowSearchBar}</div>}
 
       <div className="dir-view-toggle-row">
         <p className="dir-search-count">

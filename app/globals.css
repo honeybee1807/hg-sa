@@ -3242,6 +3242,10 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .dir-search-bar { flex: 1; min-width: 0; }
 
+/* the slot between the search bar and the results (the homepage's mission
+   banner) — the search bar row above already supplies the top gap. */
+.dir-below-search { margin-bottom: 2rem; }
+
 /* the pill-shaped search bar — an outer rounded border containing the
    magnifying-glass icon, the text input, and a circular submit button, all
    read as one continuous shape rather than three separate controls. */
