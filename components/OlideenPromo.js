@@ -17,11 +17,8 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { OLIDEEN_URL } from "@/lib/constants";
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function OlideenPromo() {
   const ref = useRef(null); // points at the outer <section> below, used both as the scroll-trigger target and to scope the animation to just this component
@@ -29,32 +26,50 @@ export default function OlideenPromo() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+    const sectionElement = ref.current;
+    if (!sectionElement) return;
+
     // gsap.context() groups every animation created inside it so they can
     // all be cleaned up together (via ctx.revert()) when this component is
-    // removed from the page — without it, an animation on ".promo-animate"
-    // could accidentally linger and affect a different part of the page.
+    // removed from the page. scoped to this section, so ".promo-animate"
+    // only ever matches elements inside it.
     const animationContext = gsap.context(() => {
-      // every element carrying the "promo-animate" class name — logo,
-      // heading, paragraph, button, and the mobile credit strip — fades
-      // and slides upward into place together, one after another
-      // ("stagger"), the moment this section scrolls into view.
-      gsap.fromTo(
-        ".promo-animate",
-        { y: 32, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.85,
-          stagger: 0.18,
-          ease: "power3.out",
-          force3D: true,
-          clearProps: "transform",
-          scrollTrigger: { trigger: ref.current, start: "top 82%", once: true },
-        }
-      );
-    }, ref);
+      gsap.set(".promo-animate", { y: 32, opacity: 0 });
+    }, sectionElement);
 
-    return () => animationContext.revert();
+    // every element carrying the "promo-animate" class name — logo,
+    // heading, paragraph, button, and the mobile credit strip — fades and
+    // slides upward into place, one after another ("stagger"), once this
+    // section's top is 18% of the screen height above the bottom of the
+    // screen (the old "top 82%" point). uses IntersectionObserver rather
+    // than ScrollTrigger for the same reason as AnimatedSection.js: it
+    // always checks the section's real current position, so the content
+    // can't get stuck invisible when the page above changes height.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+
+        animationContext.add(() => {
+          gsap.to(".promo-animate", {
+            y: 0,
+            opacity: 1,
+            duration: 0.85,
+            stagger: 0.18,
+            ease: "power3.out",
+            force3D: true,
+            clearProps: "transform",
+          });
+        });
+      },
+      { rootMargin: "0px 0px -18% 0px" }
+    );
+    observer.observe(sectionElement);
+
+    return () => {
+      observer.disconnect();
+      animationContext.revert();
+    };
   }, []);
 
   return (
