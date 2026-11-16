@@ -24,11 +24,12 @@
 // both Filters entry points render the same FilterControl, so there's one
 // copy of the filter panel logic, not two.
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { CATEGORIES, PROVINCES, BUSINESS_TYPES } from "@/lib/constants";
+import { CATEGORIES, PROVINCES, BUSINESS_TYPES, SITE_WHATSAPP } from "@/lib/constants";
+import { buildSearchIndex, searchDirectory, removeQueryWords, sanitizeSearchTerm } from "@/lib/search";
 import SocialLink from "@/components/SocialLink";
 import BadgePills from "@/components/BadgePills";
 
@@ -57,25 +58,15 @@ const BADGE_PARAM_KEYS = ["halal", "delivery", "callouts"];
 const VALID_VIEWS = new Set(["grid2", "compact", "list"]);
 const VIEW_STORAGE_KEY = "hgsa_view_preference";
 
-// checks one business against the current search text, deciding whether it
-// should stay in the results. returns true if the search box is empty (no
-// filtering needed), or if the typed text shows up anywhere in the
-// business's name, category, area, or description.
-function businessMatchesSearchText(business, searchText) {
-  if (!searchText) return true;
+// pre-filled WhatsApp message for someone whose search found nothing —
+// same "request a category" message as the /categories page.
+const REQUEST_CATEGORY_URL = `https://wa.me/${SITE_WHATSAPP}?text=${encodeURIComponent(
+  "Hi! I'd like to request a new category for Hidden Gems SA: "
+)}`;
 
-  const lowercaseName        = business.name.toLowerCase();
-  const lowercaseCategory    = business.category.toLowerCase();
-  const lowercaseArea        = business.area.toLowerCase();
-  const lowercaseDescription = (business.description ?? "").toLowerCase();
-
-  return (
-    lowercaseName.includes(searchText) ||
-    lowercaseCategory.includes(searchText) ||
-    lowercaseArea.includes(searchText) ||
-    lowercaseDescription.includes(searchText)
-  );
-}
+// how long the search text has to sit unchanged before it's counted as a
+// finished search for analytics (so "t", "tu", "tut"... aren't each sent).
+const SEARCH_ANALYTICS_DELAY_MS = 800;
 
 // turns a saved WhatsApp number (already stored in the "27..." format from
 // when it was submitted — see app/submit/actions.js) into that exact
@@ -155,40 +146,67 @@ export function DirectorySearchProvider({ businesses, initialBadges = [], childr
 
   const activeFilterCount = appliedCategories.length + appliedProvinces.length + appliedBusinessTypes.length + appliedBadges.length;
 
-  // recalculates the filtered list of businesses whenever the full list,
-  // the search text, or any applied filter changes. "useMemo" just means
-  // this filtering work is skipped and the previous result reused if none
-  // of those things have actually changed since the last render.
-  const filtered = useMemo(() => {
-    const searchText = query.trim().toLowerCase();
+  // the search's prepared word lists for every listing — only rebuilt if
+  // the listings themselves change, not on every keystroke.
+  const searchIndex = useMemo(() => buildSearchIndex(businesses), [businesses]);
 
-    return businesses.filter((business) => {
-      const matchesSearchText     = businessMatchesSearchText(business, searchText);
-      const matchesCategory       = appliedCategories.length === 0 || appliedCategories.includes(business.category);
-      const matchesProvince       = appliedProvinces.length === 0 || appliedProvinces.includes(business.province);
-      const matchesBusinessType   = appliedBusinessTypes.length === 0 || appliedBusinessTypes.includes(business.business_type);
+  // the search runs on a "deferred" copy of the typed text: React keeps the
+  // input itself instant and updates the results a moment later if a phone
+  // is busy, so typing never lags.
+  const deferredQuery = useDeferredValue(query);
 
-      // every checked badge filter must match (AND, not OR) — a business
-      // checked against "Halal" and "Delivery Available" together has to
-      // have both, not just one.
-      const matchesBadges = appliedBadges.every((key) => {
-        if (key === "halal") return !!business.halal;
-        if (key === "delivery") return !!business.delivery_available;
-        if (key === "callouts") return !!business.callouts_available;
-        return true;
+  // the actual search (see lib/search.js): the typed text and every applied
+  // filter combine with AND. returns the ranked results plus how the text
+  // was understood (the chips) and any fallback message. "useMemo" skips
+  // the work entirely if nothing it depends on has changed.
+  const search = useMemo(
+    () =>
+      searchDirectory(searchIndex, deferredQuery, {
+        categories: appliedCategories,
+        provinces: appliedProvinces,
+        businessTypes: appliedBusinessTypes,
+        badges: appliedBadges,
+      }),
+    [searchIndex, deferredQuery, appliedCategories, appliedProvinces, appliedBusinessTypes, appliedBadges]
+  );
+  const filtered = search.results;
+
+  // removes the words behind one interpretation chip from the search box.
+  function removeChip(chip) {
+    setQuery(removeQueryWords(deferredQuery, chip.rawIndexes));
+  }
+
+  // once someone stops typing for a moment, records the search in Google
+  // Analytics (the gtag set up in app/layout.js) as a "directory_search"
+  // event: what was searched (with any email or phone number stripped
+  // out), how many results showed, and whether anything matched exactly.
+  // zero_results is the one to watch — it's what people want that isn't
+  // listed yet. each distinct search is only sent once.
+  const lastSearchSentRef = useRef("");
+  useEffect(() => {
+    const searchTerm = sanitizeSearchTerm(deferredQuery);
+    if (!searchTerm || searchTerm === lastSearchSentRef.current) return;
+    const timer = setTimeout(() => {
+      if (typeof window.gtag !== "function") return;
+      lastSearchSentRef.current = searchTerm;
+      window.gtag("event", "directory_search", {
+        search_term: searchTerm,
+        result_count: search.results.length,
+        exact_result_count: search.exactCount,
+        zero_results: search.exactCount === 0,
+        match_type: search.tier,
       });
-
-      // a business only stays in the results if it satisfies every active
-      // filter at once.
-      return matchesSearchText && matchesCategory && matchesProvince && matchesBusinessType && matchesBadges;
-    });
-  }, [businesses, query, appliedCategories, appliedProvinces, appliedBusinessTypes, appliedBadges]);
+    }, SEARCH_ANALYTICS_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [deferredQuery, search]);
 
   const value = {
     businesses,
     filtered,
+    search,
     query,
     setQuery,
+    removeChip,
     appliedCategories,
     appliedProvinces,
     appliedBusinessTypes,
@@ -427,6 +445,8 @@ export function DirectorySearchBar() {
         </button>
       </form>
 
+      <SearchChips variant="hero" />
+
       <div className="hsb-filters">
         <FilterControl variant="link" />
       </div>
@@ -483,6 +503,8 @@ export function DirectorySection() {
           <FilterControl variant="button" />
         </form>
 
+        <SearchChips />
+
         {/* category pills: the same category filter the panel uses. a pill
             reads as active when its category is applied (the panel can
             apply several at once); "All listings" when none is. */}
@@ -523,17 +545,17 @@ export function DirectorySection() {
 
           <aside className="dsec-aside">
             <div className="dsec-info">
-              {/* the Hidden Gems SA pin-and-gem mark: the main logo
-                  (transparent background), framed so only its left-hand
-                  pin shows — the wordmark's dark lettering wouldn't read on
-                  this dark card. see .dsec-info-logo in globals.css. */}
-              <span className="dsec-info-logo" aria-hidden="true">
+              {/* the full Hidden Gems SA logo (pin + "Hidden Gems SA"
+                  wordmark), unchanged, on a soft light backing — its dark
+                  blue "GEMS" lettering would disappear straight on this
+                  dark card. see .dsec-info-logo in globals.css. */}
+              <span className="dsec-info-logo">
                 <Image
                   src="/HG_Logo.png"
-                  alt=""
-                  width={144}
-                  height={64}
-                  sizes="144px"
+                  alt="Hidden Gems SA"
+                  width={180}
+                  height={80}
+                  sizes="180px"
                 />
               </span>
               <h3 className="dsec-info-title">Every community has businesses worth discovering.</h3>
@@ -570,9 +592,37 @@ export function DirectorySection() {
   );
 }
 
+// how the search text was understood, shown as small chips under both
+// search bars ("Tutoring & Education", "Estcourt"). each has an × that
+// takes those words back out of the search.
+//   variant — "hero" (over the hero photo) or "section" (directory section)
+function SearchChips({ variant = "section" }) {
+  const { search, removeChip } = useDirectorySearch();
+  if (search.chips.length === 0) return null;
+
+  return (
+    <div className={`dsec-chips dsec-chips--${variant}`} role="group" aria-label="Your search was understood as">
+      <span className="dsec-chips-label">Searching for</span>
+      {search.chips.map((chip) => (
+        <span key={chip.id} className={`dsec-chip dsec-chip--${chip.kind}`}>
+          {chip.label}
+          <button
+            type="button"
+            className="dsec-chip-remove"
+            onClick={() => removeChip(chip)}
+            aria-label={`Remove ${chip.label} from search`}
+          >
+            <i className="fa-solid fa-xmark" aria-hidden="true" />
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // the result count, the (small) view toggle, and the results themselves.
 function DirectoryResultsList() {
-  const { businesses, filtered } = useDirectorySearch();
+  const { businesses, filtered, search, clearAll } = useDirectorySearch();
 
   // which of the three layouts is currently selected. starts as "grid2"
   // (the new card grid) so the very first server-rendered frame is
@@ -656,6 +706,20 @@ function DirectoryResultsList() {
         </div>
       </div>
 
+      {/* explains any results that aren't an exact match ("no tutors in
+          Ladysmith yet, showing other areas") and any clash between the
+          typed text and a selected filter — fallback results never show
+          without saying why. */}
+      {(search.message || search.notes.length > 0) && (
+        <div className="dsec-search-notice" role="status">
+          <i className="fa-solid fa-circle-info" aria-hidden="true" />
+          <div>
+            {search.message && <p>{search.message}</p>}
+            {search.notes.map((note) => <p key={note}>{note}</p>)}
+          </div>
+        </div>
+      )}
+
       {filtered.length > 0 ? (
         // the "key" forces a fresh element whenever the view changes, which
         // is what lets the CSS fade-in animation on ".dir-results" replay
@@ -675,6 +739,16 @@ function DirectoryResultsList() {
               ? "No businesses listed yet."
               : "No matches. Try a different name, category, or filter."}
           </p>
+          {businesses.length > 0 && (
+            <div className="listing-empty-actions">
+              <a href={REQUEST_CATEGORY_URL} target="_blank" rel="noopener noreferrer" className="listing-empty-link">
+                <i className="fa-brands fa-whatsapp" aria-hidden="true" /> Request a category
+              </a>
+              <button type="button" className="listing-empty-link" onClick={clearAll}>
+                Browse all listings
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>

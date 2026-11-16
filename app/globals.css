@@ -3795,6 +3795,115 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   outline-offset: 2px;
 }
 
+/* ── how the search was understood: small removable chips under the bar ── */
+.dsec-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.dsec-chips-label {
+  margin-right: 0.15rem;
+  color: #8a84a0;
+  font-size: 0.78rem;
+}
+
+.dsec-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.22rem 0.3rem 0.22rem 0.7rem;
+  border: 1px solid #E2DCEC;
+  border-radius: 999px;
+  background: var(--sapphire-pale);
+  color: var(--sapphire-deep);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.dsec-chip--area,
+.dsec-chip--province { background: color-mix(in srgb, var(--aquamarine) 14%, #fff); }
+.dsec-chip--badge    { background: color-mix(in srgb, var(--amethyst-light) 30%, #fff); }
+.dsec-chip--text     { background: #fff; }
+
+.dsec-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #6b6580;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.dsec-chip-remove:hover { background: rgba(8, 43, 102, 0.08); color: var(--sapphire-deep); }
+.dsec-chip-remove:focus-visible { outline: 2px solid var(--amethyst); outline-offset: 1px; }
+
+/* explains fallback results ("showing other areas", "closest matches") */
+/* the hero's copy of the chips sits over the photo, so it gets a solid
+   light backing and a white label to stay readable */
+.dsec-chips--hero { margin-top: 0.7rem; }
+.dsec-chips--hero .dsec-chips-label { color: rgba(255, 255, 255, 0.85); }
+.dsec-chips--hero .dsec-chip {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 12px rgba(8, 6, 16, 0.25);
+}
+.dsec-chips--hero + .hsb-filters { margin-top: 0.4rem; }
+
+.dsec-search-notice {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--amethyst-light) 60%, #fff);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--amethyst-light) 14%, #fff);
+  color: var(--sapphire-deep);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.dsec-search-notice i { margin-top: 0.2rem; color: var(--amethyst); }
+.dsec-search-notice p { margin: 0; }
+.dsec-search-notice p + p { margin-top: 0.3rem; }
+
+/* the two links under "No matches" */
+.listing-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
+.listing-empty-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.05rem;
+  border: 1px solid #E2DCEC;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--sapphire-deep);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.listing-empty-link:hover { border-color: var(--amethyst-light); }
+.listing-empty .listing-empty-link i { display: inline; margin: 0; color: #25D366; font-size: 1rem; }
+
 /* ── two columns: info card (left, narrow) + results (right) ── */
 .dsec-layout {
   display: grid;
@@ -3820,24 +3929,23 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   box-shadow: 0 18px 40px rgba(8, 43, 102, 0.18);
 }
 
-/* the Hidden Gems SA pin-and-gem mark at the top of the info card: the
-   full logo (HG_Logo.png, 1336×595, transparent) shown at 64px tall, inside
-   a frame just wide enough for its left-hand pin (about 31% of the image),
-   so the wordmark is cropped off. */
+/* the full Hidden Gems SA logo (pin + wordmark) at the top of the info
+   card, on a soft light backing so the wordmark's dark blue "GEMS" stays
+   readable against the dark card */
 .dsec-info-logo {
-  display: block;
-  width: 46px;
-  height: 64px;
-  overflow: hidden;
-  margin-bottom: 1.1rem;
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+  line-height: 0;
 }
 
 .dsec-info-logo img {
   display: block;
-  width: 144px;
-  max-width: none;
-  height: 64px;
+  width: 180px;
+  height: auto;
 }
 
 .dsec-info-title {
