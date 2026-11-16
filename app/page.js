@@ -1,18 +1,20 @@
 // this is the homepage — hiddengemssa.co.za itself. it fetches the current
 // featured business and the full list of approved businesses, then lays out
 // every section a visitor sees: the hero banner (which includes the
-// featured business card — see Hero.js), the live search, the category and
-// area browsing grids, the "built by Olideen" panel, the FAQ, and the
-// closing call-to-action.
+// featured business card and the search bar — see Hero.js), the "explore
+// the directory" section with the live results, the "built by Olideen"
+// panel, the FAQ, and the closing call-to-action. (the old "Browse by
+// Category" and "Browse by Area" grids were removed — the directory's
+// category pills, its info-card links, and the nav/footer now lead to
+// /categories and /towns.)
 
-import { Suspense } from "react";
 import Link from "next/link";
 import supabase from "@/lib/supabase";
 import { CATEGORIES, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
 import Hero from "@/components/Hero";
 import OlideenPromo from "@/components/OlideenPromo";
 import AnimatedSection from "@/components/AnimatedSection";
-import DirectorySearch from "@/components/DirectorySearch";
+import { DirectorySearchProvider, DirectorySection } from "@/components/DirectorySearch";
 
 // always render this page fresh on every request rather than serving a
 // statically-built snapshot — without this, Next.js prerenders the
@@ -73,10 +75,11 @@ async function getAllApprovedBusinesses() {
   return data ?? [];
 }
 
-// finds every distinct area with at least one approved business, for the
-// homepage's "Browse by Area" pills — areas aren't a fixed list (see
-// lib/constants.js), so this asks the database rather than looping over a
-// constant. mirrors the same logic in app/towns/page.js.
+// finds every distinct area with at least one approved business. only its
+// length is used now — the live "areas to explore" number in the hero's
+// stats bar. areas aren't a fixed list (see lib/constants.js), so this asks
+// the database rather than looping over a constant. mirrors the same logic
+// in app/towns/page.js.
 async function getAreaSummaries() {
   const { data: approvedBusinesses } = await supabase
     .from("businesses")
@@ -221,7 +224,8 @@ const jsonLd = {
       ],
     },
     {
-      // itemlist of categories — helps search engines understand the directory structure
+      // itemlist of categories — helps search engines understand the directory structure.
+      // every category is still shown on the page, as the directory section's category pills.
       "@type": "ItemList",
       "name": "Business categories on Hidden Gems SA",
       "itemListElement": CATEGORIES.map((cat, i) => ({
@@ -250,7 +254,16 @@ const jsonLd = {
 // a visitor's browser, so the featured business and the full business list
 // are both already loaded by the time anyone sees the page — nothing needs
 // to "pop in" afterwards.
-export default async function HomePage() {
+// the badge filters that can be pre-set from the URL (e.g. a shared
+// "?halal=true" link). read here on the server and handed to
+// DirectorySearchProvider, so a shared link renders already filtered. same
+// keys as BADGE_PARAM_KEYS in components/DirectorySearch.js.
+const BADGE_PARAM_KEYS = ["halal", "delivery", "callouts"];
+
+export default async function HomePage({ searchParams }) {
+  const params = await searchParams;
+  const initialBadges = BADGE_PARAM_KEYS.filter((key) => params?.[key] === "true");
+
   // fetch all three at the same time (rather than one after the other) so
   // the page loads as fast as possible.
   const [featuredGem, allBusinesses, areas] = await Promise.all([
@@ -266,118 +279,19 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Hero featuredGem={featuredGem} areaCount={areas.length} />
+      {/* the hero's search bar and the "Explore the directory" section
+          below it share one source of truth (search text, filters,
+          results), so typing in either search bar updates both. see
+          components/DirectorySearch.js. */}
+      <DirectorySearchProvider businesses={allBusinesses} initialBadges={initialBadges}>
+        <Hero featuredGem={featuredGem} areaCount={areas.length} />
 
-      {/* search & filter the whole directory — live results, no page reload */}
-      <section className="home-section">
-        <div className="container">
-          <AnimatedSection>
-            <div className="section-header home-section-header">
-              <h2>Search the Directory</h2>
-              <p>Find exactly what you need, instantly</p>
-            </div>
-          </AnimatedSection>
-          <AnimatedSection delay={0.1}>
-            {/* DirectorySearch reads the "?halal=" etc. badge-filter query
-                params via useSearchParams() (see Part F), which requires a
-                Suspense boundary around it. */}
-            <Suspense fallback={null}>
-              <DirectorySearch
-                businesses={allBusinesses}
-                belowSearchBar={
-                  // mission statement banner, sitting directly under the
-                  // search bar, above the search results.
-                  <div className="mission-banner">
-                    <div className="mission-glow" aria-hidden="true" />
-                    <div className="mission-content">
-                      <p className="mission-lead">
-                        Every community has businesses worth discovering.
-                      </p>
-                      <p className="mission-text">
-                        Hidden Gems SA exists to shine a light on the local and independent
-                        businesses that make our communities special.
-                      </p>
-                      <p className="mission-text">
-                        From home bakers and tutors to mechanics, transport operators,
-                        creatives and family-run businesses, we&apos;re making it easier for
-                        people to discover what&apos;s already around them and support local.
-                      </p>
-                      <p className="mission-text mission-text--emphasis">
-                        Because sometimes, the best businesses aren&apos;t the biggest ones.
-                        They&apos;re the hidden gems right next door.
-                      </p>
-                    </div>
-                  </div>
-                }
-              />
-            </Suspense>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* browse by category — 14 categories covering all major kzn business types */}
-      <section className="home-section home-section--inset">
-        <div className="container">
-          <AnimatedSection>
-            <div className="section-header home-section-header">
-              <h2>Browse by Category</h2>
-              <p>Find the business you need, by category</p>
-            </div>
-          </AnimatedSection>
-          <AnimatedSection stagger className="grid-4 cat-grid">
-            {CATEGORIES.map((cat) => (
-              <Link key={cat.slug} href={`/category/${cat.slug}`} className="category-card">
-                <span className="cat-icon" style={{ background: cat.gradient }}>
-                  <i className={cat.icon} />
-                </span>
-                <span className="cat-name">{cat.name}</span>
-                <span className="cat-desc">{cat.desc}</span>
-              </Link>
-            ))}
-          </AnimatedSection>
-          <AnimatedSection delay={0.15}>
-            <div className="text-center mt-3">
-              <Link href="/categories" className="btn-rose-outline">
-                <i className="fa-solid fa-grid-2" /> View All Categories
-              </Link>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* browse by area — one clickable "pill" button per distinct area
-          that currently has an approved business (see getAreaSummaries
-          above); nothing shown at all if no business has been approved yet */}
-      {areas.length > 0 && (
-        <section className="home-section">
-          <div className="container">
-            <AnimatedSection>
-              <div className="section-header home-section-header">
-                <h2>Browse by Area</h2>
-                <p>Find local businesses near you</p>
-              </div>
-            </AnimatedSection>
-            <AnimatedSection stagger className="towns-grid">
-              {areas.map((area) => (
-                <Link
-                  key={area}
-                  href={`/town/${area.toLowerCase().replace(/\s+/g, "-")}`}
-                  className="town-pill"
-                >
-                  <i className="fa-solid fa-location-dot" /> {area}
-                </Link>
-              ))}
-            </AnimatedSection>
-            <AnimatedSection delay={0.15}>
-              <div className="text-center mt-3">
-                <Link href="/towns" className="btn-rose-outline">
-                  <i className="fa-solid fa-map" /> All Areas
-                </Link>
-              </div>
-            </AnimatedSection>
-          </div>
-        </section>
-      )}
+        {/* the directory: header, search with Filters, category pills, the
+            "every community..." info card, and the live results. replaces
+            the old results section and the mission banner above it (the
+            banner's wording now lives in the section's info card). */}
+        <DirectorySection />
+      </DirectorySearchProvider>
 
       <OlideenPromo />
 

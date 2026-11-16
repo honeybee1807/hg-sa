@@ -953,10 +953,10 @@ export default function AdminPanel({ businesses, currentFeatured, featuredHistor
   // its own layout and copy, but the same Canvas approach and 1080x1080
   // size.
   //
-  // canvas text can't use the site's actual Playfair Display/Inter web
-  // fonts — next/font hosts them locally under generated, unpredictable
+  // canvas text can't use the site's actual Instrument Serif/Space Grotesk
+  // web fonts — next/font hosts them locally under generated, unpredictable
   // font-family names (see the comment in app/layout.js), not literally
-  // "Playfair Display"/"Inter" — so, like downloadGraphic() above,
+  // "Instrument Serif"/"Space Grotesk" — so, like downloadGraphic() above,
   // headings use Georgia as a serif stand-in and body text uses Arial as
   // a sans-serif stand-in.
   function downloadShareGraphic(biz) {

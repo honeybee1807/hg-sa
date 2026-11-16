@@ -5,24 +5,32 @@
 // can override the title/description, but everything else defined here
 // applies everywhere.
 
-import { Playfair_Display, Inter } from "next/font/google";
+import { Instrument_Serif, Space_Grotesk } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import DeferredStylesheet from "@/components/DeferredStylesheet";
 
-// the two fonts used across the site: Playfair Display for headings, Inter
-// for body text. next/font downloads and hosts these ourselves (instead of
-// linking to Google's servers), which is faster for visitors.
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+// the two fonts used across the site: Instrument Serif for headings, Space
+// Grotesk for body text. next/font downloads and hosts these ourselves
+// (instead of linking to Google's servers), which is faster for visitors.
+// they're wired into the rest of the site through the --font-heading and
+// --font-body tokens at the top of app/globals.css.
+//
+// Instrument Serif only comes in one weight (regular), plus a true italic —
+// which is used for the italic second lines of headings (e.g. "is closer
+// than you think.").
+const headingFont = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  weight: "400",
+  style: ["normal", "italic"],
   subsets: ["latin"],
   display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const bodyFont = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
   display: "swap",
 });
@@ -98,7 +106,7 @@ export const metadata = {
 // (like the navbar and footer below) appears on every single page.
 export default function RootLayout({ children }) {
   return (
-    <html lang="en-ZA" className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="en-ZA" className={`${headingFont.variable} ${bodyFont.variable}`}>
       <head>
         {/* "preconnect" tells the browser to start setting up a connection to
             these outside websites early, before it actually needs the files

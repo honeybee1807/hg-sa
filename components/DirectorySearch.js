@@ -1,18 +1,33 @@
 "use client";
 
-// the live search/filter box shown on the homepage above the full business
-// directory. everything here runs entirely in the browser — the full list
-// of approved businesses is already loaded on the page, and this component
-// just narrows down which ones are currently shown, based on whatever text
-// someone has typed and which filters (category / province / business type)
-// are currently applied, plus which of the three view layouts (2-column
-// grid, compact grid, or list) is currently selected. nothing is re-fetched
-// from the database as someone types, filters, or switches views.
+// the live search/filter for the homepage's business directory. everything
+// here runs entirely in the browser — the full list of approved businesses
+// is already loaded on the page, and this just narrows down which ones are
+// currently shown, based on whatever text someone has typed and which
+// filters (category / province / business type / badges) are applied, plus
+// which of the three view layouts (2-column grid, compact grid, or list) is
+// selected. nothing is re-fetched from the database as someone types,
+// filters, or switches views.
+//
+// it's split into pieces that all read one shared state, so the hero's
+// search bar and the directory section below it always agree:
+//   DirectorySearchProvider — owns the single source of truth (search
+//                             text, applied filters, the filtered list).
+//                             wraps both of the pieces below (see
+//                             app/page.js).
+//   DirectorySearchBar      — the hero's search card and Filters link
+//                             (rendered in components/Hero.js).
+//   DirectorySection        — the "Explore the directory" section under
+//                             the hero: its own search bar (bound to the
+//                             same search text), Filters button, category
+//                             pills, info card, and the results.
+// both Filters entry points render the same FilterControl, so there's one
+// copy of the filter panel logic, not two.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { CATEGORIES, PROVINCES, BUSINESS_TYPES } from "@/lib/constants";
 import SocialLink from "@/components/SocialLink";
 import BadgePills from "@/components/BadgePills";
@@ -28,12 +43,13 @@ const BADGE_FILTER_OPTIONS = [
   { key: "callouts",  label: "Call-Outs Available",    icon: "fa-solid fa-location-arrow" },
 ];
 
-// the three query-string keys the badge filters sync to/from — kept as
-// their own list (rather than category/province/business-type) since
-// those don't have URL-param support yet; see the note on "readBadgesFromUrl"
-// below.
+// the three query-string keys the badge filters sync to/from (e.g.
+// "?halal=true&delivery=true"), so a filtered view is shareable by link.
+// category/province/business type don't have URL params. app/page.js reads
+// the starting values for these from the page's own searchParams on the
+// server (it keeps its own copy of this list, since a server component
+// can't import a plain value from a "use client" file).
 const BADGE_PARAM_KEYS = ["halal", "delivery", "callouts"];
-
 
 // the three ways results can be displayed, and the localStorage key that
 // remembers whichever one someone last picked, so it's still selected next
@@ -73,48 +89,39 @@ function formatWhatsApp(raw) {
   return "27" + digitsOnly;
 }
 
-// "belowSearchBar" is optional content rendered directly under the search
-// bar and filter button, above the result count and results (the homepage
-// uses it for the mission statement banner).
-export default function DirectorySearch({ businesses, belowSearchBar = null }) {
+const DirectorySearchContext = createContext(null);
+
+function useDirectorySearch() {
+  const context = useContext(DirectorySearchContext);
+  if (!context) {
+    throw new Error("DirectorySearchBar and DirectoryResults must be inside a DirectorySearchProvider.");
+  }
+  return context;
+}
+
+// owns everything both halves need to agree on: the search text, the
+// filters currently applied, and the resulting filtered list.
+// "initialBadges" is whichever badge filters were in the URL when the page
+// loaded, read on the server by app/page.js — so a shared "?halal=true"
+// link renders already filtered, with no flash of unfiltered results.
+export function DirectorySearchProvider({ businesses, initialBadges = [], children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  // reads whichever badge filters are currently in the URL (e.g.
-  // "?halal=true&delivery=true") — used once, below, to restore a shared/
-  // refreshed link's filter state. category/province/business-type don't
-  // have URL params yet, so only these three are read here.
-  function readBadgesFromUrl() {
-    return BADGE_PARAM_KEYS.filter((key) => searchParams.get(key) === "true");
-  }
 
   const [query, setQuery] = useState(""); // whatever text is currently typed into the search box
 
   // the filters actually being applied to the results right now.
-  const [appliedCategories, setAppliedCategories]         = useState([]);
-  const [appliedProvinces, setAppliedProvinces]           = useState([]);
-  const [appliedBusinessTypes, setAppliedBusinessTypes]   = useState([]);
-  const [appliedBadges, setAppliedBadges]                 = useState(readBadgesFromUrl);
-
-  // the filters currently ticked inside the (possibly still open) filter
-  // panel — kept separate from the "applied" versions above so that ticking
-  // a checkbox doesn't change the results until "Apply Filters" is clicked.
-  const [pendingCategories, setPendingCategories]         = useState([]);
-  const [pendingProvinces, setPendingProvinces]           = useState([]);
-  const [pendingBusinessTypes, setPendingBusinessTypes]   = useState([]);
-  const [pendingBadges, setPendingBadges]                 = useState(appliedBadges);
-
-  const [filtersOpen, setFiltersOpen] = useState(false); // whether the filter panel is currently showing
-  const [openSections, setOpenSections] = useState({ category: true, province: true, businessType: true, badges: true }); // which of the panel's collapsible sections are expanded
+  const [appliedCategories, setAppliedCategories]       = useState([]);
+  const [appliedProvinces, setAppliedProvinces]         = useState([]);
+  const [appliedBusinessTypes, setAppliedBusinessTypes] = useState([]);
+  const [appliedBadges, setAppliedBadges]               = useState(initialBadges);
 
   // keeps the URL's badge query params in sync with whatever's currently
   // applied, so a filtered view is shareable via link and restores
-  // correctly on page load/refresh. only the badge filters do this for
-  // now — category/province/business-type never touch the URL, so those
-  // are left completely alone here.
+  // correctly on page load/refresh. reads the current query string straight
+  // from the address bar, so any other params already there are kept.
   function syncBadgesToUrl(badges) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     for (const key of BADGE_PARAM_KEYS) {
       if (badges.includes(key)) params.set(key, "true");
       else params.delete(key);
@@ -123,117 +130,27 @@ export default function DirectorySearch({ businesses, belowSearchBar = null }) {
     router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
   }
 
-  // which of the three layouts is currently selected. starts as "list"
-  // (the default) so the very first server-rendered frame is predictable —
-  // the effect below then swaps in whatever was actually saved from a
-  // previous visit, once the page has loaded in the browser.
-  const [view, setView] = useState("list");
-  const [isMobile, setIsMobile] = useState(false); // whether the screen is currently narrow enough to hide the compact-grid option
-
-  const filterWrapRef = useRef(null); // points at the button + panel together, used to detect clicks landing outside both
-
-  // on first load in the browser, restore whichever view was saved from a
-  // previous visit (if any, and if it's still one of the three valid ones).
-  useEffect(() => {
-    function restoreSavedView() {
-      const savedView = window.localStorage.getItem(VIEW_STORAGE_KEY);
-      if (savedView && VALID_VIEWS.has(savedView)) {
-        setView(savedView);
-      }
-    }
-    restoreSavedView();
-  }, []);
-
-  // every time the view changes, remember it for next time.
-  useEffect(() => {
-    window.localStorage.setItem(VIEW_STORAGE_KEY, view);
-  }, [view]);
-
-  // tracks whether the screen is currently narrow enough that the compact
-  // grid option should be hidden (see the "effectiveView" fallback below).
-  useEffect(() => {
-    const mobileQuery = window.matchMedia("(max-width: 768px)");
-
-    function handleChange(query) {
-      setIsMobile(query.matches);
-    }
-    handleChange(mobileQuery);
-    mobileQuery.addEventListener("change", handleChange);
-    return () => mobileQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  // closes the filter panel if someone clicks anywhere outside it, or
-  // presses Escape — but only while it's actually open, so these listeners
-  // aren't sitting on the page doing nothing the rest of the time.
-  useEffect(() => {
-    if (!filtersOpen) return;
-
-    function handleClickOutside(event) {
-      if (filterWrapRef.current && !filterWrapRef.current.contains(event.target)) {
-        setFiltersOpen(false);
-      }
-    }
-    function handleEscape(event) {
-      if (event.key === "Escape") setFiltersOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [filtersOpen]);
-
-  // the compact grid doesn't make sense on a narrow screen (there's no room
-  // for 3-4 columns), so on mobile it quietly falls back to list view
-  // instead — without touching the actual saved preference, so the compact
-  // grid is exactly where they left it next time they're back on a wider
-  // screen.
-  const effectiveView = view === "compact" && isMobile ? "list" : view;
-
-  // opening the panel copies whatever's currently applied into the pending
-  // (checkbox) state, so re-opening it after closing without applying shows
-  // the last applied selection rather than a half-finished one.
-  function handleToggleFilters() {
-    setFiltersOpen((currentlyOpen) => {
-      if (!currentlyOpen) {
-        setPendingCategories(appliedCategories);
-        setPendingProvinces(appliedProvinces);
-        setPendingBusinessTypes(appliedBusinessTypes);
-        setPendingBadges(appliedBadges);
-      }
-      return !currentlyOpen;
-    });
+  function applyFilters({ categories, provinces, businessTypes, badges }) {
+    setAppliedCategories(categories);
+    setAppliedProvinces(provinces);
+    setAppliedBusinessTypes(businessTypes);
+    setAppliedBadges(badges);
+    syncBadgesToUrl(badges);
   }
 
-  function toggleSection(section) {
-    setOpenSections((previous) => ({ ...previous, [section]: !previous[section] }));
-  }
-
-  function handleApplyFilters() {
-    setAppliedCategories(pendingCategories);
-    setAppliedProvinces(pendingProvinces);
-    setAppliedBusinessTypes(pendingBusinessTypes);
-    setAppliedBadges(pendingBadges);
-    syncBadgesToUrl(pendingBadges);
-    setFiltersOpen(false);
+  // used by the category pills in DirectorySection: sets the exact same
+  // category filter the filter panel uses (a name from CATEGORIES), or
+  // clears it when null ("All listings"). only categories change — no URL
+  // update is needed, since categories don't have URL params.
+  function setCategoryFilter(categoryName) {
+    setAppliedCategories(categoryName ? [categoryName] : []);
   }
 
   // resets absolutely everything — the keyword search box included — back
   // to a completely unfiltered directory.
-  function handleClearAll() {
+  function clearAll() {
     setQuery("");
-    setPendingCategories([]);
-    setPendingProvinces([]);
-    setPendingBusinessTypes([]);
-    setPendingBadges([]);
-    setAppliedCategories([]);
-    setAppliedProvinces([]);
-    setAppliedBusinessTypes([]);
-    setAppliedBadges([]);
-    syncBadgesToUrl([]);
-    setFiltersOpen(false);
+    applyFilters({ categories: [], provinces: [], businessTypes: [], badges: [] });
   }
 
   const activeFilterCount = appliedCategories.length + appliedProvinces.length + appliedBusinessTypes.length + appliedBadges.length;
@@ -267,96 +184,435 @@ export default function DirectorySearch({ businesses, belowSearchBar = null }) {
     });
   }, [businesses, query, appliedCategories, appliedProvinces, appliedBusinessTypes, appliedBadges]);
 
+  const value = {
+    businesses,
+    filtered,
+    query,
+    setQuery,
+    appliedCategories,
+    appliedProvinces,
+    appliedBusinessTypes,
+    appliedBadges,
+    activeFilterCount,
+    applyFilters,
+    setCategoryFilter,
+    clearAll,
+  };
+
+  return <DirectorySearchContext.Provider value={value}>{children}</DirectorySearchContext.Provider>;
+}
+
+// the id on DirectorySection's outer <section>, so the hero search bar's
+// "Find a gem" button knows where to scroll to.
+const DIRECTORY_SECTION_ID = "directory";
+
+// smooth-scrolls to the directory section (or jumps, for anyone whose
+// device asks for reduced motion).
+function scrollToDirectory() {
+  const section = document.getElementById(DIRECTORY_SECTION_ID);
+  if (!section) return;
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  section.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+}
+
+// the Filters button plus the existing filter panel (Category, Province,
+// Business Type, badges, "Clear all", "Apply Filters"). rendered in two
+// places — the hero (as a small text link) and the directory section's
+// search bar (as a button with a count badge) — but both read and write
+// the same applied filters from the provider, so they always agree. the
+// panel's checkboxes are "pending" until Apply Filters is clicked — only
+// then are they handed to the provider and the results change.
+//   variant — "link" (hero) or "button" (directory section)
+function FilterControl({ variant }) {
+  const {
+    appliedCategories,
+    appliedProvinces,
+    appliedBusinessTypes,
+    appliedBadges,
+    activeFilterCount,
+    applyFilters,
+    clearAll,
+  } = useDirectorySearch();
+
+  // the filters currently ticked inside the (possibly still open) filter
+  // panel — kept separate from the "applied" versions so that ticking a
+  // checkbox doesn't change the results until "Apply Filters" is clicked.
+  const [pendingCategories, setPendingCategories]       = useState([]);
+  const [pendingProvinces, setPendingProvinces]         = useState([]);
+  const [pendingBusinessTypes, setPendingBusinessTypes] = useState([]);
+  const [pendingBadges, setPendingBadges]               = useState(appliedBadges);
+
+  const [filtersOpen, setFiltersOpen] = useState(false); // whether the filter panel is currently showing
+  const [openSections, setOpenSections] = useState({ category: true, province: true, businessType: true, badges: true }); // which of the panel's collapsible sections are expanded
+
+  const filterWrapRef = useRef(null); // points at the button + panel together, used to detect clicks landing outside both
+
+  // closes the filter panel if someone clicks anywhere outside it, or
+  // presses Escape — but only while it's actually open, so these listeners
+  // aren't sitting on the page doing nothing the rest of the time.
+  useEffect(() => {
+    if (!filtersOpen) return;
+
+    function handleClickOutside(event) {
+      if (filterWrapRef.current && !filterWrapRef.current.contains(event.target)) {
+        setFiltersOpen(false);
+      }
+    }
+    function handleEscape(event) {
+      if (event.key === "Escape") setFiltersOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [filtersOpen]);
+
+  // opening the panel copies whatever's currently applied into the pending
+  // (checkbox) state, so re-opening it after closing without applying shows
+  // the last applied selection (including a category picked from the
+  // pills) rather than a half-finished one.
+  function handleToggleFilters() {
+    setFiltersOpen((currentlyOpen) => {
+      if (!currentlyOpen) {
+        setPendingCategories(appliedCategories);
+        setPendingProvinces(appliedProvinces);
+        setPendingBusinessTypes(appliedBusinessTypes);
+        setPendingBadges(appliedBadges);
+      }
+      return !currentlyOpen;
+    });
+  }
+
+  function toggleSection(section) {
+    setOpenSections((previous) => ({ ...previous, [section]: !previous[section] }));
+  }
+
+  function handleApplyFilters() {
+    applyFilters({
+      categories: pendingCategories,
+      provinces: pendingProvinces,
+      businessTypes: pendingBusinessTypes,
+      badges: pendingBadges,
+    });
+    setFiltersOpen(false);
+  }
+
+  function handleClearAll() {
+    setPendingCategories([]);
+    setPendingProvinces([]);
+    setPendingBusinessTypes([]);
+    setPendingBadges([]);
+    clearAll();
+    setFiltersOpen(false);
+  }
+
   return (
-    <div className="dir-search">
-      <div className="dir-search-top">
-        {/* "onSubmit" here just stops the browser's default full-page-reload
-            behaviour — filtering already happens live as "query" changes,
-            so pressing Enter or clicking the search button don't need to
-            do anything extra beyond that. */}
-        <form className="dir-search-bar" onSubmit={(event) => event.preventDefault()}>
-          <div className="dir-search-pill">
-            <i className="fa-solid fa-magnifying-glass dir-search-pill-icon" aria-hidden="true" />
-            <input
-              type="text"
-              className="dir-search-pill-input"
-              placeholder="Search by name, category or area..."
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              aria-label="Search the directory"
-            />
-            <button type="submit" className="dir-search-pill-btn" aria-label="Search">
-              <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+    <div className={`dir-filter-wrap dir-filter-wrap--${variant}`} ref={filterWrapRef}>
+      {variant === "link" ? (
+        <button
+          type="button"
+          className={`hsb-filter-btn ${filtersOpen ? "hsb-filter-btn--active" : ""}`}
+          onClick={handleToggleFilters}
+          aria-expanded={filtersOpen}
+        >
+          <i className="fa-solid fa-sliders" aria-hidden="true" />
+          <span>
+            Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          className={`dsec-filter-btn ${filtersOpen ? "dsec-filter-btn--active" : ""}`}
+          onClick={handleToggleFilters}
+          aria-expanded={filtersOpen}
+          aria-label={activeFilterCount > 0 ? `Filters, ${activeFilterCount} active` : "Filters"}
+        >
+          <i className="fa-solid fa-sliders" aria-hidden="true" />
+          <span className="dsec-filter-btn-label">Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="dsec-filter-count" aria-hidden="true">{activeFilterCount}</span>
+          )}
+        </button>
+      )}
+
+      {filtersOpen && (
+        <div className="dir-filter-panel" role="dialog" aria-label="Filter businesses">
+          <FilterSection
+            title="Category"
+            isOpen={openSections.category}
+            onToggle={() => toggleSection("category")}
+            options={CATEGORIES.map((c) => c.name)}
+            selected={pendingCategories}
+            onChange={setPendingCategories}
+          />
+          <FilterSection
+            title="Province"
+            isOpen={openSections.province}
+            onToggle={() => toggleSection("province")}
+            options={PROVINCES}
+            selected={pendingProvinces}
+            onChange={setPendingProvinces}
+          />
+          <FilterSection
+            title="Business Type"
+            isOpen={openSections.businessType}
+            onToggle={() => toggleSection("businessType")}
+            options={BUSINESS_TYPES}
+            selected={pendingBusinessTypes}
+            onChange={setPendingBusinessTypes}
+          />
+          <BadgeFilterSection
+            isOpen={openSections.badges}
+            onToggle={() => toggleSection("badges")}
+            selected={pendingBadges}
+            onChange={setPendingBadges}
+          />
+
+          <div className="dir-filter-actions">
+            <button type="button" className="btn-secondary" onClick={handleClearAll}>
+              Clear all
+            </button>
+            <button type="button" className="btn-primary" onClick={handleApplyFilters}>
+              Apply Filters
             </button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// the hero's search card (icon, input, "Find a gem" button) plus a small
+// Filters link underneath. the input is bound to the same shared "query"
+// as the directory section's own search bar, so typing in either updates
+// both. pressing Enter or clicking "Find a gem" smooth-scrolls down to the
+// directory section, where the results are already filtered.
+export function DirectorySearchBar() {
+  const { query, setQuery } = useDirectorySearch();
+
+  // the input is blurred first so a phone's on-screen keyboard closes and
+  // doesn't cover the results.
+  function handleSubmit(event) {
+    event.preventDefault();
+    event.currentTarget.querySelector("input")?.blur();
+    scrollToDirectory();
+  }
+
+  return (
+    <div className="hsb">
+      <form className="hsb-card" role="search" onSubmit={handleSubmit}>
+        <i className="fa-solid fa-magnifying-glass hsb-icon" aria-hidden="true" />
+        <input
+          type="text"
+          className="hsb-input"
+          placeholder="What are you looking for?"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          aria-label="Search the directory"
+          enterKeyHint="search"
+        />
+        {/* the full label is swapped for a shorter one on narrow phones
+            (see .hsb-btn-label--short in globals.css), so the bar always
+            fits on one row. */}
+        <button type="submit" className="hsb-btn" aria-label="Find a gem">
+          <span className="hsb-btn-label hsb-btn-label--full">Find a gem</span>
+          <span className="hsb-btn-label hsb-btn-label--short">Find</span>
+          {/* a plain "↗" character: Font Awesome 6.5.1's free set has no
+              simple up-right arrow icon. */}
+          <span className="hsb-btn-arrow" aria-hidden="true">↗</span>
+        </button>
+      </form>
+
+      <div className="hsb-filters">
+        <FilterControl variant="link" />
+      </div>
+    </div>
+  );
+}
+
+// the "Explore the directory" section directly below the hero: header,
+// search bar with Filters, category pills, then a two-column layout — a
+// dark info card on the left (moved below the results on mobile) and the
+// live results on the right.
+export function DirectorySection() {
+  const { query, setQuery, appliedCategories, setCategoryFilter } = useDirectorySearch();
+
+  // when someone arrives via a "/#directory" link from another page (the
+  // footer's "Directory" link), Next.js shows the loading screen first and
+  // tries to jump to #directory before this section exists — so it gives
+  // up and leaves the page at the top. once the section is actually on the
+  // page, finish that jump here.
+  useEffect(() => {
+    if (window.location.hash !== `#${DIRECTORY_SECTION_ID}`) return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(DIRECTORY_SECTION_ID)?.scrollIntoView({ block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  return (
+    <section className="dsec" id={DIRECTORY_SECTION_ID} aria-labelledby="dsec-heading">
+      <div className="container">
+        <header className="dsec-header">
+          <p className="dsec-eyebrow">
+            <i className="fa-solid fa-diamond" aria-hidden="true" /> Explore the directory
+          </p>
+          <h2 id="dsec-heading" className="dsec-title">
+            <span>Your next local favourite</span>
+            <em>is closer than you think.</em>
+          </h2>
+        </header>
+
+        {/* the same shared search text as the hero's bar. Enter does
+            nothing extra here: results already filter live as you type. */}
+        <form className="dsec-search" role="search" onSubmit={(event) => event.preventDefault()}>
+          <i className="fa-solid fa-magnifying-glass dsec-search-icon" aria-hidden="true" />
+          <input
+            type="text"
+            className="dsec-search-input"
+            placeholder="Search a business, service or keyword"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label="Search a business, service or keyword"
+            enterKeyHint="search"
+          />
+          <FilterControl variant="button" />
         </form>
 
-        <div className="dir-filter-wrap" ref={filterWrapRef}>
-          <button
-            type="button"
-            className={`dir-filter-btn ${filtersOpen ? "dir-filter-btn--active" : ""}`}
-            onClick={handleToggleFilters}
-            aria-expanded={filtersOpen}
-          >
-            <i className="fa-solid fa-sliders" aria-hidden="true" />
-            <span className="dir-filter-btn-label">
-              Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
-            </span>
-          </button>
-
-          {filtersOpen && (
-            <div className="dir-filter-panel" role="dialog" aria-label="Filter businesses">
-              <FilterSection
-                title="Category"
-                isOpen={openSections.category}
-                onToggle={() => toggleSection("category")}
-                options={CATEGORIES.map((c) => c.name)}
-                selected={pendingCategories}
-                onChange={setPendingCategories}
-              />
-              <FilterSection
-                title="Province"
-                isOpen={openSections.province}
-                onToggle={() => toggleSection("province")}
-                options={PROVINCES}
-                selected={pendingProvinces}
-                onChange={setPendingProvinces}
-              />
-              <FilterSection
-                title="Business Type"
-                isOpen={openSections.businessType}
-                onToggle={() => toggleSection("businessType")}
-                options={BUSINESS_TYPES}
-                selected={pendingBusinessTypes}
-                onChange={setPendingBusinessTypes}
-              />
-              <BadgeFilterSection
-                isOpen={openSections.badges}
-                onToggle={() => toggleSection("badges")}
-                selected={pendingBadges}
-                onChange={setPendingBadges}
-              />
-
-              <div className="dir-filter-actions">
-                <button type="button" className="btn-secondary" onClick={handleClearAll}>
-                  Clear all
+        {/* category pills: the same category filter the panel uses. a pill
+            reads as active when its category is applied (the panel can
+            apply several at once); "All listings" when none is. */}
+        <div className="dsec-pills-wrap">
+          <div className="dsec-pills" role="group" aria-label="Filter by category">
+            <button
+              type="button"
+              className={`dsec-pill ${appliedCategories.length === 0 ? "dsec-pill--active" : ""}`}
+              aria-pressed={appliedCategories.length === 0}
+              onClick={() => setCategoryFilter(null)}
+            >
+              All listings
+            </button>
+            {CATEGORIES.map((category) => {
+              const isActive = appliedCategories.includes(category.name);
+              return (
+                <button
+                  key={category.slug}
+                  type="button"
+                  className={`dsec-pill ${isActive ? "dsec-pill--active" : ""}`}
+                  aria-pressed={isActive}
+                  onClick={() => setCategoryFilter(category.name)}
+                >
+                  {category.name}
                 </button>
-                <button type="button" className="btn-primary" onClick={handleApplyFilters}>
-                  Apply Filters
-                </button>
-              </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="dsec-layout">
+          {/* results come first in the page order, so on a phone people
+              see businesses before the info card; on desktop the grid puts
+              the info card back in the left-hand column. */}
+          <div className="dsec-results">
+            <DirectoryResultsList />
+          </div>
+
+          <aside className="dsec-aside">
+            <div className="dsec-info">
+              <span className="dsec-info-icon" aria-hidden="true">
+                <i className="fa-solid fa-diamond" />
+              </span>
+              <h3 className="dsec-info-title">Every community has businesses worth discovering.</h3>
+              <p>
+                Hidden Gems SA exists to shine a light on the local and independent
+                businesses that make our communities special.
+              </p>
+              <p>
+                From home bakers and tutors to mechanics, transport operators, creatives
+                and family-run businesses, we&apos;re making it easier for people to
+                discover what&apos;s already around them and support local.
+              </p>
+              <p>
+                Because sometimes, the best businesses aren&apos;t the biggest ones.
+                They&apos;re the hidden gems right next door.
+              </p>
+              <nav className="dsec-info-links" aria-label="Browse the directory">
+                <Link href="/towns" className="dsec-info-link">
+                  Explore by area <span aria-hidden="true">↗</span>
+                </Link>
+                <Link href="/categories" className="dsec-info-link">
+                  See all categories <span aria-hidden="true">↗</span>
+                </Link>
+              </nav>
             </div>
-          )}
+            <p className="dsec-update">
+              Already listed?{" "}
+              <Link href="/edit">Update your business details ↗</Link>
+            </p>
+          </aside>
         </div>
       </div>
+    </section>
+  );
+}
 
-      {belowSearchBar && <div className="dir-below-search">{belowSearchBar}</div>}
+// the result count, the (small) view toggle, and the results themselves.
+function DirectoryResultsList() {
+  const { businesses, filtered } = useDirectorySearch();
 
-      <div className="dir-view-toggle-row">
-        <p className="dir-search-count">
+  // which of the three layouts is currently selected. starts as "grid2"
+  // (the new card grid) so the very first server-rendered frame is
+  // predictable — the effect below then swaps in whatever was actually
+  // saved from a previous visit, once the page has loaded in the browser.
+  const [view, setView] = useState("grid2");
+  const [isMobile, setIsMobile] = useState(false); // whether the screen is currently narrow enough to hide the compact-grid option
+
+  // on first load in the browser, restore whichever view was saved from a
+  // previous visit (if any, and if it's still one of the three valid ones).
+  useEffect(() => {
+    function restoreSavedView() {
+      const savedView = window.localStorage.getItem(VIEW_STORAGE_KEY);
+      if (savedView && VALID_VIEWS.has(savedView)) {
+        setView(savedView);
+      }
+    }
+    restoreSavedView();
+  }, []);
+
+  // every time the view changes, remember it for next time.
+  useEffect(() => {
+    window.localStorage.setItem(VIEW_STORAGE_KEY, view);
+  }, [view]);
+
+  // tracks whether the screen is currently narrow enough that the compact
+  // grid option should be hidden (see the "effectiveView" fallback below).
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(max-width: 768px)");
+
+    function handleChange(query) {
+      setIsMobile(query.matches);
+    }
+    handleChange(mobileQuery);
+    mobileQuery.addEventListener("change", handleChange);
+    return () => mobileQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  // the compact grid doesn't make sense on a narrow screen, so on mobile it
+  // quietly falls back to the card grid instead — without touching the
+  // actual saved preference.
+  const effectiveView = view === "compact" && isMobile ? "grid2" : view;
+
+  return (
+    <>
+      <div className="dsec-count-row">
+        <p className="dsec-count">
           {businesses.length === 0
             ? "No approved listings yet — be the first!"
-            : `${filtered.length} ${filtered.length === 1 ? "business" : "businesses"} found`}
+            : `${filtered.length} ${filtered.length === 1 ? "business" : "businesses"} to discover`}
         </p>
 
         <div className="dir-view-toggle" role="group" aria-label="Choose how results are displayed">
@@ -398,7 +654,7 @@ export default function DirectorySearch({ businesses, belowSearchBar = null }) {
           {filtered.map((biz) =>
             effectiveView === "list"
               ? <DirectoryRow key={biz.id} biz={biz} />
-              : <DirectoryCard key={biz.id} biz={biz} compact={effectiveView === "compact"} />
+              : <GemCard key={biz.id} biz={biz} compact={effectiveView === "compact"} />
           )}
         </div>
       ) : (
@@ -411,7 +667,7 @@ export default function DirectorySearch({ businesses, belowSearchBar = null }) {
           </p>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -508,53 +764,45 @@ function BadgeFilterSection({ isOpen, onToggle, selected, onChange }) {
   );
 }
 
-// a single business shown as a card — used for both the 2-column grid and
-// the compact grid, which differ only in size (via the "compact" flag)
-// rather than in what information they show.
-function DirectoryCard({ biz, compact }) {
+// a single business shown as a card — used for both the card grid and the
+// compact grid, which differ only in size (via the "compact" flag). the
+// whole card is one link to the business's own page.
+function GemCard({ biz, compact }) {
   const initial = biz.name[0].toUpperCase();
   // some older records may store the area with extra text after it (like
   // "Estcourt, KwaZulu-Natal" instead of just "Estcourt") — only the part
   // before the first comma is the actual area name.
   const areaName = biz.area.split(",")[0].trim();
-  const socialSize = compact ? "sm" : "md";
 
   return (
-    <div className={`dir-card ${compact ? "dir-card--compact" : ""}`}>
-      <Link href={`/business/${biz.slug}`} className="dir-card-link">
-        <div className="dir-card-top">
-          <div className="dir-card-logo">
-            {biz.logo_url ? (
-              <Image src={biz.logo_url} alt={`${biz.name} logo`} width={56} height={56} className="avatar" />
-            ) : (
-              <div className="avatar-monogram">{initial}</div>
-            )}
-          </div>
-          <div className="dir-card-heading">
-            <h3 className="dir-card-name">{biz.name}</h3>
-            <p className="dir-card-location">
-              <i className="fa-solid fa-location-dot" aria-hidden="true" /> {areaName}, {biz.province}
-            </p>
-          </div>
-        </div>
+    <Link href={`/business/${biz.slug}`} className={`gem-card ${compact ? "gem-card--compact" : ""}`}>
+      <div className="gem-card-banner">
+        {biz.logo_url ? (
+          <Image
+            src={biz.logo_url}
+            alt={`${biz.name} logo`}
+            width={72}
+            height={72}
+            sizes="72px"
+            className="gem-card-logo"
+          />
+        ) : (
+          <div className="avatar-monogram gem-card-monogram" aria-hidden="true">{initial}</div>
+        )}
+      </div>
 
-        <div className="dir-card-tags">
-          <span className="dir-card-cat-pill"><i className="fa-solid fa-tag" aria-hidden="true" /> {biz.category}</span>
-          {biz.business_type && <span className="business-type-badge">{biz.business_type}</span>}
-        </div>
-
+      <div className="gem-card-body">
+        <p className="gem-card-meta">{biz.category} · {areaName}</p>
+        <h3 className="gem-card-name">{biz.name}</h3>
+        {biz.description && <p className="gem-card-desc">{biz.description}</p>}
         <BadgePills biz={biz} />
+      </div>
 
-        {biz.description && <p className="dir-card-desc">{biz.description}</p>}
-      </Link>
-
-      {(biz.instagram || biz.facebook) && (
-        <div className="dir-card-actions">
-          <SocialLink platform="instagram" value={biz.instagram} className={`social-icon-btn social-icon-btn--instagram social-icon-btn--${socialSize}`} iconOnly />
-          <SocialLink platform="facebook" value={biz.facebook} className={`social-icon-btn social-icon-btn--facebook social-icon-btn--${socialSize}`} iconOnly />
-        </div>
-      )}
-    </div>
+      <div className="gem-card-footer">
+        <span>Listed on Hidden Gems SA</span>
+        <span className="gem-card-arrow" aria-hidden="true">↗</span>
+      </div>
+    </Link>
   );
 }
 

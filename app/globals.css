@@ -11,15 +11,13 @@
   --aquamarine:     #2EC4B6;
   --pearl:          #F5F0EB;
 
-  /* the header and footer both use this one fixed navy, rather than each
-     borrowing a colour from whatever section happens to sit next to them
-     (the footer previously matched the CTA band above it exactly, so the
-     two visually merged into one block) — this keeps them reading as a
-     consistent, distinct "chrome" bookending the page. */
+  /* the header's fixed navy. the footer is now light lavender (see the
+     footer section), but uses this navy for its tagline and nav links. */
   --chrome-navy:    #0A1730;
 
-  --font-heading: var(--font-playfair), "Playfair Display", Georgia, serif;
-  --font-body:    var(--font-inter), Inter, system-ui, sans-serif;
+  /* the fonts themselves are loaded in app/layout.js (next/font) */
+  --font-heading: var(--font-instrument-serif), "Instrument Serif", Georgia, serif;
+  --font-body:    var(--font-space-grotesk), "Space Grotesk", system-ui, sans-serif;
 
   --max-width: 1200px;
   --radius:    8px;
@@ -39,9 +37,22 @@ html {
   scroll-behavior: smooth;
 }
 
+/* the heading font (Instrument Serif) only has a regular weight. headings
+   all over the site ask for bold (600–800), and without this the browser
+   would fake it by smearing the letters thicker. this tells it to just use
+   the real regular weight instead. the body font has real weights up to
+   bold, so body text is unaffected. */
+html { font-synthesis-weight: none; }
+
 html, body {
   max-width: 100vw;
+  /* stops any sideways scrolling. "clip" rather than "hidden": hidden on
+     both html and body turns body into its own (never-scrolling) scroll
+     box, which silently breaks position: sticky everywhere on the page
+     (e.g. the directory section's info card). older browsers without
+     "clip" support just keep the "hidden" line above it. */
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -215,21 +226,12 @@ h1, h2, h3, h4, h5, h6 {
   gap: 1.5rem;
 }
 
-.grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
-}
-
 @media (max-width: 900px) {
   .grid-3 { grid-template-columns: repeat(2, 1fr); }
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 560px) {
-  .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  /* category cards stay 2-col on mobile — looks better than a single column */
-  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: 1fr; }
 }
 
 /* ─── form elements ────────────────────────────────────────────────── */
@@ -648,72 +650,6 @@ h1, h2, h3, h4, h5, h6 {
   .featured-gem-badge { right: 50%; transform: translate(50%, -50%); }
 }
 
-/* ─── category cards ───────────────────────────────────────────────── */
-.category-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 1.75rem 1rem 1.5rem;
-  border-radius: 14px;
-  text-align: center;
-  text-decoration: none;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
-}
-
-.cat-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-  color: #fff;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  flex-shrink: 0;
-}
-
-.cat-name {
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.category-card:hover { transform: translateY(-6px); }
-.category-card:hover .cat-icon { transform: scale(1.1) rotate(-3deg); }
-
-/* ─── town pills ───────────────────────────────────────────────────── */
-.towns-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: center;
-}
-
-.town-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.6rem 1.35rem;
-  background: #fff;
-  border: 1.5px solid var(--sapphire-light);
-  border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--sapphire);
-  text-decoration: none;
-  transition: background 0.25s, color 0.25s, border-color 0.25s, box-shadow 0.25s, transform 0.25s;
-}
-
-.town-pill:hover {
-  background: linear-gradient(120deg, var(--sapphire), var(--aquamarine));
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 14px rgba(15, 82, 186, 0.35);
-  transform: translateY(-2px);
-}
-
 /* ─── faq ──────────────────────────────────────────────────────────── */
 .faq-list { display: flex; flex-direction: column; gap: 0.75rem; }
 
@@ -784,80 +720,161 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .cta-band p  { color: rgba(255,255,255,0.8); }
 
 /* ─── footer ───────────────────────────────────────────────────────── */
+/* light lavender footer — see components/Footer.js. top row: logo,
+   tagline, "Back to top"; a hairline; bottom row: nav links, the Olideen
+   credit, and a small muted stack (disclaimer / edit listing / ©). */
 .footer {
-  background: var(--chrome-navy);
-  color: rgba(255,255,255,0.75);
-  padding: 3rem 0 2rem;
+  --footer-ink:   var(--chrome-navy);   /* tagline line 1 + nav links: navy, almost black */
+  --footer-muted: #7A7690;              /* right-hand stack + "Back to top" */
+  --footer-rule:  #E6E2F0;              /* the hairline */
+  background: #FAF9FF;
+  /* a faint edge, so the footer still reads as its own block on pages
+     whose own background is nearly the same light tone */
+  border-top: 1px solid var(--footer-rule);
+  color: var(--footer-muted);
+  padding: 3.5rem 0 2.5rem;
   margin-top: auto;
 }
 
-.footer-inner {
+/* both rows share the same three columns, so the centre items line up */
+.footer-top,
+.footer-bottom {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 3rem;
-  align-items: start;
+  grid-template-columns: 1fr auto 1fr;
+  column-gap: 2rem;
 }
 
-.footer-title {
+.footer-top { align-items: center; }
+.footer-bottom { align-items: end; }
+
+.footer-logo { justify-self: start; display: block; line-height: 0; }
+
+.footer-tagline {
+  margin: 0;
+  text-align: center;
   font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #fff;
-  display: block;
-  margin-bottom: 0.4rem;
+  font-size: clamp(1.75rem, 2.8vw, 2.5rem);
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--footer-ink);
 }
 
-.footer-links {
+.footer-tagline span,
+.footer-tagline em { display: block; }
+.footer-tagline em { font-style: italic; color: var(--amethyst); }
+
+.footer-back-to-top {
+  justify-self: end;
+  font-size: 0.85rem;
+  color: var(--footer-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.footer-back-to-top:hover { color: var(--footer-ink); }
+
+/* the hairline, across the full content width */
+.footer-rule {
+  height: 0;
+  margin: 2.75rem 0 1.75rem;
+  border: 0;
+  border-top: 1px solid var(--footer-rule);
+}
+
+.footer-nav {
+  justify-self: start;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
 }
 
-.footer-links a {
-  font-size: 0.9rem;
-  color: rgba(255,255,255,0.7);
-  transition: color 0.2s;
+.footer-nav a {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--footer-ink);
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-.footer-links a:hover { color: #fff; }
-
-.footer-brand-mark {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.5rem;
-}
+.footer-nav a:hover { color: var(--amethyst); }
 
 .footer-credit {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--amethyst);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.footer-credit:hover { color: #7A4FA6; } /* a slightly deeper amethyst */
+
+.footer-meta {
+  justify-self: end;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  font-size: 0.8rem;
 }
 
-.footer-built-by {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.35);
+.footer-meta a {
+  color: var(--footer-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-.footer-ot-link {
-  display: block;
-  transition: opacity 0.2s;
+.footer-meta a:hover { color: var(--footer-ink); }
+
+.footer-copy { margin: 0; color: var(--footer-muted); }
+
+.footer a:focus-visible {
+  outline: 2px solid var(--amethyst);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
-.footer-ot-link:hover { opacity: 0.85; }
+/* tablets and phones: one centred column — logo, tagline, back to top,
+   hairline, nav, credit, then the disclaimer / edit / © stack */
+@media (max-width: 860px) {
+  .footer { padding: 2.75rem 0 2rem; }
 
-.footer-copy { font-size: 0.78rem; color: rgba(255,255,255,0.35); }
+  .footer-top,
+  .footer-bottom {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
 
-.footer-edit-link {
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.35);
-  text-decoration: underline;
-  text-decoration-color: rgba(255,255,255,0.2);
+  .footer-top    { row-gap: 1rem; }
+  .footer-bottom { row-gap: 0.75rem; }
+
+  .footer-logo,
+  .footer-back-to-top,
+  .footer-nav,
+  .footer-meta { justify-self: center; }
+
+  .footer-tagline { font-size: clamp(1.6rem, 6.4vw, 2.1rem); }
+
+  .footer-rule { width: 100%; margin: 1.5rem 0 1rem; }
+
+  .footer-nav { justify-content: center; gap: 0 1.25rem; }
+  .footer-meta { align-items: center; gap: 0; }
+
+  /* comfortable tap targets (at least 40px tall) */
+  .footer-back-to-top,
+  .footer-nav a,
+  .footer-credit,
+  .footer-meta a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em; /* keeps the space before the ↑ / ↗ arrows */
+    min-height: 40px;
+  }
+
+  .footer-copy { margin-top: 0.5rem; }
 }
-.footer-edit-link:hover { color: rgba(255,255,255,0.6); }
 
 /* ─── olideen logo pulse animation ─────────────────────────────── */
 @keyframes otLogoPulse {
@@ -878,38 +895,11 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 @media (max-width: 720px) {
-  .footer {
-    padding: 2rem 0 1.5rem;
-  }
-  .footer-inner {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-    text-align: center;
-  }
-  .footer-brand-mark { justify-content: center; }
-  .footer-links {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.4rem 1.5rem;
-    justify-items: center;
-  }
-  .footer-credit {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.4rem 1rem;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 1.25rem;
-  }
+  /* the Olideen logo in the homepage promo (components/OlideenPromo.js) */
   .ot-logo-pulse {
     width: 80px !important;
     height: auto !important;
     animation: none;
-  }
-  .footer-copy {
-    width: 100%;
-    margin-top: 0.1rem;
   }
 }
 
@@ -2485,10 +2475,6 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   background: #fff;
 }
 
-.home-section--inset {
-  background: #F5F0EB;
-}
-
 /* bigger, warmer section headings on white */
 .home-section-header {
   text-align: center;
@@ -2512,30 +2498,6 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   margin: 0 auto;
 }
 
-/* ── rose outline button (replaces ghost-white on light bg) ─────── */
-.btn-rose-outline {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1.75rem;
-  border: 1.5px solid var(--amethyst);
-  border-radius: 10px;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--amethyst);
-  background: transparent;
-  text-decoration: none;
-  transition: background 0.22s, color 0.22s, box-shadow 0.22s;
-}
-
-.btn-rose-outline:hover {
-  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 4px 18px rgba(153,102,204,0.35);
-}
-
 /* keep ghost-white available for hero dark sections */
 .btn-ghost-white {
   display: inline-flex;
@@ -2557,78 +2519,6 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   border-color: rgba(255,255,255,0.5);
   color: #fff;
   background: rgba(255,255,255,0.07);
-}
-
-/* ── category cards (warm light) ────────────────────────────────── */
-.home-wrap .category-card {
-  background: #fff;
-  border: 1.5px solid #E1E8F4;
-  color: var(--sapphire-deep);
-  box-shadow: 0 4px 12px rgba(8,43,102,0.08);
-  padding: 2rem 1rem 1.75rem;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, border-color 0.22s ease;
-}
-
-.home-wrap .cat-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
-  font-size: 1.6rem;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  transition: box-shadow 0.22s ease, filter 0.22s ease, transform 0.22s ease;
-}
-
-.home-wrap .cat-name {
-  color: var(--sapphire-deep);
-  font-size: 0.92rem;
-  font-weight: 700;
-  transition: color 0.22s;
-}
-
-.home-wrap .cat-desc {
-  color: #6b7280;
-  font-size: 0.78rem;
-  font-weight: 400;
-  line-height: 1.4;
-  margin-top: 0.25rem;
-  transition: color 0.22s;
-}
-
-.home-wrap .category-card:hover {
-  background: #F3ECFA;
-  border-color: var(--amethyst);
-  box-shadow: 0 8px 28px rgba(153,102,204,0.18);
-  transform: translateY(-4px);
-}
-
-.home-wrap .category-card:hover .cat-name {
-  color: var(--amethyst);
-}
-
-.home-wrap .category-card:hover .cat-desc {
-  color: #7A4FA6;
-}
-
-.home-wrap .category-card:hover .cat-icon {
-  box-shadow: 0 10px 28px rgba(153,102,204,0.28);
-  filter: brightness(1.12);
-  transform: scale(1.06) rotate(-2deg);
-}
-
-/* ── town pills (warm light) ─────────────────────────────────────── */
-.home-wrap .town-pill {
-  background: #fff;
-  border-color: #DCC7EA;
-  color: var(--sapphire-deep);
-  font-size: 0.95rem;
-  box-shadow: 0 2px 8px rgba(153,102,204,0.06);
-}
-
-.home-wrap .town-pill:hover {
-  background: linear-gradient(120deg, var(--sapphire), var(--aquamarine));
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 6px 22px rgba(15,82,186,0.4);
 }
 
 /* ── featured gem card (dark) ────────────────────────────────────── */
@@ -2751,7 +2641,12 @@ details[open] .faq-question::after { transform: rotate(180deg); }
     radial-gradient(ellipse at 25% 40%, rgba(153,102,204,0.32) 0%, transparent 55%),
     radial-gradient(ellipse at 80% 70%, rgba(15,82,186,0.22) 0%, transparent 50%),
     linear-gradient(160deg, #1a0710 0%, #0d0a1a 45%, #080610 100%);
-  overflow: hidden;
+  /* only clips sideways: the search bar's filter dropdown (see .h-search)
+     has to be able to drop down past the bottom of the hero, over the
+     section below. the oversized decorative glows are clipped by .hero-bg
+     itself, and the zooming photos by .hero-photo-bg. */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .hero-bg {
@@ -2759,6 +2654,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   inset: 0;
   pointer-events: none;
   z-index: 1;
+  overflow: hidden;
 }
 
 /* ── hero — rotating photo background ─────────────────────────── */
@@ -2845,15 +2741,21 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .hero-inner {
   display: grid;
   grid-template-columns: 1fr 420px;
-  gap: 5rem;
+  gap: 3.5rem;
   align-items: center;
-  min-height: 88vh;
-  padding: 5rem 1.25rem 4rem;
+  /* sized by its content rather than a fixed share of the screen height
+     (it used to be min-height: 88vh, which is what made it so tall). */
+  padding: 3rem 1.25rem 2.25rem;
   position: relative;
   z-index: 1;
 }
 
 /* ── hero left ──────────────────────────────────────────────────── */
+/* min-width: 0 lets both grid columns shrink to the screen width. without
+   it a grid column won't go narrower than its content's natural minimum
+   (here, the search input's built-in default width), which pushed the
+   hero wider than a 375px phone screen. */
+.hero-inner > * { min-width: 0; }
 .hero-left { display: flex; flex-direction: column; }
 
 
@@ -2861,9 +2763,9 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 
 .hero-h1 {
   font-family: var(--font-heading);
-  font-size: clamp(3.5rem, 8vw, 6.5rem);
-  line-height: 1.0;
-  margin-bottom: 1.5rem;
+  font-size: clamp(2.5rem, 4.8vw, 4rem); /* Instrument Serif is narrow, so it runs larger than the old Playfair */
+  line-height: 1.05;
+  margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.04em;
@@ -2902,18 +2804,130 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .h-sub {
   color: var(--dtext-2);
   font-size: 1.05rem;
-  line-height: 1.75;
-  margin-bottom: 2.25rem;
-  max-width: 480px;
+  line-height: 1.65;
+  margin-bottom: 1.5rem;
+  max-width: 540px;
   text-shadow: 0 2px 16px rgba(0,0,0,0.45);
 }
 
-.h-ctas {
-  display: flex;
-  gap: 0.875rem;
-  flex-wrap: wrap;
-  margin-bottom: 3rem;
+/* the directory search bar, in the hero under the description — see
+   DirectorySearchBar in components/DirectorySearch.js. it sits above
+   .hero-featured-slot in stacking order so its filter dropdown always
+   opens on top of the featured card on narrow screens. */
+.h-search {
+  position: relative;
+  z-index: 2;
+  max-width: 640px;
 }
+
+/* the white search card: purple icon, borderless input, "Find a gem" */
+.hsb-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff;
+  border-radius: 18px;
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  box-shadow: 0 14px 40px rgba(8, 6, 16, 0.35), 0 2px 8px rgba(8, 6, 16, 0.18);
+  transition: box-shadow 0.2s ease;
+}
+
+.hsb-card:focus-within {
+  box-shadow: 0 14px 40px rgba(8, 6, 16, 0.35), 0 0 0 3px rgba(153, 102, 204, 0.5);
+}
+
+.hsb-icon {
+  flex-shrink: 0;
+  color: var(--amethyst);
+  font-size: 1.05rem;
+}
+
+.hsb-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0.8rem 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: #1c1830;
+}
+
+.hsb-input::placeholder { color: #9b96aa; }
+
+/* sapphire → amethyst, lightening toward the right-hand end */
+.hsb-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.4rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(100deg, var(--sapphire) 0%, var(--amethyst) 62%, #C7A6EA 100%);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(153, 102, 204, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hsb-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(153, 102, 204, 0.48);
+}
+
+.hsb-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.hsb-btn-arrow { font-size: 1.05rem; line-height: 1; }
+
+/* the shorter "Find" label only shows on narrow phones (see below) */
+.hsb-btn-label--short { display: none; }
+
+/* the small "Filters" link under the card, which opens the same filter
+   panel as before (categories, provinces, business types, badges). */
+.hsb-filters { display: inline-block; margin-top: 0.7rem; }
+
+.hsb-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.1rem;
+  border: none;
+  background: none;
+  color: rgba(235, 226, 250, 0.82);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(235, 226, 250, 0.3);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.hsb-filter-btn:hover,
+.hsb-filter-btn--active {
+  color: #fff;
+  text-decoration-color: rgba(255, 255, 255, 0.7);
+}
+
+.hsb-filter-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* the panel opens under the Filters link, lined up with its left edge */
+.hsb .dir-filter-panel { left: 0; right: auto; }
 
 /* primary cta — amethyst → sapphire gradient */
 .hero-cta-primary {
@@ -2937,60 +2951,74 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   box-shadow: 0 10px 36px rgba(153,102,204,0.48);
 }
 
-/* ghost cta */
-.hero-cta-ghost {
-  display: inline-flex;
+/* ── stats bar — full-width strip along the bottom of the hero ───── */
+.hero-stats-bar {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid rgba(225, 210, 250, 0.14); /* the hairline, edge to edge */
+}
+
+.hero-stats-inner {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 2rem;
-  border: 1.5px solid rgba(255,255,255,0.2);
-  border-radius: 10px;
-  color: rgba(235,240,255,0.72);
-  font-family: var(--font-body);
-  font-size: 1rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: border-color 0.22s, color 0.22s, background 0.22s;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.35rem 1.25rem 1.6rem;
 }
 
-.hero-cta-ghost:hover {
-  border-color: rgba(255,255,255,0.45);
-  color: #fff;
-  background: rgba(255,255,255,0.07);
-}
-
-/* stats */
 .h-stats {
   display: flex;
   align-items: center;
-  gap: 2rem;
-  flex-wrap: wrap;
+  gap: 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.h-stat { text-align: left; }
+/* numeral and label side by side, sitting on the same baseline */
+.h-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
 
 .h-stat-val {
-  display: block;
   font-family: var(--font-heading);
-  font-size: 2.1rem;
-  font-weight: 800;
-  color: var(--dtext);
+  font-size: 2.9rem;
+  font-weight: 600;
   line-height: 1;
-  margin-bottom: 0.22rem;
+  color: #DCCDF5;
+  /* lining (all-the-same-height) figures, so the stats sit level even if
+     the heading font's default numerals are "old-style" (uneven heights). */
+  font-variant-numeric: lining-nums;
 }
 
 .h-stat-label {
-  font-size: 0.7rem;
-  color: var(--dtext-3);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  line-height: 1.25;
+  color: rgba(214, 200, 240, 0.62);
+  white-space: nowrap;
 }
 
 .h-stat-sep {
   width: 1px;
-  height: 44px;
-  background: rgba(255,255,255,0.1);
+  height: 2.25rem;
+  background: rgba(225, 210, 250, 0.18);
 }
+
+.h-tagline {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  line-height: 1.25;
+  color: #EEE6FA;
+}
+
+.h-tagline span { display: block; }
+.h-tagline-1 { font-weight: 400; }
+.h-tagline-2 { font-style: italic; color: #C9A8E0; }
 
 /* ── hero right — real Featured Gem card slot ─────────────────────── */
 .hero-featured-slot {
@@ -3005,21 +3033,48 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 @media (max-width: 980px) {
   .hero-inner {
     grid-template-columns: 1fr;
-    min-height: auto;
-    padding: 5rem 1.25rem 3.5rem;
-    gap: 3.5rem;
+    padding: 2.5rem 1.25rem 2rem;
+    gap: 2rem;
   }
 
-  .hero-featured-slot {
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
-  }
+  .h-search { max-width: none; }
+
+  /* stats on one line, the tagline underneath, left-aligned */
+  .hero-stats-inner { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .h-tagline        { text-align: left; }
 }
 
 @media (max-width: 560px) {
-  .hero-inner { padding: 4rem 1.25rem 3rem; }
-  .h-stats    { gap: 1.25rem; }
-  .h-stat-sep { height: 32px; }
+  .hero-inner { padding: 1.75rem 1.25rem 1.75rem; gap: 1.75rem; }
+  .hero-h1    { font-size: 2.5rem; }
+  .h-sub      { font-size: 0.98rem; margin-bottom: 1.25rem; }
+
+  /* three equal columns, label stacked under its numeral so all three fit
+     side by side on a phone; the dividers are dropped since they'd crowd
+     the row at this width. */
+  .hero-stats-inner { padding: 1.1rem 1.25rem 1.4rem; }
+  .h-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start; /* numerals line up even when one label wraps */
+    gap: 1rem;
+    width: 100%;
+  }
+  .h-stat-sep   { display: none; }
+  .h-stat       { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+  .h-stat-val   { font-size: 2.2rem; }
+  .h-stat-label { font-size: 0.74rem; white-space: normal; }
+  .h-tagline    { font-size: 1.35rem; }
+}
+
+/* narrow phones: a shorter "Find" label so the search bar always stays on
+   one row without squeezing the input. */
+@media (max-width: 420px) {
+  .hsb-card { gap: 0.6rem; padding-left: 1rem; }
+  .hsb-input { font-size: 0.93rem; }
+  .hsb-btn  { padding: 0.8rem 1rem; }
+  .hsb-btn-label--full  { display: none; }
+  .hsb-btn-label--short { display: inline; }
 }
 
 /* ── homepage section rhythm — mobile ──────────────────────────── */
@@ -3084,32 +3139,6 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 .section--dark .section-header p { color: rgba(255,255,255,0.62); }
-
-.section--dark .category-card {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.9);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-}
-
-.section--dark .category-card i {
-  background: rgba(153, 102, 204, 0.18);
-  color: var(--amethyst-light);
-}
-
-.section--dark .category-card:hover {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.22);
-  box-shadow: 0 10px 36px rgba(0,0,0,0.3);
-  transform: translateY(-6px);
-  color: #fff;
-}
-
-.section--dark .category-card:hover i {
-  background: linear-gradient(135deg, var(--amethyst), var(--amethyst-light));
-  color: #fff;
-  transform: scale(1.1);
-}
 
 /* ─── gem loader ───────────────────────────────────────────────────── */
 .gem-loader {
@@ -3233,102 +3262,9 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   margin: 0 auto;
 }
 
-.dir-search-top {
-  display: flex;
-  align-items: stretch;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-.dir-search-bar { flex: 1; min-width: 0; }
-
-/* the slot between the search bar and the results (the homepage's mission
-   banner) — the search bar row above already supplies the top gap. */
-.dir-below-search { margin-bottom: 2rem; }
-
-/* the pill-shaped search bar — an outer rounded border containing the
-   magnifying-glass icon, the text input, and a circular submit button, all
-   read as one continuous shape rather than three separate controls. */
-.dir-search-pill {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  border: 1.5px solid #d1d5db;
-  border-radius: 100px;
-  background: #fff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.dir-search-pill:focus-within {
-  border-color: var(--sapphire);
-  box-shadow: 0 0 0 3px rgba(15, 82, 186, 0.12);
-}
-
-.dir-search-pill-icon {
-  margin-left: 1.1rem;
-  color: #9ca3af;
-  font-size: 0.9rem;
-}
-
-.dir-search-pill-input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  padding: 0.85rem 0.75rem;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  color: #1a1a1a;
-}
-
-.dir-search-pill-btn {
-  flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  margin: 4px;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.9rem;
-  cursor: pointer;
-  background: linear-gradient(120deg, var(--amethyst), var(--sapphire));
-  background-size: 200% 100%;
-  background-position: 0% 50%;
-  transition: background-position 0.4s ease;
-}
-
-.dir-search-pill-btn:hover { background-position: 100% 50%; }
-
-/* ── filters button + dropdown panel ── */
+/* ── filter dropdown panel (opened from the hero's Filters link or the
+   directory section's Filters button — see FilterControl) ── */
 .dir-filter-wrap { position: relative; flex-shrink: 0; }
-
-.dir-filter-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  height: 100%;
-  padding: 0 1.25rem;
-  border: 1.5px solid #d1d5db;
-  border-radius: 100px;
-  background: #fff;
-  color: #374151;
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: border-color 0.2s, color 0.2s;
-}
-
-.dir-filter-btn:hover,
-.dir-filter-btn--active {
-  border-color: var(--sapphire);
-  color: var(--sapphire);
-}
 
 .dir-filter-panel {
   position: absolute;
@@ -3657,11 +3593,486 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 }
 
 @media (max-width: 560px) {
-  .dir-search-top { flex-direction: column; align-items: stretch; }
-  .dir-filter-btn { justify-content: center; }
-  .dir-filter-btn-label { display: none; }
-  .dir-filter-panel { left: 0; right: 0; width: auto; }
+  /* on a phone the filter panel spans the full width of whichever search
+     area it was opened from: the small wrapper around the Filters
+     button/link stops being the panel's positioning box, and the whole
+     search area (.hsb in the hero, .dsec-search in the directory section)
+     becomes it instead. */
+  .hsb,
+  .dsec-search { position: relative; }
+  .dir-filter-wrap { position: static; }
+  .dir-filter-panel,
+  .hsb .dir-filter-panel { left: 0; right: 0; width: auto; }
   .dir-row-view-label { display: none; }
+}
+
+
+/* ─── "explore the directory" section (under the hero) ────────────── */
+/* see DirectorySection in components/DirectorySearch.js */
+.dsec {
+  /* a very light lavender, mixed from the brand's own amethyst tint */
+  background: color-mix(in srgb, var(--amethyst-light) 13%, #fff);
+  padding: 4.5rem 0 5rem;
+  /* the hero's "Find a gem" button scrolls here — leave room for the
+     sticky navbar */
+  scroll-margin-top: 72px;
+}
+
+.dsec-header { margin-bottom: 2rem; }
+
+.dsec-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+  color: var(--amethyst);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dsec-eyebrow i { font-size: 0.6rem; }
+
+.dsec-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2.4rem, 5vw, 3.9rem);
+  font-weight: 600;
+  line-height: 1.12;
+  color: var(--sapphire-deep);
+}
+
+.dsec-title span,
+.dsec-title em { display: block; }
+
+.dsec-title em {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--amethyst);
+}
+
+/* ── search bar with Filters ── */
+.dsec-search {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #fff;
+  border: 1px solid #E6E0F0;
+  border-radius: 18px;
+  padding: 0.6rem 0.6rem 0.6rem 1.35rem;
+  box-shadow: 0 4px 18px rgba(8, 43, 102, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dsec-search:focus-within {
+  border-color: var(--amethyst-light);
+  box-shadow: 0 0 0 3px rgba(153, 102, 204, 0.16);
+}
+
+.dsec-search-icon {
+  flex-shrink: 0;
+  color: var(--amethyst);
+  font-size: 1.05rem;
+}
+
+.dsec-search-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0.85rem 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: #1c1830;
+}
+
+.dsec-search-input::placeholder { color: #9b96aa; }
+
+.dsec-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem;
+  border: 1px solid #E6E0F0;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--sapphire-deep);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.dsec-filter-btn:hover,
+.dsec-filter-btn--active {
+  border-color: var(--amethyst);
+  color: var(--amethyst);
+}
+
+.dsec-filter-btn:focus-visible {
+  outline: 2px solid var(--amethyst);
+  outline-offset: 2px;
+}
+
+/* the small "how many filters are on" badge */
+.dsec-filter-count {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--amethyst);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+/* ── category pills: one row, scrolls sideways, fades at the right ── */
+.dsec-pills-wrap {
+  position: relative;
+  margin: 1.1rem 0 2.5rem;
+}
+
+.dsec-pills-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--amethyst-light) 13%, #fff));
+}
+
+.dsec-pills {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.15rem 56px 0.15rem 0.15rem; /* end padding so the last pill can scroll clear of the fade */
+  scrollbar-width: none;
+}
+
+.dsec-pills::-webkit-scrollbar { display: none; }
+
+.dsec-pill {
+  flex-shrink: 0;
+  padding: 0.55rem 1.05rem;
+  border: 1px solid #E2DCEC;
+  border-radius: 999px;
+  background: #fff;
+  color: #6b6580;
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.dsec-pill:hover { border-color: var(--amethyst-light); color: var(--sapphire-deep); }
+
+.dsec-pill--active,
+.dsec-pill--active:hover {
+  background: var(--sapphire-deep);
+  border-color: var(--sapphire-deep);
+  color: #fff;
+}
+
+.dsec-pill:focus-visible {
+  outline: 2px solid var(--amethyst);
+  outline-offset: 2px;
+}
+
+/* ── two columns: info card (left, narrow) + results (right) ── */
+.dsec-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+/* the results come first in the page order (so they come first on a
+   phone); on desktop the grid puts the info card back on the left. */
+.dsec-results { grid-column: 2; grid-row: 1; min-width: 0; }
+.dsec-aside   { grid-column: 1; grid-row: 1; position: sticky; top: 92px; }
+
+.dsec-info {
+  border-radius: 22px;
+  padding: 2rem 1.75rem 1.25rem;
+  background: linear-gradient(160deg, var(--sapphire-deep) 0%, #1B1A55 55%, #2A1C5E 100%);
+  color: rgba(214, 200, 240, 0.72);
+  box-shadow: 0 18px 40px rgba(8, 43, 102, 0.18);
+}
+
+.dsec-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 1.25rem;
+  border: 1px solid rgba(201, 168, 224, 0.45);
+  border-radius: 11px;
+  color: var(--amethyst-light);
+  font-size: 0.8rem;
+}
+
+.dsec-info-title {
+  margin: 0 0 1rem;
+  font-family: var(--font-heading);
+  font-size: 1.9rem;
+  font-weight: 500;
+  line-height: 1.15;
+  color: #F1EBFA;
+}
+
+.dsec-info p {
+  margin: 0 0 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.dsec-info-links {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1.25rem;
+}
+
+.dsec-info-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 0;
+  border-top: 1px solid rgba(225, 210, 250, 0.16);
+  color: #EEE6FA;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.dsec-info-link:hover { color: var(--amethyst-light); }
+
+.dsec-update {
+  margin: 1rem 0 0;
+  padding: 0 0.25rem;
+  color: #8a85a0;
+  font-size: 0.85rem;
+}
+
+.dsec-update a {
+  color: var(--amethyst);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dsec-update a:hover { text-decoration: underline; }
+
+/* ── results: count line + small view toggle ── */
+.dsec-count-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.dsec-count {
+  margin: 0;
+  color: #6b6580;
+  font-size: 0.9rem;
+}
+
+/* smaller, quieter view toggle than the old directory's */
+.dsec .dir-view-toggle { gap: 0.3rem; }
+
+.dsec .dir-view-btn {
+  width: 32px;
+  height: 32px;
+  border-width: 1px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.dsec .dir-view-btn--active {
+  background: var(--sapphire-deep);
+  border-color: var(--sapphire-deep);
+}
+
+/* the narrower right-hand column fits three compact cards, not four */
+.dsec .dir-results--compact { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dsec .dir-results--grid2   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* ── business card ── */
+.gem-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #ECE6F4;
+  border-radius: 18px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 2px 10px rgba(8, 43, 102, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.gem-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--amethyst-light);
+  box-shadow: 0 12px 28px rgba(8, 43, 102, 0.1);
+}
+
+.gem-card:focus-visible {
+  outline: 2px solid var(--amethyst);
+  outline-offset: 3px;
+}
+
+.gem-card-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 112px;
+  background: color-mix(in srgb, var(--amethyst-light) 24%, #fff);
+}
+
+.gem-card-logo,
+.gem-card-monogram {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px rgba(8, 43, 102, 0.12);
+}
+
+.gem-card-logo { object-fit: cover; background: #fff; }
+.gem-card-monogram { font-size: 1.8rem; }
+
+.gem-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.1rem 1.25rem 1rem;
+}
+
+.gem-card-meta {
+  margin: 0;
+  color: var(--amethyst);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.gem-card-name {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--sapphire-deep);
+}
+
+.gem-card-desc {
+  margin: 0;
+  color: #6b6580;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gem-card .badge-pills { margin-top: 0.25rem; }
+
+.gem-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.25rem;
+  border-top: 1px solid #F0EBF6;
+  color: var(--amethyst);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.gem-card-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #E6DDF2;
+  border-radius: 50%;
+  color: var(--amethyst);
+  font-size: 0.85rem;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.gem-card:hover .gem-card-arrow {
+  background: var(--amethyst);
+  border-color: var(--amethyst);
+  color: #fff;
+}
+
+/* compact grid: tighter card */
+.gem-card--compact .gem-card-banner { height: 84px; }
+.gem-card--compact .gem-card-logo,
+.gem-card--compact .gem-card-monogram { width: 56px; height: 56px; }
+.gem-card--compact .gem-card-name { font-size: 1.4rem; }
+.gem-card--compact .gem-card-body { padding: 0.9rem 1rem 0.8rem; }
+.gem-card--compact .gem-card-footer { padding: 0.65rem 1rem; }
+
+/* ── responsive ── */
+@media (max-width: 1100px) {
+  .dsec .dir-results--compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 980px) {
+  /* one column: results first, then the info card (no longer sticky) */
+  .dsec-layout  { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
+  .dsec-results { grid-column: 1; grid-row: auto; }
+  .dsec-aside   { grid-column: 1; grid-row: auto; position: static; }
+}
+
+@media (max-width: 700px) {
+  .dsec .dir-results--grid2,
+  .dsec .dir-results--compact { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .dsec { padding: 3rem 0 3.5rem; }
+  .dsec-header { margin-bottom: 1.5rem; }
+  .dsec-title { font-size: 2.3rem; }
+  .dsec-search { gap: 0.6rem; padding: 0.45rem 0.45rem 0.45rem 1rem; }
+  .dsec-search-input { font-size: 0.93rem; }
+  .dsec-filter-btn { padding: 0.7rem 0.8rem; }
+  .dsec-filter-btn-label { display: none; } /* icon (+ count badge) only */
+  .dsec-pills-wrap { margin-bottom: 1.75rem; }
+  .dsec-info { padding: 1.75rem 1.4rem 1rem; }
+}
+
+
+/* ─── business names in bold ───────────────────────────────────────── */
+/* every place a business's name is shown: directory cards and list rows,
+   the Featured Gem card, the business's own page, and the category/area
+   listing cards (blog post titles share .listing-card-name, so blog cards
+   are left out). the heading font has no real bold weight, so these are
+   the one place the browser is allowed to thicken it (see the
+   font-synthesis-weight note near the top of this file). */
+.gem-card-name,
+.dir-row-name,
+.featured-gem-info h3,
+.biz-name,
+.listing-card:not(.blog-card) .listing-card-name {
+  font-weight: 700;
+  font-synthesis-weight: auto;
 }
 
 
