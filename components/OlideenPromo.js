@@ -86,8 +86,8 @@ export default function OlideenPromo() {
           <Image
             src="/OT_Logo.png"
             alt="Olideen Technologies"
-            width={200}
-            height={70}
+            width={150}
+            height={53}
             className="ot-logo-pulse"
             style={{ objectFit: "contain", height: "auto" }}
           />

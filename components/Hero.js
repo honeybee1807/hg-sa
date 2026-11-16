@@ -27,6 +27,14 @@ export default function Hero({ featuredGem, areaCount }) {
     // real values in the markup below, so there's nothing to fill in.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+    // if the browser freezes for 100ms or more (busy loading the rest of
+    // the page), carry on from where the animation was instead of skipping
+    // ahead to "catch up" — the skip is what reads as a stutter. GSAP's own
+    // default only steps in for freezes over 500ms. applies to every GSAP
+    // animation on the page.
+    gsap.ticker.lagSmoothing(100, 16);
+
+    let entranceTimeline;
     const animationContext = gsap.context(() => {
       // the entrance sequence: each piece of the hero fades and slides in
       // one after another, in this order — first headline
@@ -36,7 +44,10 @@ export default function Hero({ featuredGem, areaCount }) {
       // "-=0.x" timings make each step start slightly before the previous
       // one finishes, so it reads as one flowing motion rather than a
       // series of separate, disconnected pops.
-      const entranceTimeline = gsap.timeline({ delay: 0.1 });
+      // created paused: every element is put in its hidden starting state
+      // straight away, but the timeline only plays once the page has
+      // finished its heaviest start-up work (see the end of this effect).
+      entranceTimeline = gsap.timeline({ paused: true });
 
       entranceTimeline
         .fromTo(".h-line-1",
@@ -94,20 +105,38 @@ export default function Hero({ featuredGem, areaCount }) {
         // plain number is animated from 0 up to the target value, and on
         // every tick of that animation the on-screen text is updated to
         // show the current rounded number.
+        // added to the same timeline (starting 1s in), so the count-up
+        // waits for the timeline to start too.
         const animatedNumber = { currentValue: 0 };
-        gsap.to(animatedNumber, {
+        entranceTimeline.to(animatedNumber, {
           currentValue: counter.finalValue,
           duration: 2.2,
           ease: "power2.out",
-          delay: 1.0,
           onUpdate() {
             counterElement.textContent = String(Math.round(animatedNumber.currentValue));
           },
-        });
+        }, 1.0);
       }
     }, ref);
 
-    return () => animationContext.revert();
+    // start the entrance once the browser is idle — i.e. after the burst of
+    // work right after the page loads (hydrating the directory, decoding
+    // images, swapping in fonts), which is what made it stutter — but never
+    // later than 600ms. browsers without requestIdleCallback (Safari) wait a
+    // short fixed moment instead.
+    const play = () => entranceTimeline?.play();
+    let idleHandle, timeoutHandle;
+    if ("requestIdleCallback" in window) {
+      idleHandle = window.requestIdleCallback(play, { timeout: 600 });
+    } else {
+      timeoutHandle = window.setTimeout(play, 250);
+    }
+
+    return () => {
+      if (idleHandle) window.cancelIdleCallback(idleHandle);
+      if (timeoutHandle) window.clearTimeout(timeoutHandle);
+      animationContext.revert();
+    };
   }, [areaCount]);
 
   // the actual markup: the rotating photo background, then two columns —

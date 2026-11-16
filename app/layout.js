@@ -10,6 +10,7 @@ import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import WhatsAppHelpButton from "@/components/WhatsAppHelpButton";
 import DeferredStylesheet from "@/components/DeferredStylesheet";
 
 // the two fonts used across the site: Instrument Serif for headings, Space
@@ -178,6 +179,8 @@ export default function RootLayout({ children }) {
             between the navbar and the footer. */}
         <main>{children}</main>
         <Footer />
+        {/* floating "Need help?" WhatsApp button, bottom-right on every public page */}
+        <WhatsAppHelpButton />
       </body>
     </html>
   );

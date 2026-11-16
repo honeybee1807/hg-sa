@@ -523,8 +523,18 @@ export function DirectorySection() {
 
           <aside className="dsec-aside">
             <div className="dsec-info">
-              <span className="dsec-info-icon" aria-hidden="true">
-                <i className="fa-solid fa-diamond" />
+              {/* the Hidden Gems SA pin-and-gem mark: the main logo
+                  (transparent background), framed so only its left-hand
+                  pin shows — the wordmark's dark lettering wouldn't read on
+                  this dark card. see .dsec-info-logo in globals.css. */}
+              <span className="dsec-info-logo" aria-hidden="true">
+                <Image
+                  src="/HG_Logo.png"
+                  alt=""
+                  width={144}
+                  height={64}
+                  sizes="144px"
+                />
               </span>
               <h3 className="dsec-info-title">Every community has businesses worth discovering.</h3>
               <p>
@@ -781,9 +791,9 @@ function GemCard({ biz, compact }) {
           <Image
             src={biz.logo_url}
             alt={`${biz.name} logo`}
-            width={72}
-            height={72}
-            sizes="72px"
+            width={104}
+            height={104}
+            sizes="104px"
             className="gem-card-logo"
           />
         ) : (

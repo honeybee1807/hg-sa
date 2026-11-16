@@ -34,7 +34,7 @@ export default function Footer() {
 
           <p className="footer-tagline">
             <span>Hidden in your community.</span>
-            <em>Found through Hidden Gems.</em>
+            <em>Found through Hidden Gems SA.</em>
           </p>
 
           <BackToTop className="footer-back-to-top" />
