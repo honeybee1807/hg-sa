@@ -9,6 +9,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { cloudinaryUrl, logoAlt } from "@/lib/images";
 
 export default function FeaturedGemCard({ gem }) {
   // no featured business set — show the "want to be featured?" placeholder.
@@ -54,8 +55,8 @@ export default function FeaturedGemCard({ gem }) {
         <div className="featured-gem-logo">
           {biz.logo_url ? (
             <Image
-              src={biz.logo_url}
-              alt={`${biz.name} logo`}
+              src={cloudinaryUrl(biz.logo_url, { width: 240 })}
+              alt={logoAlt(biz, areaName)}
               width={96}
               height={96}
               className="featured-gem-img"

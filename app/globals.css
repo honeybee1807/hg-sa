@@ -4270,3 +4270,89 @@ details[open] .faq-question::after { transform: rotate(180deg); }
     animation: none !important;
   }
 }
+
+/* ─── plain link lists (homepage, category, area and business pages) ─── */
+/* see components/LinkList.js. deliberately light: text links only. */
+.link-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem 2.5rem;
+}
+.link-list-title {
+  font-size: 1.35rem;
+  margin-bottom: 0.75rem;
+}
+.link-list ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.link-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #dfe6f3;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--sapphire-deep);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.link-list a:hover { border-color: var(--sapphire); color: var(--sapphire); }
+.link-list-count {
+  min-width: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--sapphire-pale);
+  color: var(--sapphire);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+.home-links { padding-top: 3rem; padding-bottom: 1rem; }
+
+/* the short intro written from live data on category, area and hub pages */
+.section-header .page-intro {
+  max-width: 62ch;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.65;
+}
+.page-intro a { color: var(--sapphire); font-weight: 600; }
+.page-intro a:hover { text-decoration: underline; }
+.page-faq-title { font-size: 1.6rem; margin-bottom: 1rem; text-align: center; }
+
+/* an empty category on /categories: shown, but not a link */
+.hub-card--empty { opacity: 0.6; cursor: default; }
+.hub-card--empty:hover { transform: none; box-shadow: none; }
+
+.biz-street-address { margin-bottom: 0.35rem; color: #374151; }
+.biz-meta a { color: inherit; text-decoration: underline; text-decoration-color: rgba(15, 82, 186, 0.3); text-underline-offset: 3px; }
+.biz-meta a:hover { color: var(--sapphire); }
+
+/* footer: popular categories and areas */
+.footer-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem 2.5rem;
+  margin-top: 1.75rem;
+}
+.footer-links-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--footer-ink);
+  margin-bottom: 0.5rem;
+}
+.footer-links ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; }
+.footer-links a { font-size: 0.86rem; color: var(--footer-ink); opacity: 0.85; }
+.footer-links a:hover { color: var(--amethyst); opacity: 1; }
+@media (max-width: 720px) {
+  .footer-links { text-align: center; }
+  .footer-links ul { justify-content: center; }
+}

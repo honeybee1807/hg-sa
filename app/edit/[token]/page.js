@@ -8,7 +8,7 @@ import Link from "next/link";
 import { getAdminClient } from "@/lib/supabase-admin";
 import EditListingForm from "./EditListingForm";
 
-export const metadata = { title: "Edit Your Listing — Hidden Gems SA", robots: "noindex" };
+export const metadata = { title: "Edit Your Listing", robots: { index: false, follow: false } };
 
 // every field the edit form can change — see the "Keep" list in the
 // business's edit spec: the same fields as the original submission form,
@@ -56,7 +56,7 @@ export default async function EditTokenPage({ params }) {
     return (
       <div className="container" style={{ maxWidth: 480, paddingTop: "2rem", paddingBottom: "4rem" }}>
         <div className="submit-error">
-          <i className="fa-solid fa-triangle-exclamation" /> This edit link is invalid or expired — request a new one.
+          <i className="fa-solid fa-triangle-exclamation" /> This edit link has expired or isn&apos;t valid. Please request a new one.
         </div>
         <Link href="/edit" className="btn-secondary mt-3">
           <i className="fa-solid fa-arrow-left" /> Request a New Link
@@ -69,7 +69,7 @@ export default async function EditTokenPage({ params }) {
     <div className="container" style={{ maxWidth: 720, paddingTop: "2rem", paddingBottom: "4rem" }}>
       <div className="submit-page-header">
         <h1>Edit Your Listing</h1>
-        <p>Update your details and submit — changes go live once we review them.</p>
+        <p>Update your details and send them. Changes go live once we&apos;ve checked them.</p>
       </div>
       <EditListingForm token={token} business={business} />
     </div>

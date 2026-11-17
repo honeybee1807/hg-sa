@@ -1,60 +1,55 @@
-// this file automatically creates the page at hiddengemssa.co.za/llms.txt
-// — a short, plain-text summary of the site meant for AI tools (ChatGPT,
-// Perplexity, etc.) to read, following an emerging convention for helping
-// AI understand a website (see llmstxt.org). the category count comes from
-// the same CATEGORIES list the rest of the site uses; the area count is
-// looked up fresh from the database, since areas are free text (any area,
-// suburb, or town in South Africa) rather than a fixed list — see
-// lib/constants.js and app/submit/SubmitForm.js.
+// hiddengemssa.co.za/llms.txt: a plain-text site summary for crawlers and
+// assistants (see llmstxt.org). it states facts only and matches the
+// Disclaimer: listings are checked before they go live, but Hidden Gems SA
+// does not verify or endorse the businesses listed. counts and links are
+// built from live data, so they're always current.
 
 import { CATEGORIES, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
-import supabase from "@/lib/supabase";
+import { getApprovedBusinesses, getAreas, getCategories } from "@/lib/directory";
+import { searchPhrase } from "@/lib/seo";
 
-// counts how many distinct areas currently have at least one approved
-// business, mirroring the same logic used on the homepage and /towns.
-async function getAreaCount() {
-  const { data } = await supabase
-    .from("businesses")
-    .select("area")
-    .eq("status", "approved");
-
-  const areasWithoutDuplicates = new Set(
-    (data ?? [])
-      .map((business) => business.area?.split(",")[0]?.trim())
-      .filter(Boolean)
-  );
-  return areasWithoutDuplicates.size;
-}
+export const revalidate = 3600;
 
 export async function GET() {
-  const areaCount = await getAreaCount();
-  const categoryList = CATEGORIES.map((c) => c.name).join(", ");
+  const [businesses, areas, categories] = await Promise.all([getApprovedBusinesses(), getAreas(), getCategories()]);
+  const listedCategories = categories.filter((c) => c.businesses.length > 0);
 
   const body = `# Hidden Gems SA
 
-> Free local business directory for KwaZulu-Natal and surrounding areas. Connects residents with home bakers, tutors, transport operators, hairstylists, tradespeople and more — open to businesses from any South African province, no account required.
+> A free directory of local businesses, mostly in KwaZulu-Natal, South Africa, and open to businesses in any province. People can browse home bakers, tutors, transport operators, hairstylists, tradespeople and more, and contact them directly on WhatsApp. No account is needed to browse or to list.
 
-Hidden Gems SA is built and maintained by Olideen Technologies (${OLIDEEN_URL}), a digital agency based in KwaZulu-Natal.
+Hidden Gems SA is built and run by Olideen Technologies (${OLIDEEN_URL}).
 
 ## Key facts
 
-- Currently covers ${areaCount} distinct ${areaCount === 1 ? "area" : "areas"} across South Africa, with new areas added as businesses from them are approved
-- ${CATEGORIES.length} business categories: ${categoryList}
-- Free to list a business — no account or payment required
-- Submissions are reviewed and approved within 24–48 hours
-- Every approved listing includes a direct WhatsApp contact button
-- A different approved business is spotlighted as "Featured Gem of the Week" each Monday
+- ${businesses.length} approved listings in ${areas.length} ${areas.length === 1 ? "area" : "areas"}
+- ${CATEGORIES.length} categories: ${CATEGORIES.map((c) => c.name).join(", ")}
+- Free to list a business, with no account or payment
+- New listings are checked by the team before they go live, usually within 24 to 48 hours
+- Information on each listing is supplied by the business owner. Hidden Gems SA does not verify or endorse listed businesses (see the Disclaimer)
+- Most listings have a WhatsApp contact button
+- One approved business is shown as the Featured Gem each week
 
-## Pages
+## Main pages
 
-- [Homepage](${SITE_URL}/): overview, featured business of the week, live search and filter
-- [Browse by Area](${SITE_URL}/towns): every area that currently has an approved listing, with listing counts
-- [Browse by Category](${SITE_URL}/categories): all ${CATEGORIES.length} categories with listing counts
-- [List Your Business](${SITE_URL}/submit): free business submission form
+- [Homepage](${SITE_URL}/): the full directory with search and filters, and this week's Featured Gem
+- [Browse by area](${SITE_URL}/towns): every area with a listing, with counts
+- [Browse by category](${SITE_URL}/categories): every category, with counts
+- [List your business](${SITE_URL}/submit): free submission form
+- [Blog](${SITE_URL}/blog): stories and guides
+- [Disclaimer and Terms of Use](${SITE_URL}/disclaimer)
 
-## About
+## Categories with listings
 
-Hidden Gems SA exists to put overlooked local businesses in KwaZulu-Natal and surrounding areas on the map. Listing is free — the goal is helping residents discover trusted local services close to home. Every business page includes its name, category, area, province, description, and a direct WhatsApp contact link.
+${listedCategories.map((c) => `- [${searchPhrase(c.name)}](${SITE_URL}/category/${c.slug}): ${c.businesses.length}`).join("\n")}
+
+## Areas with listings
+
+${areas.map((a) => `- [${a.name}, ${a.province}](${SITE_URL}/town/${a.slug}): ${a.businesses.length}`).join("\n")}
+
+## What a listing page shows
+
+Each business page has the business name, category, area, province, a description, any Halal, Delivery or Call-Outs badges the owner selected, and contact links (WhatsApp, and where given, a website, Instagram or Facebook). A street address is shown only for shops, offices and on-site services that provided one.
 `;
 
   return new Response(body, {

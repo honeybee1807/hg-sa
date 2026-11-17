@@ -1,11 +1,13 @@
 // the site-wide footer shown at the bottom of every page, on a light
 // lavender background:
-//   top row    — the Hidden Gems SA logo (links home), a two-line tagline,
-//                and "Back to top ↑"
+//   top row     the Hidden Gems SA logo (links home), a two-line tagline,
+//               and "Back to top"
+//   link row    popular categories and areas, from live listings (passed in
+//               by app/layout.js), as plain links
 //   hairline divider
-//   bottom row — the nav links, the "Built by Olideen Technologies" credit,
-//                and a small stack: Disclaimer & Terms, Edit your listing,
-//                and the copyright line
+//   bottom row  the nav links, the "Built by Olideen Technologies" credit,
+//               and a small stack: Disclaimer & Terms, Edit your listing,
+//               and the copyright line
 // on a phone it all stacks into one centred column, in that same order.
 
 import Link from "next/link";
@@ -13,7 +15,7 @@ import Image from "next/image";
 import { OLIDEEN_URL } from "@/lib/constants";
 import BackToTop from "@/components/BackToTop";
 
-export default function Footer() {
+export default function Footer({ categoryLinks = [], areaLinks = [] }) {
   const year = new Date().getFullYear(); // used in the "© 2026 Hidden Gems SA" line below, so it never needs manually updating
 
   return (
@@ -21,7 +23,7 @@ export default function Footer() {
       <div className="container">
         {/* ── top row ── */}
         <div className="footer-top">
-          <Link href="/" className="footer-logo" aria-label="Hidden Gems SA — home">
+          <Link href="/" className="footer-logo" aria-label="Hidden Gems SA home">
             <Image
               src="/HG_Logo.png"
               alt="Hidden Gems SA"
@@ -39,6 +41,29 @@ export default function Footer() {
 
           <BackToTop className="footer-back-to-top" />
         </div>
+
+        {(categoryLinks.length > 0 || areaLinks.length > 0) && (
+          <div className="footer-links">
+            {categoryLinks.length > 0 && (
+              <nav aria-label="Popular categories">
+                <p className="footer-links-title">Popular categories</p>
+                <ul>
+                  {categoryLinks.map((l) => <li key={l.href}><Link href={l.href} prefetch={false}>{l.label}</Link></li>)}
+                  <li><Link href="/categories" prefetch={false}>All categories</Link></li>
+                </ul>
+              </nav>
+            )}
+            {areaLinks.length > 0 && (
+              <nav aria-label="Browse by area">
+                <p className="footer-links-title">Browse by area</p>
+                <ul>
+                  {areaLinks.map((l) => <li key={l.href}><Link href={l.href} prefetch={false}>{l.label}</Link></li>)}
+                  <li><Link href="/towns" prefetch={false}>All areas</Link></li>
+                </ul>
+              </nav>
+            )}
+          </div>
+        )}
 
         <hr className="footer-rule" />
 

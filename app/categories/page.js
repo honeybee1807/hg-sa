@@ -1,91 +1,79 @@
-// this is the page at hiddengemssa.co.za/categories — the "browse by
-// category" hub, showing all categories as clickable cards with a
-// live count of how many approved businesses are in each one.
+// the page at hiddengemssa.co.za/categories: every category with a live
+// count of approved listings. categories with listings link to their own
+// page; empty ones are shown (so people know they exist) but not linked,
+// since their pages aren't indexed until the first listing arrives.
 
 import Link from "next/link";
-import { CATEGORIES, SITE_URL, SITE_WHATSAPP } from "@/lib/constants";
-import supabase from "@/lib/supabase";
+import { SITE_WHATSAPP } from "@/lib/constants";
+import { getCategories, getApprovedBusinesses } from "@/lib/directory";
+import { searchPhraseLower, listToSentence, breadcrumbList, JsonLd, plural } from "@/lib/seo";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
-// pre-filled WhatsApp link for someone who can't find their category in the
-// grid below — sends a ready-to-go request straight to Hidden Gems SA.
+export const revalidate = 3600;
+
+export const metadata = {
+  title: "Browse Local Businesses by Category",
+  description:
+    "Browse local businesses by category on Hidden Gems SA: bakers and caterers, tutors, hair and beauty, trades, transport and more. Free to browse.",
+  alternates: { canonical: "/categories" },
+};
+
 const requestCategoryUrl = `https://wa.me/${SITE_WHATSAPP}?text=${encodeURIComponent(
   "Hi! I'd like to request a new category for Hidden Gems SA: "
 )}`;
 
-export const metadata = {
-  title: "Browse by Category: KwaZulu-Natal Local Businesses",
-  description: "Find local KwaZulu-Natal businesses by category: bakers, tutors, transport, trades and more.",
-  alternates: { canonical: `${SITE_URL}/categories` },
-};
-
-export const revalidate = 3600;
-
-// counts how many approved businesses are in each category, so each card
-// can show something like "12 businesses". returns an object that looks
-// like { "Baking & Catering": 12, "Beauty & Hair": 4, ... }.
-async function getCountsByCategory() {
-  const { data: approvedBusinesses } = await supabase
-    .from("businesses")
-    .select("category")
-    .eq("status", "approved");
-
-  if (!approvedBusinesses) return {};
-
-  // start with an empty tally, then go through every approved business one
-  // at a time, adding 1 to that business's category count.
-  const countByCategory = {};
-  for (const business of approvedBusinesses) {
-    const currentCount = countByCategory[business.category] ?? 0;
-    countByCategory[business.category] = currentCount + 1;
-  }
-  return countByCategory;
-}
-
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home",       item: SITE_URL },
-    { "@type": "ListItem", position: 2, name: "Categories", item: `${SITE_URL}/categories` },
-  ],
-};
+const crumbs = [
+  { name: "Home", path: "/" },
+  { name: "Categories", path: "/categories" },
+];
 
 export default async function CategoriesPage() {
-  const counts = await getCountsByCategory();
+  const [categories, businesses] = await Promise.all([getCategories(), getApprovedBusinesses()]);
+  const withListings = categories.filter((c) => c.businesses.length > 0);
+  const busiest = [...withListings].sort((a, b) => b.businesses.length - a.businesses.length).slice(0, 3);
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={{ "@context": "https://schema.org", ...breadcrumbList(crumbs) }} />
 
-      <section className="section">
+      <div className="container section-sm">
+        <Breadcrumbs items={crumbs} />
+      </div>
+
+      <section className="section" style={{ paddingTop: "1rem" }}>
         <div className="container">
           <div className="section-header">
-            <h1>Browse by Category</h1>
-            <p>Find the local business you need.</p>
+            <h1>Browse by category</h1>
+            <p className="page-intro">
+              {plural(businesses.length, "business", "businesses")} across {plural(withListings.length, "category", "categories")}
+              {busiest.length > 0 && `, with the most listed under ${listToSentence(busiest.map((c) => searchPhraseLower(c.name)))}`}.
+              {" "}Pick a category to see who&apos;s listed and where.
+            </p>
           </div>
 
           <div className="hub-grid">
-            {CATEGORIES.map((cat) => {
-              const count = counts[cat.name] ?? 0;
-              return (
-                <Link key={cat.slug} href={`/category/${cat.slug}`} className="hub-card">
+            {categories.map((cat) => {
+              const count = cat.businesses.length;
+              const body = (
+                <>
                   <div className="hub-card-icon">
-                    <i className={cat.icon} />
+                    <i className={cat.icon} aria-hidden="true" />
                   </div>
                   <div className="hub-card-body">
                     <span className="hub-card-name">{cat.name}</span>
-                    <span className="hub-card-count">
-                      {count} {count === 1 ? "business" : "businesses"}
-                    </span>
+                    <span className="hub-card-count">{count ? plural(count, "business", "businesses") : "None listed yet"}</span>
                   </div>
-                  <i className="fa-solid fa-chevron-right hub-card-arrow" />
+                </>
+              );
+              return count > 0 ? (
+                <Link key={cat.slug} href={`/category/${cat.slug}`} className="hub-card">
+                  {body}
+                  <i className="fa-solid fa-chevron-right hub-card-arrow" aria-hidden="true" />
                 </Link>
+              ) : (
+                <div key={cat.slug} className="hub-card hub-card--empty">{body}</div>
               );
             })}
-
             <a
               href={requestCategoryUrl}
               target="_blank"
@@ -93,13 +81,13 @@ export default async function CategoriesPage() {
               className="hub-card hub-card--request"
             >
               <div className="hub-card-icon hub-card-icon--request">
-                <i className="fa-brands fa-whatsapp" />
+                <i className="fa-brands fa-whatsapp" aria-hidden="true" />
               </div>
               <div className="hub-card-body">
                 <span className="hub-card-name">Don&apos;t see your category?</span>
                 <span className="hub-card-count">Message us on WhatsApp and we&apos;ll add it.</span>
               </div>
-              <i className="fa-solid fa-chevron-right hub-card-arrow" />
+              <i className="fa-solid fa-chevron-right hub-card-arrow" aria-hidden="true" />
             </a>
           </div>
         </div>

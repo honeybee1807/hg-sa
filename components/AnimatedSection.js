@@ -20,7 +20,7 @@
 // element's real, current position, so that can't happen.
 
 import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
+import { loadGsap } from "@/lib/loadGsap";
 
 // props:
 //   children  — whatever content should be animated in
@@ -50,9 +50,17 @@ export default function AnimatedSection({ children, className = "", stagger = fa
       : [sectionElement];
     if (thingsToAnimate.length === 0) return;
 
+    // GSAP is loaded on demand (see lib/loadGsap.js); everything below runs
+    // once it arrives. "cancelled" covers the component unmounting first.
+    let cancelled = false;
+    let observer = null;
+    let animationContext = null;
+
+    loadGsap().then((gsap) => {
+    if (cancelled) return;
     // gsap.context() records every tween created inside it, so the cleanup
     // below can undo them all when this component unmounts.
-    const animationContext = gsap.context(() => {});
+    animationContext = gsap.context(() => {});
 
     // hide everything up front (only once JavaScript is running — the
     // server-rendered page is fully visible, so nothing is ever lost if
@@ -64,7 +72,7 @@ export default function AnimatedSection({ children, className = "", stagger = fa
     // reveal once the section's top edge is 12% of the screen height above
     // the bottom of the screen — the same "top 88%" point as before.
     // fires straight away if the section is already on screen.
-    const observer = new IntersectionObserver(
+    observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
         observer.disconnect(); // only ever plays once
@@ -89,10 +97,12 @@ export default function AnimatedSection({ children, className = "", stagger = fa
       { rootMargin: "0px 0px -12% 0px" }
     );
     observer.observe(sectionElement);
+    });
 
     return () => {
-      observer.disconnect();
-      animationContext.revert();
+      cancelled = true;
+      observer?.disconnect();
+      animationContext?.revert();
     };
   }, [stagger, delay]);
 

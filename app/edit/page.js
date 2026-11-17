@@ -8,10 +8,10 @@ import { SITE_URL } from "@/lib/constants";
 import EditRequestForm from "./EditRequestForm";
 
 export const metadata = {
-  title: "Edit Your Listing — Hidden Gems SA",
+  title: "Edit Your Listing",
   description: "Request a secure link to edit your Hidden Gems SA listing.",
   alternates: { canonical: `${SITE_URL}/edit` },
-  robots: "noindex",
+  robots: { index: false, follow: true },
 };
 
 export default function EditRequestPage() {

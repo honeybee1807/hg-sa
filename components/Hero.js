@@ -2,9 +2,9 @@
 
 // the big banner section at the very top of the homepage: the headline,
 // a short description, the directory search bar (see
-// [[DirectorySearch]] — it shares its state with the results further down
+// components/DirectorySearch.js; it shares its state with the results further down
 // the page), the real current Featured Gem card on the right-hand side
-// (see [[FeaturedGemCard]]), at every screen size, and a full-width stats
+// (see components/FeaturedGemCard.js), at every screen size, and a full-width stats
 // bar along the bottom (areas / categories / free, plus a tagline). the
 // featured card used to swap between a hand-written decorative mockup on
 // desktop and the real card on mobile, which meant desktop visitors never
@@ -12,7 +12,11 @@
 // card (or the genuine "Could this be your business?" placeholder, if none
 // is set) everywhere.
 import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
+import { loadGsap } from "@/lib/loadGsap";
+
+// start downloading GSAP as soon as this file runs in the browser, in
+// parallel with hydration rather than as part of it.
+if (typeof window !== "undefined") loadGsap();
 import HeroBackground from "@/components/HeroBackground";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
 import { DirectorySearchBar } from "@/components/DirectorySearch";
@@ -32,10 +36,16 @@ export default function Hero({ featuredGem, areaCount }) {
     // ahead to "catch up" — the skip is what reads as a stutter. GSAP's own
     // default only steps in for freezes over 500ms. applies to every GSAP
     // animation on the page.
+    let cancelled = false;
+    let entranceTimeline;
+    let animationContext = null;
+    let idleHandle, timeoutHandle;
+
+    loadGsap().then((gsap) => {
+    if (cancelled) return;
     gsap.ticker.lagSmoothing(100, 16);
 
-    let entranceTimeline;
-    const animationContext = gsap.context(() => {
+    animationContext = gsap.context(() => {
       // the entrance sequence: each piece of the hero fades and slides in
       // one after another, in this order — first headline
       // line, second headline line, subheading paragraph, the search bar,
@@ -125,17 +135,18 @@ export default function Hero({ featuredGem, areaCount }) {
     // later than 600ms. browsers without requestIdleCallback (Safari) wait a
     // short fixed moment instead.
     const play = () => entranceTimeline?.play();
-    let idleHandle, timeoutHandle;
     if ("requestIdleCallback" in window) {
       idleHandle = window.requestIdleCallback(play, { timeout: 600 });
     } else {
       timeoutHandle = window.setTimeout(play, 250);
     }
+    });
 
     return () => {
+      cancelled = true;
       if (idleHandle) window.cancelIdleCallback(idleHandle);
       if (timeoutHandle) window.clearTimeout(timeoutHandle);
-      animationContext.revert();
+      animationContext?.revert();
     };
   }, [areaCount]);
 

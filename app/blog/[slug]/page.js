@@ -1,28 +1,18 @@
-// this is the page shown at hiddengemssa.co.za/blog/whatever-slug — one
-// individual blog post. same overall shape as app/category/[slug]/page.js
-// and app/town/[slug]/page.js: revalidate on a timer, a per-slug fetcher,
-// generateStaticParams() for the posts that exist at build time,
-// generateMetadata() for search engines, and notFound() if the slug
-// doesn't resolve.
-//
-// a draft post (published = false) is treated exactly like a slug that
-// doesn't exist at all — there's no separate "admin preview" path here on
-// the public route; an admin previews an unpublished post from inside
-// /admin instead (see the "Blog" tab in app/admin/AdminPanel.js).
+// one blog post, e.g. hiddengemssa.co.za/blog/some-post. a draft
+// (published = false) is treated exactly like a post that doesn't exist;
+// drafts are only ever seen from inside /admin.
 
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import supabase from "@/lib/supabase";
-import { SITE_URL } from "@/lib/constants";
-import SocialLink from "@/components/SocialLink";
-import BadgePills from "@/components/BadgePills";
+import { getApprovedBusinesses, getArea, areaSlug } from "@/lib/directory";
+import { clampDescription, fullTitle, breadcrumbList, JsonLd, absoluteUrl, ORGANIZATION_ID, SITE_NAME } from "@/lib/seo";
+import { cloudinaryUrl } from "@/lib/images";
+import ListingCard from "@/components/ListingCard";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 export const revalidate = 3600;
 
-// fetches one blog post by its slug, published or not — the published
-// check happens afterwards, in the page component itself, the same way a
-// missing slug is handled (both end up calling notFound()).
 async function getBlogPost(slug) {
   const { data } = await supabase
     .from("blog_posts")
@@ -32,9 +22,6 @@ async function getBlogPost(slug) {
   return data;
 }
 
-// tells Next.js every published post that exists, so those can be
-// pre-built ahead of time. a draft only gets built (and only becomes
-// reachable at all) once it's published.
 export async function generateStaticParams() {
   const { data } = await supabase
     .from("blog_posts")
@@ -46,35 +33,36 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const post = await getBlogPost(slug);
-  if (!post || !post.published) return { title: "Post Not Found" };
-
+  if (!post || !post.published) notFound();
+  // a short excerpt is topped up with the start of the post, so the
+  // description is a useful length.
+  const description = clampDescription(
+    post.excerpt && post.excerpt.length >= 110 ? post.excerpt : `${post.excerpt ?? ""} ${post.content}`
+  );
   return {
-    title: post.title,
-    description: post.excerpt ?? post.content.slice(0, 160),
-    alternates: { canonical: `${SITE_URL}/blog/${slug}` },
+    title: fullTitle(post.title),
+    description,
+    alternates: { canonical: `/blog/${slug}` },
+    openGraph: {
+      title: post.title,
+      description,
+      url: `/blog/${slug}`,
+      type: "article",
+      publishedTime: post.created_at,
+      modifiedTime: post.updated_at ?? post.created_at,
+    },
   };
 }
 
-// fetches approved businesses matching this post's tagged category and/or
-// area, for the "Businesses You Might Like" section below the content —
-// reuses the exact same category (.eq, exact match, from
-// app/category/[slug]/page.js's getBusinessesByCategory()) and area
-// (.filter ilike prefix match, from app/town/[slug]/page.js's
-// getBusinessesByArea()) query patterns, applied together when the post
-// has both set.
+// approved businesses matching the post's tagged category and/or area,
+// for the "Businesses you might like" section under the post.
 async function getMatchingBusinesses(category, area) {
   if (!category && !area) return [];
-
-  let query = supabase
-    .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook, street_address, halal, delivery_available, callouts_available")
-    .eq("status", "approved");
-
-  if (category) query = query.eq("category", category);
-  if (area) query = query.filter("area", "ilike", `${area}%`);
-
-  const { data } = await query.order("name");
-  return data ?? [];
+  const businesses = await getApprovedBusinesses();
+  const wantedArea = area ? areaSlug(area) : null;
+  return businesses.filter(
+    (b) => (!category || b.category === category) && (!wantedArea || areaSlug(b.area) === wantedArea)
+  );
 }
 
 export default async function BlogPostPage({ params }) {
@@ -83,62 +71,57 @@ export default async function BlogPostPage({ params }) {
   if (!post || !post.published) notFound();
 
   const businesses = await getMatchingBusinesses(post.category, post.area);
+  const areaLabel = post.area ? (await getArea(areaSlug(post.area)))?.name ?? post.area : null;
 
-  // the plain-text content is split into paragraphs on a blank line (two
-  // consecutive newlines) — no rich text, nothing fancier than that.
+  // the content is plain text, split into paragraphs on blank lines.
   const paragraphs = post.content.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  const pageUrl = absoluteUrl(`/blog/${post.slug}`);
+  const image = post.featured_image_url ? cloudinaryUrl(post.featured_image_url, { width: 1200 }) : null;
+
+  const crumbs = [
+    { name: "Home", path: "/" },
+    { name: "Blog", path: "/blog" },
+    { name: post.title, path: `/blog/${post.slug}` },
+  ];
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "BlogPosting",
-        "@id": `${SITE_URL}/blog/${post.slug}#post`,
+        "@id": `${pageUrl}#post`,
+        mainEntityOfPage: pageUrl,
+        url: pageUrl,
         headline: post.title,
-        description: post.excerpt ?? undefined,
-        articleBody: post.content,
+        ...(post.excerpt && { description: post.excerpt }),
         datePublished: post.created_at,
-        dateModified: post.updated_at,
-        url: `${SITE_URL}/blog/${post.slug}`,
-        publisher: { "@type": "Organization", name: "Hidden Gems SA", url: SITE_URL },
+        dateModified: post.updated_at ?? post.created_at,
+        ...(image && { image }),
+        inLanguage: "en-ZA",
+        author: { "@type": "Organization", name: SITE_NAME, url: absoluteUrl("/") },
+        publisher: { "@id": ORGANIZATION_ID },
       },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-          { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
-          { "@type": "ListItem", position: 3, name: post.title, item: `${SITE_URL}/blog/${post.slug}` },
-        ],
-      },
+      breadcrumbList(crumbs),
     ],
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <div className="container section-sm">
-        <nav className="breadcrumb" aria-label="Breadcrumb">
-          <Link href="/">Home</Link>
-          <i className="fa-solid fa-chevron-right" />
-          <Link href="/blog">Blog</Link>
-          <i className="fa-solid fa-chevron-right" />
-          <span>{post.title}</span>
-        </nav>
+        <Breadcrumbs items={crumbs} />
       </div>
 
       <section className="section" style={{ paddingTop: "1rem" }}>
-        <div className="container" style={{ maxWidth: 760 }}>
+        <article className="container" style={{ maxWidth: 760 }}>
           {post.featured_image_url && (
             <div className="blog-post-featured-image">
               <Image
-                src={post.featured_image_url}
-                alt=""
+                src={cloudinaryUrl(post.featured_image_url, { width: 1600 })}
+                alt={post.title}
                 fill
-                sizes="(max-width: 760px) 100vw, 760px"
+                sizes="(max-width: 800px) 100vw, 760px"
                 className="blog-post-featured-img"
                 priority
               />
@@ -148,62 +131,24 @@ export default async function BlogPostPage({ params }) {
           <div className="blog-post-body">
             {paragraphs.map((paragraph, i) => <p key={i}>{paragraph}</p>)}
           </div>
-        </div>
+        </article>
       </section>
 
       {businesses.length > 0 && (
         <section className="section section--narrow" style={{ paddingTop: 0 }}>
           <div className="container">
             <div className="section-header">
-              <h2>Businesses You Might Like</h2>
+              <h2>
+                Businesses you might like
+                {post.category && areaLabel ? `: ${post.category} in ${areaLabel}` : post.category ? `: ${post.category}` : areaLabel ? ` in ${areaLabel}` : ""}
+              </h2>
             </div>
             <div className="listing-grid">
-              {businesses.map((biz) => (
-                <BusinessCard key={biz.id} biz={biz} />
-              ))}
+              {businesses.map((biz) => <ListingCard key={biz.id} biz={biz} />)}
             </div>
           </div>
         </section>
       )}
     </>
-  );
-}
-
-// identical to the BusinessCard duplicated at the bottom of
-// app/category/[slug]/page.js and app/town/[slug]/page.js — same
-// per-file convention (nothing shared between these pages), not a new one.
-function BusinessCard({ biz }) {
-  const initial = biz.name[0].toUpperCase();
-  const areaName = biz.area.split(",")[0].trim();
-  return (
-    <div className="listing-card">
-      <Link href={`/business/${biz.slug}`} className="listing-card-link">
-        <div className="listing-card-logo">
-          {biz.logo_url ? (
-            <Image src={biz.logo_url} alt={`${biz.name} logo`} width={56} height={56} className="avatar" />
-          ) : (
-            <div className="avatar-monogram">{initial}</div>
-          )}
-        </div>
-        <div className="listing-card-body">
-          <h3 className="listing-card-name">{biz.name}</h3>
-          <p className="listing-card-meta">
-            <span><i className="fa-solid fa-location-dot" /> {areaName}, {biz.province}</span>
-          </p>
-          {biz.business_type && (
-            <span className="business-type-badge">{biz.business_type}</span>
-          )}
-          <BadgePills biz={biz} />
-          {biz.description && (
-            <p className="listing-card-desc">{biz.description}</p>
-          )}
-        </div>
-      </Link>
-      <div className="listing-card-actions">
-        <SocialLink platform="instagram" value={biz.instagram} className="social-icon-btn social-icon-btn--instagram social-icon-btn--sm" iconOnly />
-        <SocialLink platform="facebook" value={biz.facebook} className="social-icon-btn social-icon-btn--facebook social-icon-btn--sm" iconOnly />
-        <i className="fa-solid fa-chevron-right listing-card-arrow" />
-      </div>
-    </div>
   );
 }

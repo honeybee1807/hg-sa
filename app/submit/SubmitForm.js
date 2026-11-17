@@ -300,7 +300,7 @@ export default function SubmitForm() {
       errors.whatsapp = "Please enter a valid South African mobile number, starting with 0 or +27.";
     }
     if (!isValidWebsiteUrl(normalizeWebsiteUrl(fields.website))) {
-      errors.website = "Please enter a valid website URL, e.g. https://example.com — not an email address, and only one link.";
+      errors.website = "Please enter a valid website, like https://example.com. Use one link, not an email address.";
     }
     if (!fields.owner_name.trim()) {
       errors.owner_name = "Please enter your name.";
@@ -421,7 +421,7 @@ export default function SubmitForm() {
       <div className="submit-success">
         <i className="fa-solid fa-circle-check" />
         <h2>Submission Received!</h2>
-        <p>Thank you! Your listing is now under review — we&apos;ll have it live within 24–48 hours.</p>
+        <p>Thank you! We&apos;re checking your listing now and will have it live within 24 to 48 hours.</p>
         <button className="btn-secondary mt-3" onClick={handleSubmitAnotherClick}>
           <i className="fa-solid fa-plus" /> Submit Another Business
         </button>
@@ -582,7 +582,7 @@ export default function SubmitForm() {
           <textarea id="description" className="form-control" value={fields.description}
             onChange={handleDescriptionChange}
             rows={3} maxLength={200}
-            placeholder="1–2 sentences about your products or services" />
+            placeholder="One or two sentences about what you offer" />
           {fieldErrors.description && <span className="field-error">{fieldErrors.description}</span>}
         </div>
       </div>
@@ -598,7 +598,7 @@ export default function SubmitForm() {
             <label htmlFor="whatsapp">WhatsApp Number <span className="required">*</span></label>
             <input id="whatsapp" className="form-control" type="tel" value={fields.whatsapp}
               onChange={set("whatsapp")} placeholder="e.g. 082 123 4567" />
-            <span className="form-hint">Enter your number starting with 0 — we&apos;ll format it automatically.</span>
+            <span className="form-hint">Start with 0 and we&apos;ll format it for you.</span>
             {fieldErrors.whatsapp && <span className="field-error">{fieldErrors.whatsapp}</span>}
           </div>
 
@@ -633,7 +633,7 @@ export default function SubmitForm() {
           <i className="fa-solid fa-user" /> About You
         </h2>
         <p className="form-section-note">
-          <i className="fa-solid fa-lock" /> Your name and email are private — only our team sees them.
+          <i className="fa-solid fa-lock" /> Your name and email are private. Only our team sees them.
           Your WhatsApp number will be shown publicly on your listing so customers can contact you.
         </p>
 
@@ -738,7 +738,7 @@ export default function SubmitForm() {
           <label className="logo-dropzone">
             <i className="fa-solid fa-cloud-arrow-up" />
             <span className="logo-dropzone-label">Click to upload a logo</span>
-            <span className="logo-dropzone-hint">PNG, JPG or WebP — you&apos;ll crop it to size before it uploads.</span>
+            <span className="logo-dropzone-hint">PNG, JPG or WebP. You&apos;ll crop it to size before it uploads.</span>
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp"
               onChange={handleFileChange} className="logo-file-input" />
           </label>
@@ -788,7 +788,7 @@ export default function SubmitForm() {
           <div className="crop-modal">
             <div className="crop-modal-header">
               <h3>Crop Your Logo</h3>
-              <p>Drag to reposition — scroll or pinch to zoom</p>
+              <p>Drag to move it, and scroll or pinch to zoom</p>
             </div>
             <div className="crop-img-wrap">
               <img ref={imgRef} src={cropSrc} alt="Logo to crop" />

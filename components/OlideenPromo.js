@@ -16,7 +16,7 @@
 // visible to a given visitor.
 
 import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
+import { loadGsap } from "@/lib/loadGsap";
 import Image from "next/image";
 import { OLIDEEN_URL } from "@/lib/constants";
 
@@ -29,11 +29,19 @@ export default function OlideenPromo() {
     const sectionElement = ref.current;
     if (!sectionElement) return;
 
+    // GSAP is loaded on demand (see lib/loadGsap.js); the setup below runs
+    // once it arrives.
+    let cancelled = false;
+    let observer = null;
+    let animationContext = null;
+
+    loadGsap().then((gsap) => {
+    if (cancelled) return;
     // gsap.context() groups every animation created inside it so they can
     // all be cleaned up together (via ctx.revert()) when this component is
     // removed from the page. scoped to this section, so ".promo-animate"
     // only ever matches elements inside it.
-    const animationContext = gsap.context(() => {
+    animationContext = gsap.context(() => {
       gsap.set(".promo-animate", { y: 32, opacity: 0 });
     }, sectionElement);
 
@@ -45,7 +53,7 @@ export default function OlideenPromo() {
     // than ScrollTrigger for the same reason as AnimatedSection.js: it
     // always checks the section's real current position, so the content
     // can't get stuck invisible when the page above changes height.
-    const observer = new IntersectionObserver(
+    observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
         observer.disconnect();
@@ -65,10 +73,12 @@ export default function OlideenPromo() {
       { rootMargin: "0px 0px -18% 0px" }
     );
     observer.observe(sectionElement);
+    });
 
     return () => {
-      observer.disconnect();
-      animationContext.revert();
+      cancelled = true;
+      observer?.disconnect();
+      animationContext?.revert();
     };
   }, []);
 

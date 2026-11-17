@@ -27,11 +27,12 @@
 import { createContext, useContext, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { CATEGORIES, PROVINCES, BUSINESS_TYPES, SITE_WHATSAPP } from "@/lib/constants";
 import { buildSearchIndex, searchDirectory, removeQueryWords, sanitizeSearchTerm } from "@/lib/search";
 import SocialLink from "@/components/SocialLink";
 import BadgePills from "@/components/BadgePills";
+import { cloudinaryUrl, logoAlt } from "@/lib/images";
 
 // the three badge filters shown in their own section of the filter panel —
 // same icons/colours as the pills themselves (see components/BadgePills.js
@@ -46,10 +47,9 @@ const BADGE_FILTER_OPTIONS = [
 
 // the three query-string keys the badge filters sync to/from (e.g.
 // "?halal=true&delivery=true"), so a filtered view is shareable by link.
-// category/province/business type don't have URL params. app/page.js reads
-// the starting values for these from the page's own searchParams on the
-// server (it keeps its own copy of this list, since a server component
-// can't import a plain value from a "use client" file).
+// category/province/business type don't have URL params. they're read from
+// the address once the page loads in the browser (see the provider below),
+// which keeps the homepage itself cacheable.
 const BADGE_PARAM_KEYS = ["halal", "delivery", "callouts"];
 
 // the three ways results can be displayed, and the localStorage key that
@@ -91,12 +91,11 @@ function useDirectorySearch() {
 }
 
 // owns everything both halves need to agree on: the search text, the
-// filters currently applied, and the resulting filtered list.
-// "initialBadges" is whichever badge filters were in the URL when the page
-// loaded, read on the server by app/page.js — so a shared "?halal=true"
-// link renders already filtered, with no flash of unfiltered results.
+// filters currently applied, and the resulting filtered list. the server
+// always renders the full, unfiltered directory (so every listing is a
+// crawlable link); any badge filters in the address are applied as soon as
+// the page loads in the browser.
 export function DirectorySearchProvider({ businesses, initialBadges = [], children }) {
-  const router = useRouter();
   const pathname = usePathname();
 
   const [query, setQuery] = useState(""); // whatever text is currently typed into the search box
@@ -106,6 +105,16 @@ export function DirectorySearchProvider({ businesses, initialBadges = [], childr
   const [appliedProvinces, setAppliedProvinces]         = useState([]);
   const [appliedBusinessTypes, setAppliedBusinessTypes] = useState([]);
   const [appliedBadges, setAppliedBadges]               = useState(initialBadges);
+
+  // apply any badge filters from a shared link ("?halal=true").
+  useEffect(() => {
+    function readBadgesFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = BADGE_PARAM_KEYS.filter((key) => params.get(key) === "true");
+      if (fromUrl.length > 0) setAppliedBadges(fromUrl);
+    }
+    readBadgesFromUrl();
+  }, []);
 
   // keeps the URL's badge query params in sync with whatever's currently
   // applied, so a filtered view is shareable via link and restores
@@ -118,7 +127,8 @@ export function DirectorySearchProvider({ businesses, initialBadges = [], childr
       else params.delete(key);
     }
     const queryString = params.toString();
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    // updates the address without asking the server for the page again.
+    window.history.replaceState(window.history.state, "", queryString ? `${pathname}?${queryString}` : pathname);
   }
 
   function applyFilters({ categories, provinces, businessTypes, badges }) {
@@ -671,7 +681,7 @@ function DirectoryResultsList() {
       <div className="dsec-count-row">
         <p className="dsec-count">
           {businesses.length === 0
-            ? "No approved listings yet — be the first!"
+            ? "No listings yet. Yours could be the first!"
             : `${filtered.length} ${filtered.length === 1 ? "business" : "businesses"} to discover`}
         </p>
 
@@ -863,8 +873,8 @@ function GemCard({ biz, compact }) {
       <div className="gem-card-banner">
         {biz.logo_url ? (
           <Image
-            src={biz.logo_url}
-            alt={`${biz.name} logo`}
+            src={cloudinaryUrl(biz.logo_url, { width: 240 })}
+            alt={logoAlt(biz, areaName)}
             width={104}
             height={104}
             sizes="104px"
@@ -901,9 +911,9 @@ function DirectoryRow({ biz }) {
       <Link href={`/business/${biz.slug}`} className="dir-row-main">
         <div className="dir-row-logo">
           {biz.logo_url ? (
-            <Image src={biz.logo_url} alt={`${biz.name} logo`} width={56} height={56} className="avatar" />
+            <Image src={cloudinaryUrl(biz.logo_url, { width: 160 })} alt={logoAlt(biz, areaName)} width={56} height={56} className="avatar" />
           ) : (
-            <div className="avatar-monogram">{initial}</div>
+            <div className="avatar-monogram" aria-hidden="true">{initial}</div>
           )}
         </div>
         <div className="dir-row-body">

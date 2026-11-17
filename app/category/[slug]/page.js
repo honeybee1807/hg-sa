@@ -1,235 +1,226 @@
-// this is the page shown at hiddengemssa.co.za/category/whatever-slug —
-// e.g. /category/baking-catering — listing every approved business in one
-// category, plus a small FAQ section written specifically for that
-// category (see faqItems further down).
+// the page at hiddengemssa.co.za/category/[slug], e.g.
+// /category/baking-catering: every approved business in one category, a
+// short intro written from the live listings, links into each area
+// ("Bakers and caterers in Estcourt"), related categories, and a small FAQ.
+//
+// a category with no listings yet still loads (so links to it never
+// break), but it's marked noindex and left out of the sitemap until its
+// first listing is approved.
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import supabase from "@/lib/supabase";
-import { CATEGORIES, SITE_URL } from "@/lib/constants";
-import SocialLink from "@/components/SocialLink";
-import BadgePills from "@/components/BadgePills";
+import { CATEGORIES } from "@/lib/constants";
+import { getCategories, getCombos, getAreas, categoryBySlug, areaSlug } from "@/lib/directory";
+import {
+  searchPhrase, searchPhraseLower, clampDescription, listToSentence, listWithMore, plural, fullTitle,
+  breadcrumbList, itemList, JsonLd, absoluteUrl,
+} from "@/lib/seo";
+import ListingCard from "@/components/ListingCard";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import LinkList from "@/components/LinkList";
 
-// rebuild this page at most once an hour.
 export const revalidate = 3600;
 
-// turns the web-address version of a category (e.g. "baking-catering")
-// back into the full category record from lib/constants.js.
-function slugToCategory(slug) {
-  return CATEGORIES.find((c) => c.slug === slug) ?? null;
-}
-
-// fetches every approved business in one specific category.
-async function getBusinessesByCategory(categoryName) {
-  const { data } = await supabase
-    .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description, instagram, facebook, street_address, halal, delivery_available, callouts_available")
-    .eq("status", "approved")
-    .eq("category", categoryName)
-    .order("name");
-  return data ?? [];
-}
-
-// tells Next.js every category page that exists, so all 14 can be
-// pre-built ahead of time.
-export async function generateStaticParams() {
+export function generateStaticParams() {
   return CATEGORIES.map((cat) => ({ slug: cat.slug }));
+}
+
+// "KwaZulu-Natal" when most listings are there, otherwise "South Africa".
+function regionFor(businesses) {
+  const counts = new Map();
+  for (const b of businesses) counts.set(b.province, (counts.get(b.province) ?? 0) + 1);
+  const [top, topCount] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
+  return top && topCount / businesses.length >= 0.75 ? top : "South Africa";
+}
+
+// distinct area names (grouped, so "DURBAN" and "Durban" count once),
+// most listings first.
+async function topAreas(businesses) {
+  const nameBySlug = new Map((await getAreas()).map((a) => [a.slug, a.name]));
+  const counts = new Map();
+  for (const b of businesses) {
+    const name = nameBySlug.get(areaSlug(b.area));
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name]) => name);
+}
+
+async function loadCategory(slug) {
+  const cat = categoryBySlug(slug);
+  if (!cat) return null;
+  const categories = await getCategories();
+  return categories.find((c) => c.slug === slug);
 }
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const cat = slugToCategory(slug);
-  if (!cat) return { title: "Category Not Found" };
+  const cat = await loadCategory(slug);
+  if (!cat) notFound();
+
+  const count = cat.businesses.length;
+  const region = count ? regionFor(cat.businesses) : "South Africa";
+  const areas = await topAreas(cat.businesses);
+  const title = `${searchPhrase(cat.name)} in ${region}`;
+  const description = count
+    ? clampDescription(
+        `${plural(count, "listing", "listings")} for ${searchPhraseLower(cat.name)} in ${listWithMore(areas)}. Free to browse, and you can message each one on WhatsApp.`
+      )
+    : `${searchPhrase(cat.name)} on Hidden Gems SA. No listings yet. Run one? List it for free.`;
+
   return {
-    title: `${cat.name} — Local Businesses`,
-    description: `Find local ${cat.name.toLowerCase()} businesses in South Africa — browse free, no account needed.`,
-    alternates: { canonical: `${SITE_URL}/category/${slug}` },
+    title: fullTitle(title),
+    description,
+    alternates: { canonical: `/category/${slug}` },
+    ...(count === 0 && { robots: { index: false, follow: true } }),
+    openGraph: { title, description, url: `/category/${slug}` },
   };
 }
 
 export default async function CategoryPage({ params }) {
   const { slug } = await params;
-  const cat = slugToCategory(slug);
+  const cat = await loadCategory(slug);
   if (!cat) notFound();
 
-  const businesses = await getBusinessesByCategory(cat.name);
+  const businesses = cat.businesses;
+  const count = businesses.length;
+  const phrase = searchPhrase(cat.name);
+  const phraseLower = searchPhraseLower(cat.name);
+  const region = count ? regionFor(businesses) : "South Africa";
+  const areas = await topAreas(businesses);
 
-  // build the list of distinct areas that actually have a business in this
-  // category, so the FAQ answer below can name them specifically (e.g.
-  // "we list baking businesses in Estcourt, Ladysmith..."). "new Set(...)"
-  // is just a quick way to remove duplicate area names before sorting
-  // them alphabetically.
-  const areaNamesWithoutDuplicates = new Set(businesses.map((b) => b.area.split(",")[0].trim()));
-  const areas = [...areaNamesWithoutDuplicates].sort();
+  // this category, split by area ("Bakers and caterers in Estcourt").
+  const combos = (await getCombos()).filter((c) => c.category.slug === slug);
 
-  const catLower = cat.name.toLowerCase();
+  // other categories that have listings in the same areas as this one.
+  const myAreas = new Set(combos.map((c) => c.area.slug));
+  const allCategories = await getCategories();
+  const related = allCategories
+    .filter((c) => c.slug !== slug && c.businesses.length > 0)
+    .map((c) => ({ c, shared: c.businesses.filter((b) => myAreas.has(areaSlug(b.area))).length }))
+    .sort((a, b) => b.shared - a.shared || b.c.businesses.length - a.c.businesses.length)
+    .slice(0, 8)
+    .map(({ c }) => ({ href: `/category/${c.slug}`, label: searchPhrase(c.name), count: c.businesses.length }));
 
-  // the FAQ shown on this specific category's page — written to directly
-  // answer a real search like "where can I find a caterer in Estcourt".
+  const delivery = businesses.filter((b) => b.delivery_available).length;
+  const callouts = businesses.filter((b) => b.callouts_available).length;
+  const halal = businesses.filter((b) => b.halal).length;
+  const extras = [
+    delivery && `${delivery} deliver`,
+    callouts && `${callouts} do call-outs`,
+    halal && `${halal} ${halal === 1 ? "is" : "are"} halal`,
+  ].filter(Boolean);
+
   const faqItems = [
     {
-      question: `Where can I find ${catLower} businesses in South Africa?`,
-      answer:
-        areas.length > 0
-          ? `We currently list ${businesses.length} approved ${catLower} ${businesses.length === 1 ? "business" : "businesses"} in ${areas.join(", ")}. Browse the list above, or search by area.`
-          : `We're still building our ${catLower} directory. Ccheck back soon, or list your own ${catLower} business for free.`,
+      question: `Where can I find ${phraseLower} near me?`,
+      answer: count
+        ? `We list ${plural(count, "business", "businesses")} in this category, in ${listToSentence(areas)}. Pick an area below to see only the ones close to you.`
+        : `We don't have any listings in this category yet. If you run one, you can list it for free.`,
     },
     {
-      question: `Is it free to list a ${catLower} business on Hidden Gems SA?`,
-      answer:
-        "Yes, completely free, no account required. We review and approve submissions within 24–48 hours. However, time is limited as we may introduce paid premium features in the future, so get your free listing whilst it is free.",
+      question: `Is it free to list a business here?`,
+      answer: "Yes. Listing is free and you don't need an account. We check new listings and usually have them live within 24 to 48 hours.",
     },
     {
-      question: `How do I contact a ${catLower} business listed here?`,
-      answer:
-        "Approved listings often have a WhatsApp button so that you can message them directly. Some also include a website link.",
+      question: `How do I contact one of these businesses?`,
+      answer: "Open a listing and tap the WhatsApp button to message the business directly. Some listings also have a website, Instagram or Facebook link.",
     },
   ];
 
-  // hidden, machine-readable description of this page for search engines
-  // and AI tools (see the fuller explanation in app/page.js).
+  const crumbs = [
+    { name: "Home", path: "/" },
+    { name: "Categories", path: "/categories" },
+    { name: cat.name, path: `/category/${slug}` },
+  ];
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home",       item: SITE_URL },
-          { "@type": "ListItem", position: 2, name: "Categories", item: `${SITE_URL}/categories` },
-          { "@type": "ListItem", position: 3, name: cat.name,     item: `${SITE_URL}/category/${slug}` },
-        ],
-      },
-      {
-        "@type": "ItemList",
-        name: `${cat.name} businesses in South Africa`,
-        itemListElement: businesses.map((b, i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          url: `${SITE_URL}/business/${b.slug}`,
-          name: b.name,
-        })),
-      },
+      breadcrumbList(crumbs),
+      ...(count ? [itemList(`${phrase} in ${region}`, businesses)] : []),
       {
         "@type": "FAQPage",
+        "@id": absoluteUrl(`/category/${slug}#faq`),
         mainEntity: faqItems.map((f) => ({
           "@type": "Question",
           name: f.question,
           acceptedAnswer: { "@type": "Answer", text: f.answer },
         })),
       },
-      {
-        "@type": "WebPage",
-        "@id": `${SITE_URL}/category/${slug}#webpage`,
-        url: `${SITE_URL}/category/${slug}`,
-        name: `${cat.name} — Local Businesses`,
-        speakable: {
-          "@type": "SpeakableSpecification",
-          cssSelector: [".page-faq-question", ".page-faq-answer"],
-        },
-      },
     ],
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <div className="container section-sm">
-        <nav className="breadcrumb" aria-label="Breadcrumb">
-          <Link href="/">Home</Link>
-          <i className="fa-solid fa-chevron-right" />
-          <Link href="/categories">Categories</Link>
-          <i className="fa-solid fa-chevron-right" />
-          <span>{cat.name}</span>
-        </nav>
+        <Breadcrumbs items={crumbs} />
       </div>
 
       <section className="section" style={{ paddingTop: "1rem" }}>
         <div className="container">
           <div className="section-header">
             <h1>
-              <i className={`${cat.icon} text-sapphire`} /> {cat.name}
+              <i className={`${cat.icon} text-sapphire`} aria-hidden="true" /> {phrase} in {region}
             </h1>
-            <p>
-              {businesses.length > 0
-                ? `${businesses.length} local ${businesses.length === 1 ? "business" : "businesses"} listed`
-                : "No businesses listed yet in this category"}
-            </p>
+            {count > 0 ? (
+              <p className="page-intro">
+                {plural(count, "business", "businesses")} listed under {cat.name}, in {listToSentence(areas.slice(0, 4))}
+                {areas.length > 4 ? ` and ${plural(areas.length - 4, "other area", "other areas")}` : ""}.
+                {extras.length > 0 && ` Of these, ${listToSentence(extras)}.`}
+                {" "}Tap a listing for details, or message them on WhatsApp.
+              </p>
+            ) : (
+              <p className="page-intro">No {phraseLower} are listed yet.</p>
+            )}
           </div>
 
-          {businesses.length > 0 ? (
+          {count > 0 ? (
             <div className="listing-grid">
-              {businesses.map((biz) => (
-                <BusinessCard key={biz.id} biz={biz} />
-              ))}
+              {businesses.map((biz) => <ListingCard key={biz.id} biz={biz} show="area" />)}
             </div>
           ) : (
             <div className="listing-empty">
-              <i className="fa-solid fa-store-slash" />
-              <p>No {cat.name.toLowerCase()} businesses listed yet.</p>
+              <i className="fa-solid fa-store-slash" aria-hidden="true" />
+              <p>Be the first {cat.name.toLowerCase()} business on Hidden Gems SA.</p>
               <Link href="/submit" className="btn-primary mt-2">
-                <i className="fa-solid fa-plus" /> List Your Business Free
+                <i className="fa-solid fa-plus" aria-hidden="true" /> List your business free
               </Link>
             </div>
           )}
         </div>
       </section>
 
+      {(combos.length > 0 || related.length > 0) && (
+        <section className="section section--narrow" style={{ paddingTop: 0 }}>
+          <div className="container link-list-grid">
+            <LinkList
+              title={`${phrase} by area`}
+              links={combos.map((c) => ({
+                href: `/category/${slug}/${c.area.slug}`,
+                label: `${phrase} in ${c.area.name}`,
+                count: c.businesses.length,
+              }))}
+            />
+            <LinkList title="Related categories" links={related} />
+          </div>
+        </section>
+      )}
+
       <section className="section section--narrow" style={{ paddingTop: 0 }}>
         <div className="container">
+          <h2 className="page-faq-title">Questions about {phraseLower}</h2>
           <div className="faq-list">
-            {faqItems.map((f, i) => (
-              <details key={i} className="faq-item">
-                <summary className="faq-question page-faq-question">{f.question}</summary>
-                <p className="faq-answer page-faq-answer">{f.answer}</p>
+            {faqItems.map((f) => (
+              <details key={f.question} className="faq-item">
+                <summary className="faq-question">{f.question}</summary>
+                <p className="faq-answer">{f.answer}</p>
               </details>
             ))}
           </div>
         </div>
       </section>
     </>
-  );
-}
-
-function BusinessCard({ biz }) {
-  const initial = biz.name[0].toUpperCase();
-  // some older records may store the area with extra text after it (like
-  // "Estcourt, KwaZulu-Natal" instead of just "Estcourt") — only the part
-  // before the first comma is the actual area name.
-  const areaName = biz.area.split(",")[0].trim();
-  return (
-    <div className="listing-card">
-      <Link href={`/business/${biz.slug}`} className="listing-card-link">
-        <div className="listing-card-logo">
-          {biz.logo_url ? (
-            <Image src={biz.logo_url} alt={`${biz.name} logo`} width={56} height={56} className="avatar" />
-          ) : (
-            <div className="avatar-monogram">{initial}</div>
-          )}
-        </div>
-        <div className="listing-card-body">
-          <h3 className="listing-card-name">{biz.name}</h3>
-          <p className="listing-card-meta">
-            <span><i className="fa-solid fa-location-dot" /> {areaName}, {biz.province}</span>
-          </p>
-          {biz.business_type && (
-            <span className="business-type-badge">{biz.business_type}</span>
-          )}
-          <BadgePills biz={biz} />
-          {biz.description && (
-            <p className="listing-card-desc">{biz.description}</p>
-          )}
-        </div>
-      </Link>
-      <div className="listing-card-actions">
-        <SocialLink platform="instagram" value={biz.instagram} className="social-icon-btn social-icon-btn--instagram social-icon-btn--sm" iconOnly />
-        <SocialLink platform="facebook" value={biz.facebook} className="social-icon-btn social-icon-btn--facebook social-icon-btn--sm" iconOnly />
-        <i className="fa-solid fa-chevron-right listing-card-arrow" />
-      </div>
-    </div>
   );
 }

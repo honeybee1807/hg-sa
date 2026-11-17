@@ -7,9 +7,9 @@
 import { SITE_URL } from "@/lib/constants";
 
 export const metadata = {
-  title: "Disclaimer & Terms of Use | Hidden Gems SA",
+  title: "Disclaimer and Terms of Use",
   description:
-    "How Hidden Gems SA connects users with independent local businesses, and what that means under South African law.",
+    "How Hidden Gems SA connects people with independent local businesses, what we do and don't check, and what that means under South African law.",
   alternates: { canonical: `${SITE_URL}/disclaimer` },
 };
 

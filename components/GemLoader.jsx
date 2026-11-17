@@ -20,7 +20,7 @@ const PHRASES = [
   "Digging through South Africa...",
   "Every gem was hidden once...",
   "Your community's best, coming right up...",
-  "Almost there — good things take a moment...",
+  "Almost there. Good things take a moment...",
 ];
 
 export default function GemLoader({ variant = "light" }) {

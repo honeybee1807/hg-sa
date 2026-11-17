@@ -1,94 +1,72 @@
-// this file automatically creates the page at hiddengemssa.co.za/sitemap.xml
-// — a list of every page on the site, handed to search engines so they know
-// what exists and how important/how-often-changing each page is.
+// hiddengemssa.co.za/sitemap.xml: every page search engines should index,
+// built from live data.
+//
+// what's in it: the homepage and hub pages, every category and area with at
+// least one listing, every "category in area" page, every approved
+// business, the blog and its published posts, and the disclaimer. empty
+// categories (which are noindex), the edit pages and the admin are left
+// out on purpose.
+//
+// "lastModified" uses real dates where the data has them (a business's
+// updated_at, a post's updated_at); a group page uses the newest date of
+// the listings on it. pages with no date of their own leave it out rather
+// than claiming they changed today.
 
 import supabase from "@/lib/supabase";
-import { CATEGORIES, SITE_URL } from "@/lib/constants";
+import { SITE_URL } from "@/lib/constants";
+import { getApprovedBusinesses, getAreas, getCategories, getCombos, latestUpdate } from "@/lib/directory";
 
-// rebuild this list once a day at most, so a newly approved business shows
-// up here (and can start getting found by Google) without a long wait.
-export const revalidate = 86400; // 86400 seconds = 24 hours
+// rebuilt at most once an hour.
+export const revalidate = 3600;
+
+function entry(path, lastModified, changeFrequency, priority) {
+  return {
+    url: `${SITE_URL}${path}`,
+    ...(lastModified && { lastModified }),
+    changeFrequency,
+    priority,
+  };
+}
 
 export default async function sitemap() {
-  // get every approved business's web address (slug), the date it was last
-  // changed, and its area (used below to work out which area pages exist).
-  // we deliberately only ask for these fields, not the whole business
-  // record — the sitemap doesn't need anything else.
-  const { data: businesses } = await supabase
-    .from("businesses")
-    .select("slug, updated_at, area")
-    .eq("status", "approved")
-    .not("slug", "is", null);
+  const [businesses, areas, categories, combos, { data: posts }] = await Promise.all([
+    getApprovedBusinesses(),
+    getAreas(),
+    getCategories(),
+    getCombos(),
+    supabase.from("blog_posts").select("slug, updated_at, created_at").eq("published", true),
+  ]);
 
-  // every published blog post's web address, e.g. .../blog/some-post —
-  // draft posts are deliberately left out of the query itself.
-  const { data: blogPosts } = await supabase
-    .from("blog_posts")
-    .select("slug, updated_at")
-    .eq("published", true);
+  const newestListing = latestUpdate(businesses);
+  const newestPost = (posts ?? [])
+    .map((p) => p.updated_at ?? p.created_at)
+    .filter(Boolean)
+    .sort()
+    .pop();
 
-  const today = new Date();
+  return [
+    entry("/", newestListing, "daily", 1.0),
+    entry("/categories", newestListing, "weekly", 0.8),
+    entry("/towns", newestListing, "weekly", 0.8),
+    entry("/submit", null, "monthly", 0.5),
+    entry("/blog", newestPost ? new Date(newestPost) : null, "weekly", 0.5),
+    entry("/disclaimer", null, "yearly", 0.2),
 
-  // the handful of pages that always exist, regardless of what's in the
-  // database. "priority" is a hint (0 to 1) about how important a page is
-  // relative to the others; "changeFrequency" hints how often it changes.
-  const staticPages = [
-    { url: SITE_URL,                   lastModified: today, changeFrequency: "daily",   priority: 1.0 },
-    { url: `${SITE_URL}/towns`,        lastModified: today, changeFrequency: "weekly",  priority: 0.8 },
-    { url: `${SITE_URL}/categories`,   lastModified: today, changeFrequency: "weekly",  priority: 0.8 },
-    { url: `${SITE_URL}/submit`,       lastModified: today, changeFrequency: "monthly", priority: 0.5 },
+    ...categories
+      .filter((c) => c.businesses.length > 0)
+      .map((c) => entry(`/category/${c.slug}`, latestUpdate(c.businesses), "weekly", 0.8)),
+
+    ...areas.map((a) => entry(`/town/${a.slug}`, latestUpdate(a.businesses), "weekly", 0.7)),
+
+    ...combos.map((c) =>
+      entry(`/category/${c.category.slug}/${c.area.slug}`, latestUpdate(c.businesses), "weekly", 0.7)
+    ),
+
+    ...businesses.map((b) => entry(`/business/${b.slug}`, b.updated_at ? new Date(b.updated_at) : null, "monthly", 0.9)),
+
+    ...(posts ?? []).map((p) => {
+      const date = p.updated_at ?? p.created_at;
+      return entry(`/blog/${p.slug}`, date ? new Date(date) : null, "monthly", 0.6);
+    }),
   ];
-
-  // one sitemap entry per area page, e.g. hiddengemssa.co.za/town/umhlanga —
-  // areas aren't a fixed list anymore (see lib/constants.js), so this asks
-  // the database for every distinct area that currently has an approved
-  // business instead of looping over a constant.
-  const distinctAreaSlugs = new Set(
-    (businesses ?? [])
-      .map((business) => business.area?.split(",")[0]?.trim())
-      .filter(Boolean)
-      .map((areaName) => areaName.toLowerCase().replace(/\s+/g, "-"))
-  );
-  const townPages = [...distinctAreaSlugs].map((areaSlug) => ({
-    url: `${SITE_URL}/town/${areaSlug}`,
-    lastModified: today,
-    changeFrequency: "weekly",
-    priority: 0.7,
-  }));
-
-  // one sitemap entry per category page, e.g. .../category/baking-catering
-  const categoryPages = CATEGORIES.map((category) => ({
-    url: `${SITE_URL}/category/${category.slug}`,
-    lastModified: today,
-    changeFrequency: "daily",
-    priority: 0.8,
-  }));
-
-  // one sitemap entry per approved business, e.g. .../business/some-bakery
-  const businessPages = (businesses ?? []).map((business) => {
-    // use the business's own "last updated" date if we have one, otherwise
-    // just fall back to today's date.
-    const lastModifiedDate = business.updated_at ? new Date(business.updated_at) : today;
-    return {
-      url: `${SITE_URL}/business/${business.slug}`,
-      lastModified: lastModifiedDate,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    };
-  });
-
-  // one sitemap entry per published blog post, e.g. .../blog/some-post
-  const blogPages = (blogPosts ?? []).map((post) => {
-    const lastModifiedDate = post.updated_at ? new Date(post.updated_at) : today;
-    return {
-      url: `${SITE_URL}/blog/${post.slug}`,
-      lastModified: lastModifiedDate,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    };
-  });
-
-  // combine everything into one single list — this is what actually becomes
-  // the sitemap.xml file.
-  return [...staticPages, ...townPages, ...categoryPages, ...businessPages, ...blogPages];
 }

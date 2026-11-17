@@ -12,6 +12,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppHelpButton from "@/components/WhatsAppHelpButton";
 import DeferredStylesheet from "@/components/DeferredStylesheet";
+import { SITE_URL } from "@/lib/constants";
+import { getAreas, getCategories } from "@/lib/directory";
+import { SITE_GRAPH, JsonLd, searchPhrase } from "@/lib/seo";
+
+// pages without their own refresh interval (the disclaimer, the submit
+// form) still pick up new footer links at least hourly.
+export const revalidate = 3600;
 
 // the two fonts used across the site: Instrument Serif for headings, Space
 // Grotesk for body text. next/font downloads and hosts these ourselves
@@ -43,15 +50,15 @@ const bodyFont = Space_Grotesk({
 export const metadata = {
   title: {
     // shown when a page doesn't set its own title
-    default: "Hidden Gems SA – Free KwaZulu-Natal Business Directory",
+    default: "Hidden Gems SA | Free Local Business Directory, KZN",
     // when a page DOES set its own title, "%s" gets replaced with that title
     // and " | Hidden Gems SA" is added on the end automatically — so a page
     // titled "Ladysmith" becomes "Ladysmith | Hidden Gems SA".
     template: "%s | Hidden Gems SA",
   },
   description:
-    "Free local business directory for KwaZulu-Natal. Home bakers, tutors, transport, beauty and more — no account needed.",
-  metadataBase: new URL("https://www.hiddengemssa.co.za"),
+    "A free directory of local businesses in KwaZulu-Natal and across South Africa: home bakers, tutors, transport, beauty, trades and more. No account needed.",
+  metadataBase: new URL(SITE_URL),
   keywords: [
     "KwaZulu-Natal business directory",
     "KZN local businesses",
@@ -78,24 +85,22 @@ export const metadata = {
   // "open graph" (OG) is the standard that controls how a link looks when
   // it's pasted into WhatsApp, Facebook, or similar apps — the preview
   // image, title, and description that show up automatically.
+  // the preview shown when a link is shared on WhatsApp, Facebook and so
+  // on. the images themselves come from the opengraph-image.js files.
   openGraph: {
     siteName: "Hidden Gems SA",
     locale: "en_ZA",
     type: "website",
-    images: [{ url: "/HG_Logo.png", alt: "Hidden Gems SA – KZN Business Directory" }],
   },
   twitter: {
     card: "summary_large_image",
     site: "@HiddenGemsSA",
   },
-  // "geo" tags tell search engines and map services exactly where in the
-  // world this business is based — this helps the site show up for local
-  // ("near me") searches around KwaZulu-Natal.
+  // the region the directory mostly covers. there's deliberately no exact
+  // coordinate: the directory has no physical location of its own.
   other: {
     "geo.region":    "ZA-KZN",
     "geo.placename": "KwaZulu-Natal, South Africa",
-    "geo.position":  "-28.7282;30.3577",
-    "ICBM":          "-28.7282, 30.3577",
     // Bing Webmaster Tools site-ownership verification — must stay in place
     // even after verification succeeds, or Bing will consider the site
     // unverified again.
@@ -105,7 +110,20 @@ export const metadata = {
 
 // this component wraps around every page on the site. anything placed here
 // (like the navbar and footer below) appears on every single page.
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // the footer's "Popular categories" and "Areas" links, built from live
+  // listings so they only ever point at pages that have something on them.
+  const [categories, areas] = await Promise.all([getCategories(), getAreas()]);
+  const footerCategories = categories
+    .filter((c) => c.businesses.length > 0)
+    .sort((a, b) => b.businesses.length - a.businesses.length)
+    .slice(0, 8)
+    .map((c) => ({ href: `/category/${c.slug}`, label: searchPhrase(c.name) }));
+  const footerAreas = [...areas]
+    .sort((a, b) => b.businesses.length - a.businesses.length)
+    .slice(0, 8)
+    .map((a) => ({ href: `/town/${a.slug}`, label: a.name }));
+
   return (
     <html lang="en-ZA" className={`${headingFont.variable} ${bodyFont.variable}`}>
       <head>
@@ -173,12 +191,13 @@ export default function RootLayout({ children }) {
         </Script>
       </head>
       <body>
+        <JsonLd data={SITE_GRAPH} />
         <Navbar />
         {/* "children" is whatever the current page is — the homepage, a
             business page, the submit form, and so on. it always appears
             between the navbar and the footer. */}
         <main>{children}</main>
-        <Footer />
+        <Footer categoryLinks={footerCategories} areaLinks={footerAreas} />
         {/* floating "Need help?" WhatsApp button, bottom-right on every public page */}
         <WhatsAppHelpButton />
       </body>

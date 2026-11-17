@@ -1,6 +1,9 @@
-// this file automatically creates the page at hiddengemssa.co.za/robots.txt.
-// it's the standard way of telling search engines (Google, Bing, etc.) which
-// parts of the site they're allowed to read and list in search results.
+// hiddengemssa.co.za/robots.txt: tells crawlers what they may read. the
+// whole public site is open to every crawler, including AI search tools,
+// which are a useful way for people to find listings. only the admin area
+// and the internal API are blocked. the private edit pages aren't blocked
+// here on purpose: they carry a "noindex" tag, and crawlers have to be
+// allowed to load a page to see that tag.
 
 import { SITE_URL } from "@/lib/constants";
 
@@ -8,15 +11,11 @@ export default function robots() {
   return {
     rules: [
       {
-        // this rule applies to every search engine ("*" means "all of them").
-        // "allow: /" means "you may read the whole site"...
-        // ...except the two lines below, which block the private admin panel.
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/admin/"],
+        disallow: ["/admin", "/admin/", "/api/"],
       },
     ],
-    // points search engines at the full list of pages (see app/sitemap.js)
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
   };

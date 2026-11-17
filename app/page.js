@@ -1,55 +1,45 @@
-// this is the homepage — hiddengemssa.co.za itself. it fetches the current
-// featured business and the full list of approved businesses, then lays out
-// every section a visitor sees: the hero banner (which includes the
-// featured business card and the search bar — see Hero.js), the "explore
-// the directory" section with the live results, the "built by Olideen"
-// panel, the FAQ, and the closing call-to-action. (the old "Browse by
-// Category" and "Browse by Area" grids were removed — the directory's
-// category pills, its info-card links, and the nav/footer now lead to
-// /categories and /towns.)
+// the homepage, hiddengemssa.co.za. it shows the hero (with the current
+// Featured Gem and the search bar, see Hero.js), the directory with every
+// approved listing, the "built by Olideen" panel, light links into the
+// category and area pages, the FAQ, and the closing call to action.
+//
+// the page is cached and rebuilt in the background every 15 minutes. the
+// admin actions (approve, edit, delete, new Featured Gem) also refresh it
+// straight away, so changes show up without waiting.
+//
+// every listing is rendered into the HTML on the server as a normal link,
+// so search engines see the full directory without running JavaScript.
+// badge filters in the address (e.g. "?halal=true") are applied in the
+// browser once the page loads (see DirectorySearchProvider), which is what
+// lets the page itself be cached. those URLs all point search engines back
+// to the plain homepage through the canonical tag.
 
 import Link from "next/link";
 import supabase from "@/lib/supabase";
-import { CATEGORIES, SITE_URL, OLIDEEN_URL } from "@/lib/constants";
+import { SITE_URL } from "@/lib/constants";
+import { getApprovedBusinesses, getAreas, getCategories } from "@/lib/directory";
+import { searchPhrase, itemList, JsonLd, absoluteUrl } from "@/lib/seo";
 import Hero from "@/components/Hero";
 import OlideenPromo from "@/components/OlideenPromo";
 import AnimatedSection from "@/components/AnimatedSection";
+import LinkList from "@/components/LinkList";
 import { DirectorySearchProvider, DirectorySection } from "@/components/DirectorySearch";
 
-// always render this page fresh on every request rather than serving a
-// statically-built snapshot — without this, Next.js prerenders the
-// homepage once at build/deploy time and keeps serving that same HTML
-// forever, so a newly-approved business, a newly-picked Featured Gem, or
-// any other change made directly in Supabase (rather than through an
-// admin-panel action that calls revalidatePath) would never show up until
-// the next deploy. mirrors the same directive already used on
-// app/admin/page.js, for the same reason.
-export const dynamic = "force-dynamic";
+export const revalidate = 900;
 
-// the title/description search engines show for the homepage specifically
-// (this overrides the sitewide default set in app/layout.js).
 export const metadata = {
-  title: "Hidden Gems SA – Free KwaZulu-Natal Business Directory",
+  title: { absolute: "Hidden Gems SA: Free Local Business Directory in KZN" },
   description:
-    "Discover trusted local businesses in KwaZulu-Natal: home bakers, tutors, transport, beauty and trades. Free to browse, no account needed.",
-  alternates: { canonical: SITE_URL },
+    "Find local businesses in KwaZulu-Natal and across South Africa: home bakers, tutors, transport, beauty, trades and more. Free to browse, no account needed.",
+  alternates: { canonical: "/" },
   openGraph: {
-    title: "Hidden Gems SA – Free KwaZulu-Natal Business Directory",
-    description:
-      "Find local businesses in KwaZulu-Natal for free, browse by category or area.",
-    url: SITE_URL,
-    siteName: "Hidden Gems SA",
-    locale: "en_ZA",
-    type: "website",
-    images: [{ url: "/HG_Logo.png", alt: "Hidden Gems SA – KZN Business Directory" }],
+    title: "Hidden Gems SA: Free Local Business Directory",
+    description: "Find local businesses in KwaZulu-Natal and across South Africa, and message them on WhatsApp.",
+    url: "/",
   },
 };
 
-// looks up whichever business is currently set as "Featured Gem of the
-// Week" (an admin picks this — see app/admin/actions.js). a featured
-// listing has an expiry date ("featured_until"), so this only counts one
-// if that date hasn't passed yet. if more than one somehow qualifies, it
-// picks the most recently created one and ignores the rest.
+// the current Featured Gem, if its week hasn't run out yet.
 async function getFeaturedGem() {
   const { data } = await supabase
     .from("featured_gem")
@@ -61,252 +51,140 @@ async function getFeaturedGem() {
   return data;
 }
 
-// fetches every business that's been approved, for the homepage's live
-// search box. only asks for the fields the search results actually need
-// to display, not the whole record.
-async function getAllApprovedBusinesses() {
-  const { data } = await supabase
-    .from("businesses")
-    .select("id, name, category, business_type, area, province, logo_url, slug, description, whatsapp, instagram, facebook, street_address, halal, delivery_available, callouts_available")
-    .eq("status", "approved")
-    .order("name");
-  // if the lookup failed for some reason, show an empty list rather than
-  // crashing the page.
-  return data ?? [];
+// only the fields the directory search shows, so the page sends the browser
+// no more data than it needs.
+const DIRECTORY_FIELDS = [
+  "id", "name", "category", "business_type", "area", "province", "logo_url", "slug", "description",
+  "whatsapp", "instagram", "facebook", "street_address", "halal", "delivery_available", "callouts_available",
+];
+function forDirectory(biz) {
+  return Object.fromEntries(DIRECTORY_FIELDS.map((key) => [key, biz[key] ?? null]));
 }
 
-// finds every distinct area with at least one approved business. only its
-// length is used now — the live "areas to explore" number in the hero's
-// stats bar. areas aren't a fixed list (see lib/constants.js), so this asks
-// the database rather than looping over a constant. mirrors the same logic
-// in app/towns/page.js.
-async function getAreaSummaries() {
-  const { data: approvedBusinesses } = await supabase
-    .from("businesses")
-    .select("area")
-    .eq("status", "approved");
-
-  if (!approvedBusinesses) return [];
-
-  const areasWithoutDuplicates = new Set(
-    approvedBusinesses
-      .map((business) => business.area?.split(",")[0]?.trim())
-      .filter(Boolean)
-  );
-  return [...areasWithoutDuplicates].sort();
-}
-
-// the questions and answers shown in the FAQ section near the bottom of the
-// page. these are written to directly answer the kind of question someone
-// might type into Google or ask a voice assistant / AI chatbot — that's
-// also why this same list gets turned into structured data (see "jsonLd"
-// below), which helps search engines and AI tools quote these answers
-// directly instead of guessing.
+// shown in the FAQ section and, word for word, in the FAQ structured data.
 const faqItems = [
   {
     question: "Is Hidden Gems SA free to use?",
     answer:
-      "Yes, Hidden Gems SA is completely free for both businesses and customers. No account, no subscription, no hidden fees. However, time is limited: we may introduce paid premium features in the future, so get your free listing now while it's still free.",
+      "Yes. It's free for businesses and for anyone looking for one. There's no account, subscription or hidden fee. We may add paid extras one day, so now is a good time to get your free listing.",
   },
   {
     question: "Which areas does Hidden Gems SA cover?",
     answer:
-      "We're focused on KwaZulu-Natal and surrounding areas, although any business can list in any South African province. Browse by Area to see what's currently listed or be the first to list your business in your area.",
+      "Mostly KwaZulu-Natal and surrounding areas, but any business in South Africa can list. Browse by area to see what's listed near you, or be the first in your town.",
   },
   {
-    question: "How do I get my business listed on Hidden Gems SA?",
+    question: "How do I get my business listed?",
     answer:
-      "Click 'List Your Business,' fill in your details, and submit. We review listings within 24–48 hours and notify you on WhatsApp once approved.",
+      "Tap List Your Business, fill in your details and send it. We check new listings within 24 to 48 hours and let you know on WhatsApp once yours is live.",
   },
   {
-    question: "What types of businesses can I find on Hidden Gems SA?",
+    question: "What kinds of businesses are listed?",
     answer:
-      "Any legitimate local business i.e. home bakers, tutors, transport, hairstylists, tradespeople, cleaners, photographers and more.",
+      "Any legitimate local business: home bakers, tutors, transport, hairstylists, tradespeople, cleaners, photographers and more.",
   },
   {
-    question: "How do I contact a business listed on Hidden Gems SA?",
+    question: "How do I contact a business?",
     answer:
-      "Approved listings usually have a WhatsApp button, tap it to message the owner directly. Some listings also include a website link.",
+      "Most listings have a WhatsApp button, so you can message the owner directly. Some also link to a website, Instagram or Facebook.",
   },
   {
-    question: "Where can I find local businesses in perhaps Ladysmith, Pietermaritzburg or Other Areas?",
+    question: "How do I find businesses in my town?",
     answer:
-      "Visit the Areas page, select your town, and browse approved local businesses there or you may filter by province or category.",
+      "Open the Areas page and pick your town to see everything listed there. You can also search, or filter by category, right here on the homepage.",
   },
   {
     question: "Who runs Hidden Gems SA?",
     answer:
-      "Hidden Gems SA is built and maintained by Olideen Technologies, a digital agency based in KwaZulu-Natal. Our mission: Help our local businesses thrive in our community.",
+      "Hidden Gems SA is built and run by Olideen Technologies, a digital agency in KwaZulu-Natal. The aim is simple: help local businesses do well in their own communities.",
   },
 ];
 
-// "structured data" (also called JSON-LD) is a block of information written
-// in a very literal, machine-readable format and hidden inside the page —
-// visitors never see it, but Google and AI tools read it to understand
-// exactly what's on the page without having to guess from the visible
-// text. this is what makes things like the FAQ show up directly in Google
-// search results, or lets an AI chatbot answer "what is Hidden Gems SA"
-// accurately instead of making something up.
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebSite",
-      "@id": `${SITE_URL}/#website`,
-      "url": SITE_URL,
-      "name": "Hidden Gems SA",
-      "description":
-        "Free local business directory for South Africa: Find home bakers, tutors, transport, beauty services, trades and more in any area, suburb, or town in any province.",
-      "inLanguage": "en-ZA",
-      "publisher": {
-        "@type": "Organization",
-        "@id": `${SITE_URL}/#org`,
-        "name": "Olideen Technologies",
-        "url": OLIDEEN_URL,
-        "address": {
-          "@type": "PostalAddress",
-          "addressRegion": "KwaZulu-Natal",
-          "addressCountry": "ZA",
-        },
-      },
-      // enables the google sitelinks search box in results
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": { "@type": "EntryPoint", "urlTemplate": `${SITE_URL}/categories` },
-        "query-input": "required name=search_term_string",
-      },
-      "areaServed": {
-        "@type": "Country",
-        "name": "South Africa",
-        "addressCountry": "ZA",
-      },
-    },
-    {
-      // faq schema — helps with people-also-ask, voice search, ai summaries
-      "@type": "FAQPage",
-      "mainEntity": faqItems.map((f) => ({
-        "@type": "Question",
-        "name": f.question,
-        "acceptedAnswer": { "@type": "Answer", "text": f.answer },
-      })),
-    },
-    {
-      // howto schema — helps ai answer engines explain the listing process
-      "@type": "HowTo",
-      "name": "How to list your business on Hidden Gems SA",
-      "description":
-        "Get your KwaZulu-Natal business discovered online for free in three simple steps.",
-      "step": [
-        {
-          "@type": "HowToStep",
-          "position": 1,
-          "name": "Fill in the submission form",
-          "text": "Go to the List Your Business page and enter your business name, category, area, province, WhatsApp number, description and owner details.",
-        },
-        {
-          "@type": "HowToStep",
-          "position": 2,
-          "name": "Upload a logo (optional)",
-          "text": "Optionally upload a business logo. The built-in crop tool lets you frame it perfectly before it uploads.",
-        },
-        {
-          "@type": "HowToStep",
-          "position": 3,
-          "name": "Wait for review",
-          "text": "Our team reviews your submission within 24–48 hours. Once approved, your listing goes live and is searchable by KZN customers.",
-        },
-      ],
-    },
-    {
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": SITE_URL },
-      ],
-    },
-    {
-      // itemlist of categories — helps search engines understand the directory structure.
-      // every category is still shown on the page, as the directory section's category pills.
-      "@type": "ItemList",
-      "name": "Business categories on Hidden Gems SA",
-      "itemListElement": CATEGORIES.map((cat, i) => ({
-        "@type": "ListItem",
-        "position": i + 1,
-        "name": cat.name,
-        "url": `${SITE_URL}/category/${cat.slug}`,
-      })),
-    },
-    {
-      // marks the FAQ answers as suitable for text-to-speech / voice
-      // assistant reading (AEO signal for answer engines)
-      "@type": "WebPage",
-      "@id": `${SITE_URL}/#webpage`,
-      "url": SITE_URL,
-      "name": "Hidden Gems SA – Free KZN Business Directory",
-      "speakable": {
-        "@type": "SpeakableSpecification",
-        "cssSelector": [".faq-question", ".faq-answer"],
-      },
-    },
-  ],
-};
-
-// the actual homepage. this runs on the server before the page is sent to
-// a visitor's browser, so the featured business and the full business list
-// are both already loaded by the time anyone sees the page — nothing needs
-// to "pop in" afterwards.
-// the badge filters that can be pre-set from the URL (e.g. a shared
-// "?halal=true" link). read here on the server and handed to
-// DirectorySearchProvider, so a shared link renders already filtered. same
-// keys as BADGE_PARAM_KEYS in components/DirectorySearch.js.
-const BADGE_PARAM_KEYS = ["halal", "delivery", "callouts"];
-
-export default async function HomePage({ searchParams }) {
-  const params = await searchParams;
-  const initialBadges = BADGE_PARAM_KEYS.filter((key) => params?.[key] === "true");
-
-  // fetch all three at the same time (rather than one after the other) so
-  // the page loads as fast as possible.
-  const [featuredGem, allBusinesses, areas] = await Promise.all([
+export default async function HomePage() {
+  const [featuredGem, approved, areas, categories] = await Promise.all([
     getFeaturedGem(),
-    getAllApprovedBusinesses(),
-    getAreaSummaries(),
+    getApprovedBusinesses(),
+    getAreas(),
+    getCategories(),
   ]);
+  const allBusinesses = approved.map(forDirectory);
+
+  const popularCategories = categories
+    .filter((c) => c.businesses.length > 0)
+    .sort((a, b) => b.businesses.length - a.businesses.length)
+    .slice(0, 10)
+    .map((c) => ({ href: `/category/${c.slug}`, label: searchPhrase(c.name), count: c.businesses.length }));
+  const popularAreas = [...areas]
+    .sort((a, b) => b.businesses.length - a.businesses.length)
+    .slice(0, 12)
+    .map((a) => ({ href: `/town/${a.slug}`, label: a.name, count: a.businesses.length }));
+
+  // describes only what's on this page: the listings in the directory and
+  // the FAQ. the sitewide publisher and website data is in app/layout.js.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${SITE_URL}/#webpage`,
+        url: SITE_URL,
+        name: "Hidden Gems SA: Free Local Business Directory",
+        isPartOf: { "@id": `${SITE_URL}/#website` },
+        inLanguage: "en-ZA",
+      },
+      itemList("Local businesses on Hidden Gems SA", approved),
+      {
+        "@type": "FAQPage",
+        "@id": absoluteUrl("/#faq"),
+        mainEntity: faqItems.map((f) => ({
+          "@type": "Question",
+          name: f.question,
+          acceptedAnswer: { "@type": "Answer", text: f.answer },
+        })),
+      },
+    ],
+  };
 
   return (
     <div className="home-wrap">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
-      {/* the hero's search bar and the "Explore the directory" section
-          below it share one source of truth (search text, filters,
-          results), so typing in either search bar updates both. see
+      {/* the hero's search bar and the directory section below it share
+          one source of truth, so typing in either updates both. see
           components/DirectorySearch.js. */}
-      <DirectorySearchProvider businesses={allBusinesses} initialBadges={initialBadges}>
+      <DirectorySearchProvider businesses={allBusinesses}>
         <Hero featuredGem={featuredGem} areaCount={areas.length} />
-
-        {/* the directory: header, search with Filters, category pills, the
-            "every community..." info card, and the live results. replaces
-            the old results section and the mission banner above it (the
-            banner's wording now lives in the section's info card). */}
         <DirectorySection />
       </DirectorySearchProvider>
 
       <OlideenPromo />
 
-      {/* faq — targets voice search, people-also-ask, and ai answer engines */}
-      <section className="home-section">
+      {/* plain links into the category and area pages: light on purpose,
+          no images and no animation. */}
+      <section className="home-section home-links" aria-label="Browse the directory">
+        <div className="container link-list-grid">
+          <LinkList
+            title="Popular categories"
+            links={[...popularCategories, { href: "/categories", label: "All categories" }]}
+          />
+          <LinkList
+            title="Browse by area"
+            links={[...popularAreas, { href: "/towns", label: "All areas" }]}
+          />
+        </div>
+      </section>
+
+      <section className="home-section" id="faq">
         <div className="container section--narrow">
           <AnimatedSection>
             <div className="section-header home-section-header">
-              <h2>Frequently Asked Questions</h2>
-              <p>Everything you need to know about Hidden Gems SA</p>
+              <h2>Frequently asked questions</h2>
+              <p>The quick answers about Hidden Gems SA</p>
             </div>
           </AnimatedSection>
           <AnimatedSection stagger className="faq-list">
-            {faqItems.map((f, i) => (
-              <details key={i} className="faq-item">
+            {faqItems.map((f) => (
+              <details key={f.question} className="faq-item">
                 <summary className="faq-question">{f.question}</summary>
                 <p className="faq-answer">{f.answer}</p>
               </details>
@@ -315,17 +193,16 @@ export default async function HomePage({ searchParams }) {
         </div>
       </section>
 
-      {/* bottom cta band */}
       <section className="home-cta-band">
         <div className="home-cta-glow" aria-hidden="true" />
         <div className="container text-center" style={{ position: "relative", zIndex: 1 }}>
           <AnimatedSection>
-            <h2 className="home-cta-h2">Is Your Business a Hidden Gem?</h2>
+            <h2 className="home-cta-h2">Is your business a hidden gem?</h2>
             <p className="home-cta-sub mt-1">
-              Free listing, no account required. List your business. Have it reviewed and live online within 48 hours.
+              It&apos;s free and you don&apos;t need an account. Send us your details and we&apos;ll have your listing checked and live within 48 hours.
             </p>
             <Link href="/submit" className="hero-cta-primary mt-3">
-              <i className="fa-solid fa-plus" /> List Your Business Free
+              <i className="fa-solid fa-plus" aria-hidden="true" /> List your business free
             </Link>
           </AnimatedSection>
         </div>

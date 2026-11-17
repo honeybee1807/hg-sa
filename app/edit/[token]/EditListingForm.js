@@ -254,7 +254,7 @@ export default function EditListingForm({ token, business }) {
       errors.whatsapp = "Please enter a valid South African mobile number, starting with 0 or +27.";
     }
     if (!isValidWebsiteUrl(normalizeWebsiteUrl(fields.website))) {
-      errors.website = "Please enter a valid website URL, e.g. https://example.com — not an email address, and only one link.";
+      errors.website = "Please enter a valid website, like https://example.com. Use one link, not an email address.";
     }
     if (isBadgeVisible("halal", fields.category) && fields.halal && !fields.halal_certificate) {
       errors.halal_certificate = "Please select your Halal certificate type.";
@@ -398,7 +398,7 @@ export default function EditListingForm({ token, business }) {
             <label htmlFor="street_address">Street Address <span className="optional">(optional)</span></label>
             <input id="street_address" className="form-control" type="text" value={fields.street_address}
               onChange={set("street_address")} placeholder="e.g. 12 Main Street, Estcourt" />
-            <span className="form-hint">Shown on a map for customers to find you — only needed for a physical location.</span>
+            <span className="form-hint">Shown on a map so customers can find you. Only needed if you have a physical location.</span>
           </div>
         )}
 
@@ -466,7 +466,7 @@ export default function EditListingForm({ token, business }) {
           <textarea id="description" className="form-control" value={fields.description}
             onChange={handleDescriptionChange}
             rows={3} maxLength={200}
-            placeholder="1–2 sentences about your products or services" />
+            placeholder="One or two sentences about what you offer" />
           {fieldErrors.description && <span className="field-error">{fieldErrors.description}</span>}
         </div>
       </div>
@@ -481,7 +481,7 @@ export default function EditListingForm({ token, business }) {
             <label htmlFor="whatsapp">WhatsApp Number <span className="required">*</span></label>
             <input id="whatsapp" className="form-control" type="tel" value={fields.whatsapp}
               onChange={set("whatsapp")} placeholder="e.g. 082 123 4567" />
-            <span className="form-hint">Enter your number starting with 0 — we&apos;ll format it automatically.</span>
+            <span className="form-hint">Start with 0 and we&apos;ll format it for you.</span>
             {fieldErrors.whatsapp && <span className="field-error">{fieldErrors.whatsapp}</span>}
           </div>
 
@@ -534,7 +534,7 @@ export default function EditListingForm({ token, business }) {
           <label className="logo-dropzone">
             <i className="fa-solid fa-cloud-arrow-up" />
             <span className="logo-dropzone-label">Click to upload a logo</span>
-            <span className="logo-dropzone-hint">PNG, JPG or WebP — you&apos;ll crop it to size before it uploads.</span>
+            <span className="logo-dropzone-hint">PNG, JPG or WebP. You&apos;ll crop it to size before it uploads.</span>
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp"
               onChange={handleFileChange} className="logo-file-input" />
           </label>
@@ -554,7 +554,7 @@ export default function EditListingForm({ token, business }) {
 
       <div className="submit-form-footer">
         <p className="submit-disclaimer">
-          <i className="fa-solid fa-shield-halved" /> Changes are reviewed before going live — your current listing stays as-is until then.
+          <i className="fa-solid fa-shield-halved" /> We check changes before they go live. Your current listing stays as it is until then.
         </p>
         <button type="submit" className="btn-primary submit-btn" disabled={submitting || !fields.consent}>
           {submitting
@@ -569,7 +569,7 @@ export default function EditListingForm({ token, business }) {
           <div className="crop-modal">
             <div className="crop-modal-header">
               <h3>Crop Your Logo</h3>
-              <p>Drag to reposition — scroll or pinch to zoom</p>
+              <p>Drag to move it, and scroll or pinch to zoom</p>
             </div>
             <div className="crop-img-wrap">
               <img ref={imgRef} src={cropSrc} alt="Logo to crop" />

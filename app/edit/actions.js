@@ -162,7 +162,7 @@ function buildEditedValues(formData) {
 
   const normalizedWebsite = normalizeWebsiteUrl(website);
   if (!isValidWebsiteUrl(normalizedWebsite)) {
-    return { error: "Please enter a valid website URL, e.g. https://example.com — not an email address, and only one link." };
+    return { error: "Please enter a valid website, like https://example.com. Use one link, not an email address." };
   }
 
   // same backstop as submitBusiness() in app/submit/actions.js: re-check

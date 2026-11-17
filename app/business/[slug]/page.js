@@ -1,75 +1,39 @@
-// this is the page shown at hiddengemssa.co.za/business/whatever-slug —
-// one individual business's own page, with its logo, description, contact
-// button, and location. "[slug]" in the folder name means this same file
-// handles every business's page; only the web address changes.
+// the page for one business, e.g. hiddengemssa.co.za/business/some-bakery:
+// its logo, description, contact buttons, location, links to similar
+// listings, and structured data describing the business.
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import supabase from "@/lib/supabase";
-import { SITE_URL, CATEGORIES, PHYSICAL_BUSINESS_TYPES, halalCertificateLabel } from "@/lib/constants";
+import { PHYSICAL_BUSINESS_TYPES, halalCertificateLabel } from "@/lib/constants";
+import { getApprovedBusinesses, getArea, areaSlug, categoryByName } from "@/lib/directory";
+import {
+  searchPhraseLower, clampDescription, fullTitle, breadcrumbList, schemaTypeFor, sameAsLinks,
+  JsonLd, absoluteUrl, ORGANIZATION_ID,
+} from "@/lib/seo";
+import { cloudinaryUrl, logoAlt } from "@/lib/images";
 import SocialLink from "@/components/SocialLink";
 import BusinessMap from "@/components/BusinessMapLoader";
 import BadgePills from "@/components/BadgePills";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import LinkList from "@/components/LinkList";
 
-// rebuild a business's page at most once an hour, so a recent admin change
-// (like approving it) shows up reasonably quickly without needing to
-// rebuild the page on every single visit.
-export const revalidate = 3600; // 3600 seconds = 1 hour
+export const revalidate = 3600;
 
-// looks up one approved business by its web-address slug. also checks for
-// an older "-kwazulu-natal" version of the slug, kept around so links
-// shared before that suffix was dropped still work instead of 404-ing.
+// finds one approved business by its slug. also accepts the older
+// "-kwazulu-natal" version of a slug, so links shared before that suffix
+// was dropped still work (the canonical URL always points to the real one).
 async function getBusiness(slug) {
-  const { data } = await supabase
-    .from("businesses")
-    .select("name, category, custom_category, business_type, area, province, description, logo_url, slug, website, whatsapp, instagram, facebook, street_address, business_detail, halal, halal_certificate, delivery_available, callouts_available")
-    .eq("status", "approved")
-    .or(`slug.eq.${slug},slug.eq.${slug}-kwazulu-natal`)
-    .maybeSingle();
-  return data;
+  const businesses = await getApprovedBusinesses();
+  return businesses.find((b) => b.slug === slug) ?? businesses.find((b) => b.slug === `${slug}-kwazulu-natal`) ?? null;
 }
 
-// tells Next.js the full list of business pages that exist, so it can
-// prepare (pre-build) all of them ahead of time rather than building each
-// one from scratch on a visitor's very first visit.
 export async function generateStaticParams() {
-  const { data } = await supabase
-    .from("businesses")
-    .select("slug")
-    .eq("status", "approved")
-    .not("slug", "is", null);
-  return (data ?? []).map((b) => ({ slug: b.slug }));
+  const businesses = await getApprovedBusinesses();
+  return businesses.map((b) => ({ slug: b.slug }));
 }
 
-// builds the page title, description, and share-preview details for this
-// specific business — this is what shows up in a Google search result or
-// a WhatsApp link preview.
-export async function generateMetadata({ params }) {
-  const { slug } = await params;
-  const biz = await getBusiness(slug);
-  if (!biz) return { title: "Business Not Found" };
-
-  return {
-    title: `${biz.name} — ${biz.category} in ${biz.area}, ${biz.province} | Hidden Gems SA`,
-    description: biz.description ?? `${biz.name} is a ${biz.category} business in ${biz.area}, ${biz.province}. Contact them directly on Hidden Gems SA.`,
-    alternates: { canonical: `${SITE_URL}/business/${biz.slug}` },
-    openGraph: {
-      title: biz.name,
-      description: biz.description ?? "",
-      siteName: "Hidden Gems SA",
-      locale: "en_ZA",
-      type: "website",
-      images: biz.logo_url
-        ? [{ url: biz.logo_url }]
-        : [{ url: "/HG_Logo.png", alt: "Hidden Gems SA – KZN Business Directory" }],
-    },
-  };
-}
-
-// turns a saved WhatsApp number (already stored in the "27..." format
-// from when it was submitted — see app/submit/actions.js) into that exact
-// format, just in case an older record was saved differently.
+// the saved WhatsApp number in "27..." format, whatever way it was stored.
 function formatWhatsApp(raw) {
   if (!raw) return null;
   const digitsOnly = raw.replace(/\D/g, "");
@@ -78,119 +42,140 @@ function formatWhatsApp(raw) {
   return "27" + digitsOnly;
 }
 
-// looks up which little icon (from the Font Awesome, or "FA", icon set)
-// should sit next to a business's category name on its page — reuses the
-// same icon already assigned to that category in lib/constants.js, rather
-// than keeping a second, separate list here that could drift out of sync.
-function getCategoryIcon(categoryName) {
-  return CATEGORIES.find((c) => c.name === categoryName)?.icon ?? "fa-solid fa-store";
+// the street address is only ever shown (and only ever put in structured
+// data) for a shop, office or on-site service that gave one. home-based
+// businesses never have an address shown anywhere.
+function publicStreetAddress(biz) {
+  return PHYSICAL_BUSINESS_TYPES.includes(biz.business_type) && biz.street_address ? biz.street_address : null;
+}
+
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const biz = await getBusiness(slug);
+  // a real 404 status for crawlers, before the loading screen streams.
+  if (!biz) notFound();
+
+  const area = (await getArea(areaSlug(biz.area)))?.name ?? biz.area;
+  const title = `${biz.name} | ${biz.category} in ${area}`;
+  const description = clampDescription(
+    biz.description
+      ? `${biz.description} ${biz.category} in ${area}, ${biz.province}.`
+      : `${biz.name} is listed under ${biz.category} in ${area}, ${biz.province}. Message them directly on WhatsApp from Hidden Gems SA.`
+  );
+
+  return {
+    title: fullTitle(title),
+    description,
+    alternates: { canonical: `/business/${biz.slug}` },
+    openGraph: { title: `${biz.name} in ${area}`, description, url: `/business/${biz.slug}` },
+  };
 }
 
 export default async function BusinessPage({ params }) {
   const { slug } = await params;
   const biz = await getBusiness(slug);
-  // no business found with this web address — show the site's normal
-  // "page not found" screen instead of a broken/blank page.
   if (!biz) notFound();
 
-  const initial = biz.name[0].toUpperCase(); // fallback monogram letter, used if there's no logo
+  const all = await getApprovedBusinesses();
+  const myAreaSlug = areaSlug(biz.area);
+  const area = await getArea(myAreaSlug);
+  const areaDisplay = area?.name ?? biz.area;
+  const category = categoryByName(biz.category);
   const waNumber = formatWhatsApp(biz.whatsapp);
-  const catSlug = CATEGORIES.find((c) => c.name === biz.category)?.slug ?? "";
-  // some older records may store the area with extra text after it (like
-  // "Estcourt, KwaZulu-Natal" instead of just "Estcourt") — only the part
-  // before the first comma is the actual area name.
-  const areaName = biz.area.split(",")[0].trim();
-  const areaSlug = areaName.toLowerCase().replace(/\s+/g, "-");
+  const streetAddress = publicStreetAddress(biz);
+  const pageUrl = absoluteUrl(`/business/${biz.slug}`);
 
-  // the hidden, machine-readable description of this business (see the
-  // longer explanation of structured data / JSON-LD in app/page.js) —
-  // this is what lets Google show rich details in search results, and
-  // helps AI tools describe this exact business accurately.
+  // a few similar listings: the same category (nearest first), and other
+  // businesses in the same area.
+  const sameCategory = all
+    .filter((b) => b.id !== biz.id && b.category === biz.category)
+    .sort((a, b) => Number(areaSlug(b.area) === myAreaSlug) - Number(areaSlug(a.area) === myAreaSlug))
+    .slice(0, 4);
+  const sameArea = all
+    .filter((b) => b.id !== biz.id && areaSlug(b.area) === myAreaSlug && b.category !== biz.category)
+    .slice(0, 4);
+  const sameComboCount = all.filter((b) => b.category === biz.category && areaSlug(b.area) === myAreaSlug).length;
+
+  const crumbs = [
+    { name: "Home", path: "/" },
+    ...(category ? [{ name: category.name, path: `/category/${category.slug}` }] : []),
+    { name: biz.name, path: `/business/${biz.slug}` },
+  ];
+
+  const logo = biz.logo_url ? cloudinaryUrl(biz.logo_url, { width: 600 }) : null;
+  const sameAs = sameAsLinks(biz);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "LocalBusiness",
-        "@id": `${SITE_URL}/business/${biz.slug}#business`,
+        "@type": schemaTypeFor(biz.category),
+        "@id": `${pageUrl}#business`,
         name: biz.name,
-        description: biz.description ?? undefined,
-        image: biz.logo_url ?? undefined,
-        url: biz.website ?? undefined,
-        address: {
-          "@type": "PostalAddress",
-          addressLocality: areaName,
-          addressRegion: biz.province,
-          addressCountry: "ZA",
-        },
-        ...(waNumber && {
-          telephone: `+${waNumber}`,
-          contactPoint: {
-            "@type": "ContactPoint",
-            telephone: `+${waNumber}`,
-            contactType: "customer service",
+        url: pageUrl,
+        ...(biz.description && { description: biz.description }),
+        ...(logo && { image: logo, logo }),
+        ...(waNumber && { telephone: `+${waNumber}` }),
+        areaServed: { "@type": "Place", name: `${areaDisplay}, ${biz.province}` },
+        ...(streetAddress && {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress,
+            addressLocality: areaDisplay,
+            addressRegion: biz.province,
+            addressCountry: "ZA",
           },
         }),
-        areaServed: { "@type": "AdministrativeArea", name: areaName },
-        knowsAbout: biz.category,
+        ...(sameAs.length > 0 && { sameAs }),
       },
+      breadcrumbList(crumbs),
       {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home",        item: SITE_URL },
-          { "@type": "ListItem", position: 2, name: biz.category,  item: `${SITE_URL}/category/${catSlug}` },
-          { "@type": "ListItem", position: 3, name: biz.name,      item: `${SITE_URL}/business/${biz.slug}` },
-        ],
+        "@type": "WebPage",
+        "@id": pageUrl,
+        url: pageUrl,
+        name: `${biz.name}, ${biz.category} in ${areaDisplay}`,
+        about: { "@id": `${pageUrl}#business` },
+        publisher: { "@id": ORGANIZATION_ID },
       },
     ],
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <div className="container section-sm">
-        {/* Breadcrumb */}
-        <nav className="breadcrumb" aria-label="Breadcrumb">
-          <Link href="/">Home</Link>
-          <i className="fa-solid fa-chevron-right" />
-          {catSlug && <Link href={`/category/${catSlug}`}>{biz.category}</Link>}
-          {catSlug && <i className="fa-solid fa-chevron-right" />}
-          <span>{biz.name}</span>
-        </nav>
+        <Breadcrumbs items={crumbs} />
       </div>
 
       <div className="container biz-layout">
-        {/* Main */}
         <article className="biz-main">
-          {/* Header card */}
           <div className="card biz-header">
             <div className="biz-header-logo">
               {biz.logo_url ? (
                 <Image
-                  src={biz.logo_url}
-                  alt={`${biz.name} logo`}
+                  src={cloudinaryUrl(biz.logo_url, { width: 320 })}
+                  alt={logoAlt(biz, areaDisplay)}
                   width={120}
                   height={120}
                   className="biz-logo-img"
+                  priority
                 />
               ) : (
-                <div className="avatar-monogram avatar-monogram--xl">{initial}</div>
+                <div className="avatar-monogram avatar-monogram--xl" aria-hidden="true">{biz.name[0].toUpperCase()}</div>
               )}
             </div>
             <div className="biz-header-info">
               <h1 className="biz-name">{biz.name}</h1>
               <div className="biz-meta">
                 <span>
-                  <i className={getCategoryIcon(biz.category)} />
-                  {biz.category}
-                  {biz.category === "Other" && biz.custom_category && ` — ${biz.custom_category}`}
+                  <i className={category?.icon ?? "fa-solid fa-store"} aria-hidden="true" />
+                  {category ? <Link href={`/category/${category.slug}`}>{biz.category}</Link> : biz.category}
+                  {biz.category === "Other" && biz.custom_category && ` (${biz.custom_category})`}
                 </span>
                 <span>
-                  <i className="fa-solid fa-location-dot" />
-                  {areaName}, {biz.province}
+                  <i className="fa-solid fa-location-dot" aria-hidden="true" />
+                  {area ? <Link href={`/town/${area.slug}`}>{areaDisplay}</Link> : areaDisplay}, {biz.province}
                 </span>
               </div>
               {biz.business_type && (
@@ -199,7 +184,7 @@ export default async function BusinessPage({ params }) {
 
               {(biz.halal || biz.delivery_available || biz.callouts_available) && (
                 <>
-                  <h3 className="biz-badges-heading">About This Business</h3>
+                  <p className="biz-badges-heading">What they offer</p>
                   <BadgePills biz={biz} size="lg" />
                   {biz.halal && biz.halal_certificate && (
                     <p className="biz-halal-cert">
@@ -211,40 +196,33 @@ export default async function BusinessPage({ params }) {
             </div>
           </div>
 
-          {/* Description */}
           {biz.description && (
             <div className="card biz-section">
               <h2 className="biz-section-title">
-                <i className="fa-solid fa-circle-info" /> About
+                <i className="fa-solid fa-circle-info" aria-hidden="true" /> About {biz.name}
               </h2>
               <p>{biz.description}</p>
             </div>
           )}
 
-          {/* Business detail */}
           {biz.business_detail && (
             <div className="card biz-section">
               <h2 className="biz-section-title">
-                <i className="fa-solid fa-list" /> More Details
+                <i className="fa-solid fa-list" aria-hidden="true" /> More details
               </h2>
               <p>{biz.business_detail}</p>
             </div>
           )}
 
-          {/* Map — only for a Shop or Office / On-site service that's
-              actually given a street address; a home-based, delivery-only,
-              or remote business has no fixed address to show a map of. */}
-          {PHYSICAL_BUSINESS_TYPES.includes(biz.business_type) && biz.street_address && (
-            <BusinessMap streetAddress={biz.street_address} area={areaName} province={biz.province} />
+          {streetAddress && (
+            <BusinessMap streetAddress={streetAddress} area={areaDisplay} province={biz.province} />
           )}
         </article>
 
-        {/* Sidebar */}
         <aside className="biz-sidebar">
-          {/* Contact */}
           <div className="card biz-contact">
             <h2 className="biz-section-title">
-              <i className="fa-solid fa-address-card" /> Contact
+              <i className="fa-solid fa-address-card" aria-hidden="true" /> Contact
             </h2>
 
             {waNumber && (
@@ -254,7 +232,7 @@ export default async function BusinessPage({ params }) {
                 rel="noopener noreferrer"
                 className="btn-primary biz-wa-btn"
               >
-                <i className="fa-brands fa-whatsapp" /> WhatsApp {biz.name}
+                <i className="fa-brands fa-whatsapp" aria-hidden="true" /> WhatsApp {biz.name}
               </a>
             )}
 
@@ -265,7 +243,7 @@ export default async function BusinessPage({ params }) {
                 rel="noopener noreferrer"
                 className="btn-secondary biz-web-btn"
               >
-                <i className="fa-solid fa-globe" /> Visit Website
+                <i className="fa-solid fa-globe" aria-hidden="true" /> Visit website
               </a>
             )}
 
@@ -277,35 +255,57 @@ export default async function BusinessPage({ params }) {
             )}
           </div>
 
-          {/* Location */}
           <div className="card biz-owner">
             <h2 className="biz-section-title">
-              <i className="fa-solid fa-map" /> Location
+              <i className="fa-solid fa-map" aria-hidden="true" /> Location
             </h2>
+            {streetAddress && <p className="biz-street-address">{streetAddress}</p>}
             <p>
-              <Link href={`/town/${areaSlug}`} className="biz-town-link">
-                {areaName}
-              </Link>
+              {area ? (
+                <Link href={`/town/${area.slug}`} className="biz-town-link">{areaDisplay}</Link>
+              ) : areaDisplay}
               , {biz.province}
             </p>
           </div>
 
-          {/* Owner edit prompt */}
           <div className="card biz-owner biz-edit-prompt">
             <p className="biz-edit-prompt-text">Is this your business?</p>
             <Link href="/edit" className="btn-secondary biz-edit-prompt-btn">
-              <i className="fa-solid fa-pen" /> Edit This Listing
+              <i className="fa-solid fa-pen" aria-hidden="true" /> Edit this listing
             </Link>
           </div>
         </aside>
       </div>
 
-      <div className="container section-sm">
-        <Link href={catSlug ? `/category/${catSlug}` : "/"} className="btn-secondary">
-          <i className="fa-solid fa-arrow-left" />
-          Back to {biz.category}
-        </Link>
+      {(sameCategory.length > 0 || sameArea.length > 0) && (
+        <section className="container section-sm">
+          <div className="link-list-grid">
+            {category && (
+              <LinkList
+                title={`More in ${category.name}`}
+                links={[
+                  ...sameCategory.map((b) => ({ href: `/business/${b.slug}`, label: `${b.name}, ${b.area.split(",")[0].trim()}` })),
+                  ...(sameComboCount > 1 && area
+                    ? [{ href: `/category/${category.slug}/${area.slug}`, label: `All ${searchPhraseLower(category.name)} in ${areaDisplay}`, count: sameComboCount }]
+                    : []),
+                  { href: `/category/${category.slug}`, label: `All ${category.name} listings` },
+                ]}
+              />
+            )}
+            {area && (
+              <LinkList
+                title={`More in ${areaDisplay}`}
+                links={[
+                  ...sameArea.map((b) => ({ href: `/business/${b.slug}`, label: `${b.name}, ${b.category}` })),
+                  { href: `/town/${area.slug}`, label: `All businesses in ${areaDisplay}`, count: area.businesses.length },
+                ]}
+              />
+            )}
+          </div>
+        </section>
+      )}
 
+      <div className="container section-sm">
         <p className="biz-disclaimer-note">
           Hidden Gems SA doesn&apos;t verify or endorse listed businesses. Read our full{" "}
           <Link href="/disclaimer">Disclaimer &amp; Terms of Use</Link> before engaging.

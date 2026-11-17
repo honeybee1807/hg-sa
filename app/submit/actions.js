@@ -131,7 +131,7 @@ export async function submitBusiness(formData) {
 
   const normalizedWebsite = normalizeWebsiteUrl(website);
   if (!isValidWebsiteUrl(normalizedWebsite)) {
-    return { success: false, error: "Please enter a valid website URL, e.g. https://example.com — not an email address, and only one link." };
+    return { success: false, error: "Please enter a valid website, like https://example.com. Use one link, not an email address." };
   }
 
   // re-checks each badge against the now-validated category — this is the

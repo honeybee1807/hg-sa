@@ -11,7 +11,7 @@ const BADGES = [
 ];
 
 // "size" is either "sm" (the default, used on cards) or "lg" (used on the
-// business detail page, per Part D's "roughly 1.2x card size").
+// business detail page, at roughly 1.2x the card size).
 export default function BadgePills({ biz, size = "sm" }) {
   const active = BADGES.filter((badge) => {
     if (badge.key === "halal") return !!biz.halal;
