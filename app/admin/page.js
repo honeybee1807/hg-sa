@@ -4,99 +4,22 @@
 // confirmed you're logged in. this is what keeps private information
 // (like a submitter's email address) from ever reaching someone who isn't
 // meant to see it, no matter how they try to get to this page.
+//
+// the previous admin panel is still reachable, behind the same login, at
+// /admin/classic (see app/admin/classic/page.js) as a temporary fallback.
 
-import { getAdminClient } from "@/lib/supabase-admin";
 import { isAdminAuthed } from "./actions";
+import { getAdminData } from "./data";
 import LoginForm from "./LoginForm";
-import AdminPanel from "./AdminPanel";
+import AdminApp from "./_components/AdminApp";
 
 // always load this page fresh from the database — never show a cached
-// (possibly outdated) version. this matters a lot for an admin panel,
-// where seeing the latest pending submissions immediately is important.
+// (possibly outdated) version.
 export const dynamic = "force-dynamic";
 
 // "robots: noindex" tells search engines not to list this page in their
-// results, on top of it already being blocked in robots.txt — belt and
-// braces, since this is a private page.
+// results, on top of it already being blocked in robots.txt.
 export const metadata = { title: "Admin — Hidden Gems SA", robots: "noindex" };
-
-// fetches every business regardless of status (pending, approved, or
-// rejected) so the admin panel can show all of them across its tabs.
-async function getAllBusinesses() {
-  const db = getAdminClient();
-  const { data } = await db
-    .from("businesses")
-    .select("id, name, category, custom_category, area, province, street_address, whatsapp, instagram, facebook, description, owner_name, owner_email, logo_url, status, review_note, slug, is_own_business, on_behalf_of_name, on_behalf_of_reason, halal, delivery_available, callouts_available")
-    .order("created_at", { ascending: false }) // newest submissions first
-  return data ?? [];
-}
-
-// fetches whichever business was most recently set as featured, so the
-// admin panel can show it at the top of the page — whether that feature is
-// still active or has since expired (unlike the public homepage's version
-// of this query, in app/page.js, which only ever wants an active one, this
-// one deliberately does NOT filter by "featured_until" still being in the
-// future, so the admin can see an expired gem and its "Expired" status
-// rather than the section just going blank once the week is up).
-async function getCurrentFeatured() {
-  const db = getAdminClient();
-  const { data } = await db
-    .from("featured_gem")
-    .select(`*, businesses(id, name, category, area, province, logo_url, slug, whatsapp, instagram, facebook, owner_name)`)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data;
-}
-
-// fetches the 5 featured-gem records before the current one, for the
-// admin panel's collapsible "Recent History" list. ".range(1, 5)" (after
-// sorting newest-first) skips row 0 — the current gem, already covered by
-// getCurrentFeatured() above — and returns the next 5. "replaced_at" is
-// when the *next* gem after this one was set (see setFeaturedGemInternal
-// in app/admin/actions.js) — it's what lets the history list show
-// "featured from ... to ..." instead of just a start date.
-async function getFeaturedHistory() {
-  const db = getAdminClient();
-  const { data } = await db
-    .from("featured_gem")
-    .select(`id, created_at, featured_until, replaced_at, businesses(id, name, logo_url)`)
-    .order("created_at", { ascending: false })
-    .range(1, 5);
-  return data ?? [];
-}
-
-// fetches every listing-edit request still awaiting review, alongside the
-// business it belongs to, for the admin panel's "Edit Requests" tab.
-// filters out rows that exist only because someone requested a magic link
-// but never actually submitted any changes yet — proposed_changes starts
-// out as an empty object (see requestEditLink in app/edit/actions.js) and
-// only gets filled in once they submit the form at /edit/[token], so
-// there's nothing yet for an admin to review or count.
-async function getEditRequests() {
-  const db = getAdminClient();
-  const { data } = await db
-    .from("business_edit_requests")
-    .select(`id, business_id, proposed_changes, created_at, businesses(id, name, category, custom_category, business_type, province, area, street_address, whatsapp, website, instagram, facebook, description, logo_url, slug)`)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  return (data ?? []).filter((request) => Object.keys(request.proposed_changes ?? {}).length > 0);
-}
-
-// fetches every blog post — published and draft alike — for the admin
-// panel's "Blog" tab. unlike the public blog pages (app/blog/page.js,
-// app/blog/[slug]/page.js), which only ever ask for published posts, the
-// admin needs to see and edit drafts too, so this uses the admin client
-// with no "published" filter.
-async function getBlogPosts() {
-  const db = getAdminClient();
-  const { data } = await db
-    .from("blog_posts")
-    .select("id, title, slug, excerpt, content, category, area, published, featured_image_url, created_at, updated_at")
-    .order("updated_at", { ascending: false });
-  return data ?? [];
-}
 
 export default async function AdminPage() {
   // the most important line in this whole file: if this comes back false,
@@ -105,23 +28,6 @@ export default async function AdminPage() {
   const isLoggedIn = await isAdminAuthed();
   if (!isLoggedIn) return <LoginForm />;
 
-  // fetch everything at once, rather than one after the other, so the page
-  // loads a little faster.
-  const [businesses, currentFeatured, featuredHistory, editRequests, blogPosts] = await Promise.all([
-    getAllBusinesses(),
-    getCurrentFeatured(),
-    getFeaturedHistory(),
-    getEditRequests(),
-    getBlogPosts(),
-  ]);
-
-  return (
-    <AdminPanel
-      businesses={businesses}
-      currentFeatured={currentFeatured}
-      featuredHistory={featuredHistory}
-      editRequests={editRequests}
-      blogPosts={blogPosts}
-    />
-  );
+  const data = await getAdminData();
+  return <AdminApp {...data} />;
 }

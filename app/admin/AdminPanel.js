@@ -109,7 +109,7 @@ function formatFeaturedRange(createdAt, featuredUntil, replacedAt) {
 // every card type (pending/approved/rejected businesses and edit requests)
 // so all four stay in sync rather than drifting into slightly different
 // copies. never uses window.confirm()/alert() — the confirmation lives
-// entirely in the card itself, see Change 2 in the task this was built for.
+// entirely in the card itself.
 function DeleteControls({ isConfirming, isFeaturedActive, deleting, onRequestDelete, onCancel, onConfirmDelete }) {
   if (!isConfirming) {
     return (
