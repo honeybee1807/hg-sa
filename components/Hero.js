@@ -2,10 +2,11 @@
 
 // the big banner section at the very top of the homepage: the headline,
 // a short description, the directory search bar (see
-// components/DirectorySearch.js; it shares its state with the results further down
-// the page), the real current Featured Gem card on the right-hand side
-// (see components/FeaturedGemCard.js), at every screen size, and a full-width stats
-// bar along the bottom (areas / categories / free, plus a tagline). the
+// components/DirectorySearch.js; it shares its state with the results
+// further down the page), the real current Featured Gem card on the
+// right-hand side (see components/FeaturedGemCard.js), at every screen
+// size, and a full-width stats bar along the bottom (areas / categories /
+// free, plus a tagline). the
 // featured card used to swap between a hand-written decorative mockup on
 // desktop and the real card on mobile, which meant desktop visitors never
 // actually saw live Supabase data in the hero — now it's the same real
@@ -42,104 +43,104 @@ export default function Hero({ featuredGem, areaCount }) {
     let idleHandle, timeoutHandle;
 
     loadGsap().then((gsap) => {
-    if (cancelled) return;
-    gsap.ticker.lagSmoothing(100, 16);
+      if (cancelled) return;
+      gsap.ticker.lagSmoothing(100, 16);
 
-    animationContext = gsap.context(() => {
-      // the entrance sequence: each piece of the hero fades and slides in
-      // one after another, in this order — first headline
-      // line, second headline line, subheading paragraph, the search bar,
-      // the featured gem card, then the stats bar along the bottom (the
-      // three stats, then the tagline). the negative
-      // "-=0.x" timings make each step start slightly before the previous
-      // one finishes, so it reads as one flowing motion rather than a
-      // series of separate, disconnected pops.
-      // created paused: every element is put in its hidden starting state
-      // straight away, but the timeline only plays once the page has
-      // finished its heaviest start-up work (see the end of this effect).
-      entranceTimeline = gsap.timeline({ paused: true });
+      animationContext = gsap.context(() => {
+        // the entrance sequence: each piece of the hero fades and slides in
+        // one after another, in this order — first headline
+        // line, second headline line, subheading paragraph, the search bar,
+        // the featured gem card, then the stats bar along the bottom (the
+        // three stats, then the tagline). the negative
+        // "-=0.x" timings make each step start slightly before the previous
+        // one finishes, so it reads as one flowing motion rather than a
+        // series of separate, disconnected pops.
+        // created paused: every element is put in its hidden starting state
+        // straight away, but the timeline only plays once the page has
+        // finished its heaviest start-up work (see the end of this effect).
+        entranceTimeline = gsap.timeline({ paused: true });
 
-      entranceTimeline
-        .fromTo(".h-line-1",
-          { y: 64, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
-        .fromTo(".h-line-2",
-          { y: 64, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.52")
-        .fromTo(".h-sub",
-          { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, "-=0.4")
-        // the search bar takes the place the two buttons used to have in
-        // the sequence. "clearProps" removes the leftover transform once
-        // it's done, so the filter dropdown inside it isn't positioned
-        // relative to a lingering transformed layer.
-        .fromTo(".h-search",
-          { y: 16, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", clearProps: "transform" }, "-=0.35")
-        // no scale here: scaling the card makes the browser re-rasterise
-        // its text and logo every frame. a slide plus fade looks almost the
-        // same and runs entirely on the GPU.
-        .fromTo(".hero-featured-slot",
-          { x: 56, opacity: 0 },
-          { x: 0, opacity: 1, duration: 1.1, ease: "expo.out", force3D: true, clearProps: "transform" }, "-=0.7")
-        .fromTo(".h-stat",
-          { y: 12, opacity: 0 },
-          { y: 0, opacity: 1, stagger: 0.09, duration: 0.45, ease: "power3.out" }, "-=0.4")
-        .fromTo(".h-tagline",
-          { y: 12, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, "-=0.25");
+        entranceTimeline
+          .fromTo(".h-line-1",
+            { y: 64, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
+          .fromTo(".h-line-2",
+            { y: 64, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.52")
+          .fromTo(".h-sub",
+            { y: 20, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, "-=0.4")
+          // the search bar takes the place the two buttons used to have in
+          // the sequence. "clearProps" removes the leftover transform once
+          // it's done, so the filter dropdown inside it isn't positioned
+          // relative to a lingering transformed layer.
+          .fromTo(".h-search",
+            { y: 16, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", clearProps: "transform" }, "-=0.35")
+          // no scale here: scaling the card makes the browser re-rasterise
+          // its text and logo every frame. a slide plus fade looks almost the
+          // same and runs entirely on the GPU.
+          .fromTo(".hero-featured-slot",
+            { x: 56, opacity: 0 },
+            { x: 0, opacity: 1, duration: 1.1, ease: "expo.out", force3D: true, clearProps: "transform" }, "-=0.7")
+          .fromTo(".h-stat",
+            { y: 12, opacity: 0 },
+            { y: 0, opacity: 1, stagger: 0.09, duration: 0.45, ease: "power3.out" }, "-=0.4")
+          .fromTo(".h-tagline",
+            { y: 12, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, "-=0.25");
 
-      // the two number stats (areas and categories) count up from zero
-      // once the hero loads, rather than just appearing as static text.
-      // ("Free" is a word, not a number, so it's left as it is.) the
-      // categories total comes straight from lib/constants.js so it can
-      // never drift out of sync; the areas total is passed in as a prop
-      // (see app/page.js) since areas are no longer a fixed list — it's
-      // however many distinct areas currently have an approved business.
-      const counters = [
-        { selector: ".hc-towns", finalValue: areaCount },
-        { selector: ".hc-cats",  finalValue: CATEGORIES.length },
-      ];
+        // the two number stats (areas and categories) count up from zero
+        // once the hero loads, rather than just appearing as static text.
+        // ("Free" is a word, not a number, so it's left as it is.) the
+        // categories total comes straight from lib/constants.js so it can
+        // never drift out of sync; the areas total is passed in as a prop
+        // (see app/page.js) since areas are no longer a fixed list — it's
+        // however many distinct areas currently have an approved business.
+        const counters = [
+          { selector: ".hc-towns", finalValue: areaCount },
+          { selector: ".hc-cats",  finalValue: CATEGORIES.length },
+        ];
 
-      for (const counter of counters) {
-        const counterElement = ref.current?.querySelector(counter.selector);
-        if (!counterElement) continue;
+        for (const counter of counters) {
+          const counterElement = ref.current?.querySelector(counter.selector);
+          if (!counterElement) continue;
 
-        // the markup renders the real number (so it's right for search
-        // engines and if JavaScript never loads); it's reset to 0 here,
-        // while the stats are still hidden by the entrance timeline
-        // above, and then counted back up.
-        counterElement.textContent = "0";
+          // the markup renders the real number (so it's right for search
+          // engines and if JavaScript never loads); it's reset to 0 here,
+          // while the stats are still hidden by the entrance timeline
+          // above, and then counted back up.
+          counterElement.textContent = "0";
 
-        // gsap can't directly "animate" a piece of text, so instead a
-        // plain number is animated from 0 up to the target value, and on
-        // every tick of that animation the on-screen text is updated to
-        // show the current rounded number.
-        // added to the same timeline (starting 1s in), so the count-up
-        // waits for the timeline to start too.
-        const animatedNumber = { currentValue: 0 };
-        entranceTimeline.to(animatedNumber, {
-          currentValue: counter.finalValue,
-          duration: 2.2,
-          ease: "power2.out",
-          onUpdate() {
-            counterElement.textContent = String(Math.round(animatedNumber.currentValue));
-          },
-        }, 1.0);
+          // gsap can't directly "animate" a piece of text, so instead a
+          // plain number is animated from 0 up to the target value, and on
+          // every tick of that animation the on-screen text is updated to
+          // show the current rounded number.
+          // added to the same timeline (starting 1s in), so the count-up
+          // waits for the timeline to start too.
+          const animatedNumber = { currentValue: 0 };
+          entranceTimeline.to(animatedNumber, {
+            currentValue: counter.finalValue,
+            duration: 2.2,
+            ease: "power2.out",
+            onUpdate() {
+              counterElement.textContent = String(Math.round(animatedNumber.currentValue));
+            },
+          }, 1.0);
+        }
+      }, ref);
+
+      // start the entrance once the browser is idle — i.e. after the burst of
+      // work right after the page loads (hydrating the directory, decoding
+      // images, swapping in fonts), which is what made it stutter — but never
+      // later than 600ms. browsers without requestIdleCallback (Safari) wait a
+      // short fixed moment instead.
+      const play = () => entranceTimeline?.play();
+      if ("requestIdleCallback" in window) {
+        idleHandle = window.requestIdleCallback(play, { timeout: 600 });
+      } else {
+        timeoutHandle = window.setTimeout(play, 250);
       }
-    }, ref);
-
-    // start the entrance once the browser is idle — i.e. after the burst of
-    // work right after the page loads (hydrating the directory, decoding
-    // images, swapping in fonts), which is what made it stutter — but never
-    // later than 600ms. browsers without requestIdleCallback (Safari) wait a
-    // short fixed moment instead.
-    const play = () => entranceTimeline?.play();
-    if ("requestIdleCallback" in window) {
-      idleHandle = window.requestIdleCallback(play, { timeout: 600 });
-    } else {
-      timeoutHandle = window.setTimeout(play, 250);
-    }
     });
 
     return () => {

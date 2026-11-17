@@ -13,12 +13,7 @@ import Footer from "@/components/Footer";
 import WhatsAppHelpButton from "@/components/WhatsAppHelpButton";
 import DeferredStylesheet from "@/components/DeferredStylesheet";
 import { SITE_URL } from "@/lib/constants";
-import { getAreas, getCategories } from "@/lib/directory";
-import { SITE_GRAPH, JsonLd, searchPhrase } from "@/lib/seo";
-
-// pages without their own refresh interval (the disclaimer, the submit
-// form) still pick up new footer links at least hourly.
-export const revalidate = 3600;
+import { SITE_GRAPH, JsonLd } from "@/lib/seo";
 
 // the two fonts used across the site: Instrument Serif for headings, Space
 // Grotesk for body text. next/font downloads and hosts these ourselves
@@ -110,19 +105,7 @@ export const metadata = {
 
 // this component wraps around every page on the site. anything placed here
 // (like the navbar and footer below) appears on every single page.
-export default async function RootLayout({ children }) {
-  // the footer's "Popular categories" and "Areas" links, built from live
-  // listings so they only ever point at pages that have something on them.
-  const [categories, areas] = await Promise.all([getCategories(), getAreas()]);
-  const footerCategories = categories
-    .filter((c) => c.businesses.length > 0)
-    .sort((a, b) => b.businesses.length - a.businesses.length)
-    .slice(0, 8)
-    .map((c) => ({ href: `/category/${c.slug}`, label: searchPhrase(c.name) }));
-  const footerAreas = [...areas]
-    .sort((a, b) => b.businesses.length - a.businesses.length)
-    .slice(0, 8)
-    .map((a) => ({ href: `/town/${a.slug}`, label: a.name }));
+export default function RootLayout({ children }) {
 
   return (
     <html lang="en-ZA" className={`${headingFont.variable} ${bodyFont.variable}`}>
@@ -197,7 +180,7 @@ export default async function RootLayout({ children }) {
             business page, the submit form, and so on. it always appears
             between the navbar and the footer. */}
         <main>{children}</main>
-        <Footer categoryLinks={footerCategories} areaLinks={footerAreas} />
+        <Footer />
         {/* floating "Need help?" WhatsApp button, bottom-right on every public page */}
         <WhatsAppHelpButton />
       </body>

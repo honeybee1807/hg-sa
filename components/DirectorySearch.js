@@ -33,6 +33,7 @@ import { buildSearchIndex, searchDirectory, removeQueryWords, sanitizeSearchTerm
 import SocialLink from "@/components/SocialLink";
 import BadgePills from "@/components/BadgePills";
 import { cloudinaryUrl, logoAlt } from "@/lib/images";
+import { normalizeWhatsApp } from "@/lib/phone";
 
 // the three badge filters shown in their own section of the filter panel —
 // same icons/colours as the pills themselves (see components/BadgePills.js
@@ -68,17 +69,6 @@ const REQUEST_CATEGORY_URL = `https://wa.me/${SITE_WHATSAPP}?text=${encodeURICom
 // finished search for analytics (so "t", "tu", "tut"... aren't each sent).
 const SEARCH_ANALYTICS_DELAY_MS = 800;
 
-// turns a saved WhatsApp number (already stored in the "27..." format from
-// when it was submitted — see app/submit/actions.js) into that exact
-// format, just in case an older record was saved differently. mirrors the
-// same small helper already used on the business detail page.
-function formatWhatsApp(raw) {
-  if (!raw) return null;
-  const digitsOnly = raw.replace(/\D/g, "");
-  if (digitsOnly.startsWith("27")) return digitsOnly;
-  if (digitsOnly.startsWith("0")) return "27" + digitsOnly.slice(1);
-  return "27" + digitsOnly;
-}
 
 const DirectorySearchContext = createContext(null);
 
@@ -904,7 +894,7 @@ function GemCard({ biz, compact }) {
 function DirectoryRow({ biz }) {
   const initial = biz.name[0].toUpperCase();
   const areaName = biz.area.split(",")[0].trim();
-  const waNumber = formatWhatsApp(biz.whatsapp);
+  const waNumber = normalizeWhatsApp(biz.whatsapp);
 
   return (
     <div className="dir-row">

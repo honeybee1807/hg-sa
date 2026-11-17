@@ -36,43 +36,43 @@ export default function OlideenPromo() {
     let animationContext = null;
 
     loadGsap().then((gsap) => {
-    if (cancelled) return;
-    // gsap.context() groups every animation created inside it so they can
-    // all be cleaned up together (via ctx.revert()) when this component is
-    // removed from the page. scoped to this section, so ".promo-animate"
-    // only ever matches elements inside it.
-    animationContext = gsap.context(() => {
-      gsap.set(".promo-animate", { y: 32, opacity: 0 });
-    }, sectionElement);
+      if (cancelled) return;
+      // gsap.context() groups every animation created inside it so they can
+      // all be cleaned up together (via ctx.revert()) when this component is
+      // removed from the page. scoped to this section, so ".promo-animate"
+      // only ever matches elements inside it.
+      animationContext = gsap.context(() => {
+        gsap.set(".promo-animate", { y: 32, opacity: 0 });
+      }, sectionElement);
 
-    // every element carrying the "promo-animate" class name — logo,
-    // heading, paragraph, button, and the mobile credit strip — fades and
-    // slides upward into place, one after another ("stagger"), once this
-    // section's top is 18% of the screen height above the bottom of the
-    // screen (the old "top 82%" point). uses IntersectionObserver rather
-    // than ScrollTrigger for the same reason as AnimatedSection.js: it
-    // always checks the section's real current position, so the content
-    // can't get stuck invisible when the page above changes height.
-    observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        observer.disconnect();
+      // every element carrying the "promo-animate" class name — logo,
+      // heading, paragraph, button, and the mobile credit strip — fades and
+      // slides upward into place, one after another ("stagger"), once this
+      // section's top is 18% of the screen height above the bottom of the
+      // screen (the old "top 82%" point). uses IntersectionObserver rather
+      // than ScrollTrigger for the same reason as AnimatedSection.js: it
+      // always checks the section's real current position, so the content
+      // can't get stuck invisible when the page above changes height.
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          observer.disconnect();
 
-        animationContext.add(() => {
-          gsap.to(".promo-animate", {
-            y: 0,
-            opacity: 1,
-            duration: 0.85,
-            stagger: 0.18,
-            ease: "power3.out",
-            force3D: true,
-            clearProps: "transform",
+          animationContext.add(() => {
+            gsap.to(".promo-animate", {
+              y: 0,
+              opacity: 1,
+              duration: 0.85,
+              stagger: 0.18,
+              ease: "power3.out",
+              force3D: true,
+              clearProps: "transform",
+            });
           });
-        });
-      },
-      { rootMargin: "0px 0px -18% 0px" }
-    );
-    observer.observe(sectionElement);
+        },
+        { rootMargin: "0px 0px -18% 0px" }
+      );
+      observer.observe(sectionElement);
     });
 
     return () => {

@@ -57,46 +57,46 @@ export default function AnimatedSection({ children, className = "", stagger = fa
     let animationContext = null;
 
     loadGsap().then((gsap) => {
-    if (cancelled) return;
-    // gsap.context() records every tween created inside it, so the cleanup
-    // below can undo them all when this component unmounts.
-    animationContext = gsap.context(() => {});
+      if (cancelled) return;
+      // gsap.context() records every tween created inside it, so the cleanup
+      // below can undo them all when this component unmounts.
+      animationContext = gsap.context(() => {});
 
-    // hide everything up front (only once JavaScript is running — the
-    // server-rendered page is fully visible, so nothing is ever lost if
-    // this script fails to load).
-    animationContext.add(() => {
-      gsap.set(thingsToAnimate, { y: 32, autoAlpha: 0 });
-    });
+      // hide everything up front (only once JavaScript is running — the
+      // server-rendered page is fully visible, so nothing is ever lost if
+      // this script fails to load).
+      animationContext.add(() => {
+        gsap.set(thingsToAnimate, { y: 32, autoAlpha: 0 });
+      });
 
-    // reveal once the section's top edge is 12% of the screen height above
-    // the bottom of the screen — the same "top 88%" point as before.
-    // fires straight away if the section is already on screen.
-    observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        observer.disconnect(); // only ever plays once
+      // reveal once the section's top edge is 12% of the screen height above
+      // the bottom of the screen — the same "top 88%" point as before.
+      // fires straight away if the section is already on screen.
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          observer.disconnect(); // only ever plays once
 
-        animationContext.add(() => {
-          // only transform (y) and opacity are animated, since the GPU can
-          // do both without repainting. "clearProps" removes the leftover
-          // inline styles once it's done, so finished sections (like the
-          // big directory search) don't stay stuck as their own GPU layer.
-          gsap.to(thingsToAnimate, {
-            y: 0,
-            autoAlpha: 1,
-            duration: 0.7,
-            delay,
-            stagger: stagger ? 0.08 : 0,
-            ease: "power3.out",
-            force3D: true,
-            clearProps: "transform,opacity,visibility",
+          animationContext.add(() => {
+            // only transform (y) and opacity are animated, since the GPU can
+            // do both without repainting. "clearProps" removes the leftover
+            // inline styles once it's done, so finished sections (like the
+            // big directory search) don't stay stuck as their own GPU layer.
+            gsap.to(thingsToAnimate, {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.7,
+              delay,
+              stagger: stagger ? 0.08 : 0,
+              ease: "power3.out",
+              force3D: true,
+              clearProps: "transform,opacity,visibility",
+            });
           });
-        });
-      },
-      { rootMargin: "0px 0px -12% 0px" }
-    );
-    observer.observe(sectionElement);
+        },
+        { rootMargin: "0px 0px -12% 0px" }
+      );
+      observer.observe(sectionElement);
     });
 
     return () => {

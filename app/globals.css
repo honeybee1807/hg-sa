@@ -4347,25 +4347,3 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 .biz-meta a { color: inherit; text-decoration: underline; text-decoration-color: rgba(15, 82, 186, 0.3); text-underline-offset: 3px; }
 .biz-meta a:hover { color: var(--sapphire); }
 
-/* footer: popular categories and areas */
-.footer-links {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.25rem 2.5rem;
-  margin-top: 1.75rem;
-}
-.footer-links-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--footer-ink);
-  margin-bottom: 0.5rem;
-}
-.footer-links ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; }
-.footer-links a { font-size: 0.86rem; color: var(--footer-ink); opacity: 0.85; }
-.footer-links a:hover { color: var(--amethyst); opacity: 1; }
-@media (max-width: 720px) {
-  .footer-links { text-align: center; }
-  .footer-links ul { justify-content: center; }
-}

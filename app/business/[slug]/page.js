@@ -6,12 +6,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { PHYSICAL_BUSINESS_TYPES, halalCertificateLabel } from "@/lib/constants";
-import { getApprovedBusinesses, getArea, areaSlug, categoryByName } from "@/lib/directory";
+import { getApprovedBusinesses, getArea, areaName, areaSlug, categoryByName } from "@/lib/directory";
 import {
   searchPhraseLower, clampDescription, fullTitle, breadcrumbList, schemaTypeFor, sameAsLinks,
   JsonLd, absoluteUrl, ORGANIZATION_ID,
 } from "@/lib/seo";
 import { cloudinaryUrl, logoAlt } from "@/lib/images";
+import { normalizeWhatsApp } from "@/lib/phone";
 import SocialLink from "@/components/SocialLink";
 import BusinessMap from "@/components/BusinessMapLoader";
 import BadgePills from "@/components/BadgePills";
@@ -33,14 +34,6 @@ export async function generateStaticParams() {
   return businesses.map((b) => ({ slug: b.slug }));
 }
 
-// the saved WhatsApp number in "27..." format, whatever way it was stored.
-function formatWhatsApp(raw) {
-  if (!raw) return null;
-  const digitsOnly = raw.replace(/\D/g, "");
-  if (digitsOnly.startsWith("27")) return digitsOnly;
-  if (digitsOnly.startsWith("0")) return "27" + digitsOnly.slice(1);
-  return "27" + digitsOnly;
-}
 
 // the street address is only ever shown (and only ever put in structured
 // data) for a shop, office or on-site service that gave one. home-based
@@ -81,7 +74,7 @@ export default async function BusinessPage({ params }) {
   const area = await getArea(myAreaSlug);
   const areaDisplay = area?.name ?? biz.area;
   const category = categoryByName(biz.category);
-  const waNumber = formatWhatsApp(biz.whatsapp);
+  const waNumber = normalizeWhatsApp(biz.whatsapp);
   const streetAddress = publicStreetAddress(biz);
   const pageUrl = absoluteUrl(`/business/${biz.slug}`);
 
@@ -284,7 +277,7 @@ export default async function BusinessPage({ params }) {
               <LinkList
                 title={`More in ${category.name}`}
                 links={[
-                  ...sameCategory.map((b) => ({ href: `/business/${b.slug}`, label: `${b.name}, ${b.area.split(",")[0].trim()}` })),
+                  ...sameCategory.map((b) => ({ href: `/business/${b.slug}`, label: `${b.name}, ${areaName(b.area)}` })),
                   ...(sameComboCount > 1 && area
                     ? [{ href: `/category/${category.slug}/${area.slug}`, label: `All ${searchPhraseLower(category.name)} in ${areaDisplay}`, count: sameComboCount }]
                     : []),
