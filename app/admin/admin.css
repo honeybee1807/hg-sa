@@ -1120,3 +1120,26 @@ button.adm-activity-row:hover .adm-activity-title { color: var(--adm-violet); }
 @media (prefers-reduced-motion: reduce) {
   .adm-drawer, .adm-drawer-scrim, .adm-toast, .adm-sidebar { animation: none !important; transition: none !important; }
 }
+
+/* ── blog editor: Heading / Subheading buttons ── */
+.adm-content-label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.adm-format-btns { display: flex; gap: 6px; }
+.adm-format-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #DCD7EA;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--adm-ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.adm-format-btn:hover { border-color: var(--adm-violet); color: var(--adm-violet); }
+.adm-format-btn-small { font-size: 0.7rem; }
+.adm-hint code { padding: 1px 5px; border-radius: 5px; background: #F3F0FB; color: var(--adm-violet); font-size: 0.85em; }
+@media (pointer: coarse) { .adm-format-btn { min-height: 44px; } }

@@ -8,6 +8,7 @@ import supabase from "@/lib/supabase";
 import { getApprovedBusinesses, getArea, areaSlug } from "@/lib/directory";
 import { clampDescription, fullTitle, breadcrumbList, JsonLd, absoluteUrl, ORGANIZATION_ID, SITE_NAME } from "@/lib/seo";
 import { cloudinaryUrl } from "@/lib/images";
+import { parseBlogContent, blogPlainText } from "@/lib/blog";
 import ListingCard from "@/components/ListingCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }) {
   // a short excerpt is topped up with the start of the post, so the
   // description is a useful length.
   const description = clampDescription(
-    post.excerpt && post.excerpt.length >= 110 ? post.excerpt : `${post.excerpt ?? ""} ${post.content}`
+    post.excerpt && post.excerpt.length >= 110 ? post.excerpt : `${post.excerpt ?? ""} ${blogPlainText(post.content)}`
   );
   return {
     title: fullTitle(post.title),
@@ -73,8 +74,8 @@ export default async function BlogPostPage({ params }) {
   const businesses = await getMatchingBusinesses(post.category, post.area);
   const areaLabel = post.area ? (await getArea(areaSlug(post.area)))?.name ?? post.area : null;
 
-  // the content is plain text, split into paragraphs on blank lines.
-  const paragraphs = post.content.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  // paragraphs, headings ("## ") and subheadings ("### "): see lib/blog.js.
+  const blocks = parseBlogContent(post.content);
   const pageUrl = absoluteUrl(`/blog/${post.slug}`);
   const image = post.featured_image_url ? cloudinaryUrl(post.featured_image_url, { width: 1200 }) : null;
 
@@ -129,7 +130,11 @@ export default async function BlogPostPage({ params }) {
           )}
           <h1>{post.title}</h1>
           <div className="blog-post-body">
-            {paragraphs.map((paragraph, i) => <p key={i}>{paragraph}</p>)}
+            {blocks.map((block, i) => {
+              if (block.type === "h2") return <h2 key={i}>{block.text}</h2>;
+              if (block.type === "h3") return <h3 key={i}>{block.text}</h3>;
+              return <p key={i}>{block.text}</p>;
+            })}
           </div>
         </article>
       </section>

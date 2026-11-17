@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CATEGORIES } from "@/lib/constants";
 import { DeleteConfirm, EmptyState, InlineFeedback, When } from "./ui";
+import { blogPlainText } from "@/lib/blog";
 
 // same cleanup rules as cleanBlogSlug() in app/admin/actions.js — the
 // server re-applies its own version before saving.
@@ -57,6 +58,31 @@ function BlogEditor({ post, existingSlugs, actions, onSaved, onCancel, onDeleted
     } else {
       setFieldErrors((prev) => ({ ...prev, save: result.error }));
     }
+  }
+
+  const contentRef = useRef(null);
+
+  // the Heading / Subheading buttons: turn the line the cursor is on into a
+  // heading ("## ") or subheading ("### "), switch between the two, or press
+  // the same button again to turn it back into normal text.
+  function toggleLinePrefix(prefix) {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const cursor = textarea.selectionStart;
+    const lineStart = content.lastIndexOf("\n", cursor - 1) + 1;
+    const lineEndIndex = content.indexOf("\n", cursor);
+    const lineEnd = lineEndIndex === -1 ? content.length : lineEndIndex;
+    const line = content.slice(lineStart, lineEnd);
+    const existing = line.match(/^#{1,3}\s+/)?.[0] ?? "";
+    const bare = line.slice(existing.length);
+    const nextLine = existing === prefix ? bare : prefix + bare;
+    const nextContent = content.slice(0, lineStart) + nextLine + content.slice(lineEnd);
+    setContent(nextContent);
+    const nextCursor = lineStart + nextLine.length;
+    requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(nextCursor, nextCursor);
+    });
   }
 
   const imgRef     = useRef(null);
@@ -230,15 +256,29 @@ function BlogEditor({ post, existingSlugs, actions, onSaved, onCancel, onDeleted
       </div>
 
       <div className="adm-field">
-        <label htmlFor="blog-content" className="adm-label">Content <span className="adm-req">*</span></label>
+        <div className="adm-content-label-row">
+          <label htmlFor="blog-content" className="adm-label">Content <span className="adm-req">*</span></label>
+          <div className="adm-format-btns" role="group" aria-label="Formatting">
+            <button type="button" className="adm-format-btn" onClick={() => toggleLinePrefix("## ")} title="Make the current line a heading">
+              <i className="fa-solid fa-heading" aria-hidden="true" /> Heading
+            </button>
+            <button type="button" className="adm-format-btn" onClick={() => toggleLinePrefix("### ")} title="Make the current line a subheading">
+              <i className="fa-solid fa-heading adm-format-btn-small" aria-hidden="true" /> Subheading
+            </button>
+          </div>
+        </div>
         <textarea
+          ref={contentRef}
           id="blog-content"
           className="adm-input"
-          rows={12}
+          rows={14}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Separate paragraphs with a blank line — they'll each render as their own paragraph."
+          placeholder={"Write your story here.\n\n## A heading\nLeave a blank line between paragraphs.\n\n### A subheading\nAnother paragraph."}
         />
+        <span className="adm-hint">
+          Leave a blank line between paragraphs. Start a line with <code>##</code> for a heading or <code>###</code> for a subheading, or use the buttons above.
+        </span>
         {fieldErrors.content && <span className="adm-field-error">{fieldErrors.content}</span>}
       </div>
 
@@ -391,7 +431,7 @@ function StoryCard({ post, onEdit, actions, notify, refresh }) {
         <span className="adm-muted">Updated <When value={post.updated_at} /></span>
       </div>
       <h3 className="adm-story-title">{post.title}</h3>
-      <p className="adm-story-excerpt">{post.excerpt || (post.content ?? "").slice(0, 140) || "No excerpt yet."}</p>
+      <p className="adm-story-excerpt">{post.excerpt || blogPlainText(post.content).slice(0, 140) || "No excerpt yet."}</p>
       <p className="adm-story-slug">/blog/{post.slug}</p>
       <InlineFeedback feedback={feedback} />
       <div className="adm-btn-row adm-story-actions">

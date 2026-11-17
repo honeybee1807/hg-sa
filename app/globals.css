@@ -1709,6 +1709,19 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   color: #374151;
 }
 
+/* headings ("## ") and subheadings ("### ") inside a post, see lib/blog.js */
+.blog-post-body h2 {
+  font-size: 1.75rem;
+  margin: 2rem 0 0.75rem;
+  line-height: 1.2;
+}
+.blog-post-body h3 {
+  font-size: 1.35rem;
+  margin: 1.5rem 0 0.5rem;
+  line-height: 1.25;
+}
+.blog-post-body > :first-child { margin-top: 0; }
+
 /* ─── submit form ──────────────────────────────────────────────────── */
 .submit-page-header {
   margin-bottom: 2rem;
