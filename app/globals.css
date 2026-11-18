@@ -2697,8 +2697,19 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   will-change: transform, opacity;
 }
 
+/* the incoming photo fades in on top of the outgoing one, which stays fully
+   opaque underneath until it's covered. (fading both at once let the dark
+   hero background show through mid-swap, a visible dim "blink".) the
+   outgoing photo only drops to opacity 0 at the following swap, when it's
+   already buried under two others. */
 .hero-photo-bg-image.is-active {
   opacity: 1;
+  z-index: 2;
+}
+
+.hero-photo-bg-image.is-leaving {
+  opacity: 1;
+  z-index: 1;
 }
 
 .hero-photo-bg-image.is-active,
@@ -2722,7 +2733,46 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   .hero-photo-bg-image {
     animation: none;
     transform: scale(1);
+    will-change: opacity;
   }
+}
+
+/* ── hero entrance ─────────────────────────────────────────────────
+   each piece slides and fades in, overlapping the one before it. starts
+   on first paint (no waiting for JavaScript) and only touches transform
+   and opacity, so it runs on the GPU. "backwards" holds the hidden start
+   state during each delay, then hands back to the element's normal styles
+   when done, so no transform lingers (the search bar's filter dropdown
+   and the featured card need that). the "to" state is left out on
+   purpose: each element animates to its own resting opacity. */
+@keyframes heroRise {
+  from { opacity: 0; transform: translate3d(0, var(--rise, 16px), 0); }
+}
+
+@keyframes heroSlideIn {
+  from { opacity: 0; transform: translate3d(56px, 0, 0); }
+}
+
+.h-line-1,
+.h-line-2,
+.h-sub,
+.h-search,
+.h-stat,
+.h-tagline {
+  animation: heroRise 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.h-line-1 { --rise: 48px; animation-duration: 0.8s; animation-delay: 0.05s; }
+.h-line-2 { --rise: 48px; animation-duration: 0.8s; animation-delay: 0.3s; }
+.h-sub    { --rise: 20px; animation-delay: 0.6s; }
+.h-search { animation-delay: 0.8s; }
+.h-stat   { --rise: 12px; animation-duration: 0.5s; animation-delay: 1.25s; }
+.h-stat:nth-child(3) { animation-delay: 1.34s; }
+.h-stat:nth-child(5) { animation-delay: 1.43s; }
+.h-tagline { --rise: 12px; animation-duration: 0.5s; animation-delay: 1.55s; }
+
+.hero-featured-slot {
+  animation: heroSlideIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.65s backwards;
 }
 
 .hero-dot-grid {
@@ -2802,7 +2852,11 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: shimmerMove 3.5s linear infinite;
+  /* animating background-position repaints this big heading (and its
+     drop-shadow filter) on every frame, on the main thread. left running
+     forever it competed with everything else on the page, so it now sweeps
+     three times as the hero comes in and then rests. */
+  animation: shimmerMove 3.5s linear 0.3s 3;
   /* a soft text-shadow barely reads once the fill itself is transparent —
      a tight, dark drop-shadow gives the gradient letters a solid edge so
      they stay legible against a busy photo background, however light or
@@ -2814,9 +2868,13 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.85));
 }
 
+/* with a 220%-wide background, moving it exactly one tile width (2.2x the
+   text width) is position 183.33%: (1 - 2.2) * 1.8333 = -2.2. the old 220%
+   overshot by a fifth of a tile, so the colours jumped at the end of every
+   loop. */
 @keyframes shimmerMove {
   0%   { background-position: 0% center; }
-  100% { background-position: 220% center; }
+  100% { background-position: 183.333% center; }
 }
 
 .h-sub {
@@ -3010,7 +3068,7 @@ details[open] .faq-question::after { transform: rotate(180deg); }
   color: #DCCDF5;
   /* lining (all-the-same-height) figures, so the stats sit level even if
      the heading font's default numerals are "old-style" (uneven heights). */
-  font-variant-numeric: lining-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .h-stat-label {
@@ -4270,11 +4328,19 @@ details[open] .faq-question::after { transform: rotate(180deg); }
 /* ─── reduced motion ───────────────────────────────────────────────── */
 /* stops every looping decorative effect for anyone whose device asks for
    reduced motion (an accessibility setting, and also commonly on in
-   battery-saver modes). the GSAP entrance animations check this same
-   setting in their own components (AnimatedSection, Hero, OlideenPromo). */
+   battery-saver modes). this includes the hero's CSS entrance; the GSAP
+   entrance animations check this same setting in their own components
+   (AnimatedSection, OlideenPromo). */
 @media (prefers-reduced-motion: reduce) {
   .hero-photo-bg-image,
   .hero-shimmer-text,
+  .h-line-1,
+  .h-line-2,
+  .h-sub,
+  .h-search,
+  .h-stat,
+  .h-tagline,
+  .hero-featured-slot,
   .olideen-promo::before,
   .promo-shimmer,
   .ot-logo-pulse,

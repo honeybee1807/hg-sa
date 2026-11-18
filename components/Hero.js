@@ -13,11 +13,6 @@
 // card (or the genuine "Could this be your business?" placeholder, if none
 // is set) everywhere.
 import { useEffect, useRef } from "react";
-import { loadGsap } from "@/lib/loadGsap";
-
-// start downloading GSAP as soon as this file runs in the browser, in
-// parallel with hydration rather than as part of it.
-if (typeof window !== "undefined") loadGsap();
 import HeroBackground from "@/components/HeroBackground";
 import FeaturedGemCard from "@/components/FeaturedGemCard";
 import { DirectorySearchBar } from "@/components/DirectorySearch";
@@ -26,128 +21,56 @@ import { CATEGORIES } from "@/lib/constants";
 export default function Hero({ featuredGem, areaCount }) {
   const ref = useRef(null); // points at the outer <section>, used to scope all of the animations below to just this component
 
+  // the entrance sequence (headline lines, description, search bar,
+  // featured card, stats, tagline sliding and fading in one after another)
+  // is plain CSS — see the "hero entrance" block in globals.css. it used to
+  // be a GSAP timeline, but GSAP is downloaded after the page is already on
+  // screen, so the hero rendered fully, then blinked out and replayed once
+  // GSAP arrived. CSS starts on the very first paint, and because it only
+  // animates transform and opacity it runs on the GPU even while the page
+  // is still busy hydrating.
+  //
+  // the two number stats (areas and categories) still count up from zero.
+  // ("Free" is a word, so it's left alone.) the markup renders the real
+  // numbers (right for search engines and without JavaScript); they're only
+  // reset to 0 and counted up if the stats are still invisible when this
+  // runs, so a slow hydration never makes a visible number jump back to 0.
   useEffect(() => {
-    // for visitors whose device asks for reduced motion, skip the entrance
-    // sequence entirely. the stat numbers are already rendered with their
-    // real values in the markup below, so there's nothing to fill in.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    // if the browser freezes for 100ms or more (busy loading the rest of
-    // the page), carry on from where the animation was instead of skipping
-    // ahead to "catch up" — the skip is what reads as a stutter. GSAP's own
-    // default only steps in for freezes over 500ms. applies to every GSAP
-    // animation on the page.
-    let cancelled = false;
-    let entranceTimeline;
-    let animationContext = null;
-    let idleHandle, timeoutHandle;
+    const counters = [
+      { selector: ".hc-towns", finalValue: areaCount },
+      { selector: ".hc-cats",  finalValue: CATEGORIES.length },
+    ]
+      .map((counter) => ({ ...counter, element: ref.current?.querySelector(counter.selector) }))
+      .filter(({ element }) => element && Number(getComputedStyle(element.closest(".h-stat")).opacity) < 0.1);
 
-    loadGsap().then((gsap) => {
-      if (cancelled) return;
-      gsap.ticker.lagSmoothing(100, 16);
+    if (counters.length === 0) return;
 
-      animationContext = gsap.context(() => {
-        // the entrance sequence: each piece of the hero fades and slides in
-        // one after another, in this order — first headline
-        // line, second headline line, subheading paragraph, the search bar,
-        // the featured gem card, then the stats bar along the bottom (the
-        // three stats, then the tagline). the negative
-        // "-=0.x" timings make each step start slightly before the previous
-        // one finishes, so it reads as one flowing motion rather than a
-        // series of separate, disconnected pops.
-        // created paused: every element is put in its hidden starting state
-        // straight away, but the timeline only plays once the page has
-        // finished its heaviest start-up work (see the end of this effect).
-        entranceTimeline = gsap.timeline({ paused: true });
+    for (const { element, finalValue } of counters) {
+      // reserve the final number's width so the label beside it doesn't
+      // shuffle sideways as the count goes from 1 digit to 2.
+      element.style.minWidth = `${String(finalValue).length}ch`;
+      element.textContent = "0";
+    }
 
-        entranceTimeline
-          .fromTo(".h-line-1",
-            { y: 64, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" })
-          .fromTo(".h-line-2",
-            { y: 64, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.52")
-          .fromTo(".h-sub",
-            { y: 20, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, "-=0.4")
-          // the search bar takes the place the two buttons used to have in
-          // the sequence. "clearProps" removes the leftover transform once
-          // it's done, so the filter dropdown inside it isn't positioned
-          // relative to a lingering transformed layer.
-          .fromTo(".h-search",
-            { y: 16, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", clearProps: "transform" }, "-=0.35")
-          // no scale here: scaling the card makes the browser re-rasterise
-          // its text and logo every frame. a slide plus fade looks almost the
-          // same and runs entirely on the GPU.
-          .fromTo(".hero-featured-slot",
-            { x: 56, opacity: 0 },
-            { x: 0, opacity: 1, duration: 1.1, ease: "expo.out", force3D: true, clearProps: "transform" }, "-=0.7")
-          .fromTo(".h-stat",
-            { y: 12, opacity: 0 },
-            { y: 0, opacity: 1, stagger: 0.09, duration: 0.45, ease: "power3.out" }, "-=0.4")
-          .fromTo(".h-tagline",
-            { y: 12, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, "-=0.25");
-
-        // the two number stats (areas and categories) count up from zero
-        // once the hero loads, rather than just appearing as static text.
-        // ("Free" is a word, not a number, so it's left as it is.) the
-        // categories total comes straight from lib/constants.js so it can
-        // never drift out of sync; the areas total is passed in as a prop
-        // (see app/page.js) since areas are no longer a fixed list — it's
-        // however many distinct areas currently have an approved business.
-        const counters = [
-          { selector: ".hc-towns", finalValue: areaCount },
-          { selector: ".hc-cats",  finalValue: CATEGORIES.length },
-        ];
-
-        for (const counter of counters) {
-          const counterElement = ref.current?.querySelector(counter.selector);
-          if (!counterElement) continue;
-
-          // the markup renders the real number (so it's right for search
-          // engines and if JavaScript never loads); it's reset to 0 here,
-          // while the stats are still hidden by the entrance timeline
-          // above, and then counted back up.
-          counterElement.textContent = "0";
-
-          // gsap can't directly "animate" a piece of text, so instead a
-          // plain number is animated from 0 up to the target value, and on
-          // every tick of that animation the on-screen text is updated to
-          // show the current rounded number.
-          // added to the same timeline (starting 1s in), so the count-up
-          // waits for the timeline to start too.
-          const animatedNumber = { currentValue: 0 };
-          entranceTimeline.to(animatedNumber, {
-            currentValue: counter.finalValue,
-            duration: 2.2,
-            ease: "power2.out",
-            onUpdate() {
-              counterElement.textContent = String(Math.round(animatedNumber.currentValue));
-            },
-          }, 1.0);
-        }
-      }, ref);
-
-      // start the entrance once the browser is idle — i.e. after the burst of
-      // work right after the page loads (hydrating the directory, decoding
-      // images, swapping in fonts), which is what made it stutter — but never
-      // later than 600ms. browsers without requestIdleCallback (Safari) wait a
-      // short fixed moment instead.
-      const play = () => entranceTimeline?.play();
-      if ("requestIdleCallback" in window) {
-        idleHandle = window.requestIdleCallback(play, { timeout: 600 });
-      } else {
-        timeoutHandle = window.setTimeout(play, 250);
+    const DURATION_MS = 2200;
+    let frameId;
+    let startTime;
+    const tick = (now) => {
+      startTime ??= now;
+      const progress = Math.min((now - startTime) / DURATION_MS, 1);
+      const eased = 1 - (1 - progress) ** 2; // ease-out
+      for (const { element, finalValue } of counters) {
+        element.textContent = String(Math.round(finalValue * eased));
       }
-    });
+      if (progress < 1) frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
 
     return () => {
-      cancelled = true;
-      if (idleHandle) window.cancelIdleCallback(idleHandle);
-      if (timeoutHandle) window.clearTimeout(timeoutHandle);
-      animationContext?.revert();
+      cancelAnimationFrame(frameId);
+      for (const { element, finalValue } of counters) element.textContent = String(finalValue);
     };
   }, [areaCount]);
 
